@@ -11,19 +11,21 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $fillable = ['name', 'email', 'password'];
+
+    protected $hidden = [
+        'password',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'remember_token'
+    ];
+
     protected function casts(): array
     {
         return [
@@ -32,12 +34,19 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Get the user's initials
-     */
+    public function empleado()
+    {
+        return $this->hasOne(Empleado::class);
+    }
+
+    public function getRolesAttribute()
+    {
+        return $this->empleado?->roles;
+    }
+
     public function initials(): string
     {
-        return Str::of($this->name)
+        return Str::of($this->name ?? '')
             ->explode(' ')
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
