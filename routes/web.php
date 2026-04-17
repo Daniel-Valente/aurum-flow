@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\Area\AreaController;
 use App\Http\Controllers\Admin\Empleado\EmpleadoController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Http\Request;
@@ -44,7 +45,7 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
     | EMPLEADOS MODULE (ADMIN)
     |--------------------------------------------------------------------------
     */
-    Route::prefix('admin/empleados')->group(function() {
+    Route::prefix('admin/empleados')->group(function () {
         Route::get('/', [EmpleadoController::class, 'index'])
             ->name('empleados.index')
             ->middleware('permission:empleados.ver');
@@ -65,6 +66,32 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
             ->name('empleados.toggle')
             ->middleware('permission:empleados.bloquear');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | AREA MODULE (ADMIN)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('admin/areas')->group(function () {
+
+        Route::get('/', [AreaController::class, 'index'])
+            ->middleware('permission:areas.ver');
+
+        Route::post('/', [AreaController::class, 'store'])
+            ->middleware('permission:areas.crear');
+
+        Route::put('/{area}', [AreaController::class, 'update'])
+            ->middleware('permission:areas.editar');
+
+        Route::delete('/{area}', [AreaController::class, 'destroy'])
+            ->middleware('permission:areas.eliminar');
+
+        Route::patch('/{area}/toggle', [AreaController::class, 'toggle'])
+            ->middleware('permission:areas.editar');
+
+        Route::get('/list', [AreaController::class, 'list'])
+            ->middleware('permission:areas.ver');
+    });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

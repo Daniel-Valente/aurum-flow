@@ -61,6 +61,14 @@ class PermissionsSeeder extends Seeder
             'empleados.eliminar',
 
             // ========================
+            // Areas
+            // ========================
+            'areas.ver',
+            'areas.crear',
+            'areas.editar',
+            'areas.eliminar',
+
+            // ========================
             // PROYECTOS
             // ========================
             'proyectos.ver',
