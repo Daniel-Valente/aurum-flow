@@ -15,40 +15,71 @@ class EmpleadoController extends Controller
 {
     public function index(Request $request)
     {
-        $empleado = Empleado::with(['user', 'area', 'centroCosto'])
-            ->when($request->search, function ($q) use ($request) {
-                $q->where('nombre_completo', 'like', "%{$request->search}%")
-                    ->orWhere('numero_nomina', 'like', "%{$request->search}%");
-            })
-            ->latest()
-            ->paginate(15);
+        $query = Empleado::with(['user', 'area', 'centroCosto']);
 
-        return ApiResponse::success(
-            EmpleadoResource::collection($empleado),
-            'Lista de empleado'
-        );
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre_completo', 'like', "%{$search}%")
+                    ->orWhere('numero_nomina', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q2) use ($search) {
+                        $q2->where('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('estatus')) {
+            $query->where('estatus', $request->estatus);
+        }
+
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->area_id);
+        }
+
+        if ($request->filled('centro_costo_id')) {
+            $query->where('centro_costo_id', $request->centro_costo_id);
+        }
+
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+
+        $query->orderBy($sortBy, $sortDir);
+
+        $perPage = min($request->input('per_page', 15), 100);
+
+        $empleados = $query->paginate($perPage);
+
+        return ApiResponse::success([
+            'items' => EmpleadoResource::collection($empleados->items()),
+            'pagination' => [
+                'total' => $empleados->total(),
+                'per_page' => $empleados->perPage(),
+                'current_page' => $empleados->currentPage(),
+                'last_page' => $empleados->lastPage(),
+            ]
+        ], 'Lista de empleados');
     }
 
     public function store(StoreEmpleadoRequest $request, EmpleadoService $service)
     {
-        return response()->json(
-            $service->create($request->validated()),
-            201
-        );
+        $data = $service->create($request->validated());
+
+        return ApiResponse::success($data, 'Empleado creado correctamente', 201);
     }
 
     public function update(UpdateEmpleadoRequest $request, Empleado $empleado, EmpleadoService $service)
     {
-        return response()->json(
-            $service->update($empleado, $request->validated())
-        );
+        $data = $service->update($empleado, $request->validated());
+
+        return ApiResponse::success($data, 'Empleado actualizado');
     }
 
     public function destroy(Empleado $empleado, EmpleadoService $service)
     {
-        return response()->json([
-            'success' => $service->delete($empleado)
-        ]);
+        $service->delete($empleado);
+
+        return ApiResponse::success(null, 'Empleado eliminado');
     }
 
     public function toggleStatus(Empleado $empleado)
@@ -57,9 +88,9 @@ class EmpleadoController extends Controller
             'estatus' => !$empleado->estatus
         ]);
 
-        return response()->json([
-            'message' => 'Estado actualizado',
-            'estatus' => $empleado->estatus
-        ]);
+        return ApiResponse::success(
+            ['estatus' => $empleado->estatus],
+            'Estado actualizado'
+        );
     }
 }
