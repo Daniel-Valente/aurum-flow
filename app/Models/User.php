@@ -15,7 +15,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
 
     protected $fillable = ['name', 'email', 'password'];
 
@@ -25,6 +25,7 @@ class User extends Authenticatable
         'two_factor_recovery_codes',
         'remember_token'
     ];
+    protected string $guard_name = 'web';
 
     protected function casts(): array
     {
@@ -39,9 +40,9 @@ class User extends Authenticatable
         return $this->hasOne(Empleado::class);
     }
 
-    public function getRolesAttribute()
+    public function empleadoRoles()
     {
-        return $this->empleado?->roles;
+        return $this->empleado?->roles ?? collect();
     }
 
     public function initials(): string
@@ -49,7 +50,7 @@ class User extends Authenticatable
         return Str::of($this->name ?? '')
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Solicitud extends Model
 {
@@ -16,8 +18,6 @@ class Solicitud extends Model
         'fecha_inicio',
         'fecha_fin',
         'motivo',
-        'monto_total',
-        'estatus'
     ];
 
     protected $casts = [
@@ -39,5 +39,10 @@ class Solicitud extends Model
     public function gastos()
     {
         return $this->hasMany(Gasto::class);
+    }
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class);
     }
 }

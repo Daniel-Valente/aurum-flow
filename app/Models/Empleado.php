@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Empleado extends Model
 {
-    use HasFactory, SoftDeletes, HasRoles;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -18,7 +20,8 @@ class Empleado extends Model
     ];
 
     protected $casts = [
-        'estatus' => 'boolean'
+        'estatus' => 'boolean',
+        'deleted_at' => 'datetime'
     ];
 
     public function user()
@@ -39,5 +42,15 @@ class Empleado extends Model
     public function solicitudes()
     {
         return $this->hasMany(Solicitud::class);
+    }
+
+    public function scopeActivos($query)
+    {
+        return $query->where('estatus', true);
+    }
+
+    public function scopeInactivos($query)
+    {
+        return $query->where('estatus', false);
     }
 }

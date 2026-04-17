@@ -7,15 +7,25 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class SystemInitSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $gerente = Role::firstOrCreate(['name' => 'gerente']);
-        $operativo = Role::firstOrCreate(['name' => 'operativo']);
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // ========================
+        // ROLES
+        // ========================
+        Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'gerente', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'operativo', 'guard_name' => 'web']);
+
+        // ========================
+        // USUARIOS BASE
+        // ========================
         $uAdmin = User::firstOrCreate(
             ['email' => 'admin@demo.com'],
             ['name' => 'Admin', 'password' => Hash::make('password')]
@@ -31,8 +41,55 @@ class SystemInitSeeder extends Seeder
             ['name' => 'Operativo', 'password' => Hash::make('password')]
         );
 
-        $uAdmin->assignRole($admin);
-        $uGerente->assignRole($gerente);
-        $uOperativo->assignRole($operativo);
+        // ========================
+        // ASIGNAR ROLES
+        // ========================
+        $uAdmin->syncRoles(['admin']);
+        $uGerente->syncRoles(['gerente']);
+        $uOperativo->syncRoles(['operativo']);
+
+        // 4. OBTENER ROLES
+        $admin = Role::findByName('admin');
+        $gerente = Role::findByName('gerente');
+        $operativo = Role::findByName('operativo');
+
+        // 5. ASIGNAR PERMISOS
+
+        // ADMIN → todo
+        $admin->syncPermissions(Permission::all());
+
+        // GERENTE
+        $gerente->syncPermissions([
+            'solicitudes.ver.todas',
+            'solicitudes.aprobar',
+            'solicitudes.rechazar',
+
+            'gastos.ver.todos',
+            'gastos.validar',
+
+            'excepciones.ver',
+            'excepciones.aprobar.nivel1',
+            'excepciones.rechazar',
+
+            'auditoria.ver',
+
+            'empleados.ver',
+            'proyectos.ver',
+
+            'reportes.ver',
+        ]);
+
+        // OPERATIVO
+        $operativo->syncPermissions([
+            'solicitudes.ver.propias',
+            'solicitudes.crear',
+            'solicitudes.editar',
+            'solicitudes.enviar',
+
+            'gastos.ver.propios',
+            'gastos.crear',
+            'gastos.editar',
+            'gastos.subir.comprobante',
+        ]);
     }
 }
