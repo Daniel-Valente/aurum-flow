@@ -14,6 +14,33 @@ class ProyectoResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'codigo' => $this->codigo,
+            'nombre' => $this->nombre,
+            'tipo' => $this->tipo,
+            'cliente' => $this->cliente,
+
+            'prioridad' => $this->prioridad,
+            'estado_operativo' => $this->estado_operativo,
+
+            'presupuesto_total' => $this->presupuesto_total,
+
+            'fechas' => [
+                'inicio' => $this->fecha_inicio,
+                'fin' => $this->fecha_fin,
+            ],
+
+            'ubicacion' => [
+                'pais' => $this->pais,
+                'estado' => $this->estado,
+                'ciudad' => $this->ciudad,
+            ],
+
+            'centro_costo' => $this->whenLoaded('centroCosto'),
+            'responsable' => $this->whenLoaded('responsable'),
+
+            'estatus' => $this->estatus,
+        ];
     }
 }

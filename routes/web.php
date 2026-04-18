@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\Area\AreaController;
 use App\Http\Controllers\Admin\CentroCosto\CentroCostoController;
 use App\Http\Controllers\Admin\Empleado\EmpleadoController;
+use App\Http\Controllers\Admin\Proyecto\ProyectoController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -121,6 +122,27 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
         Route::delete('/{centro_costo}', [CentroCostoController::class, 'destroy'])
             ->middleware('permission:centros_costos.eliminar');
+    });
+
+    Route::prefix('admin/proyectos')->group(function () {
+
+        Route::get('/', [ProyectoController::class, 'index'])
+            ->middleware('permission:proyectos.ver');
+
+        Route::get('/list', [ProyectoController::class, 'list'])
+            ->middleware('permission:proyectos.ver');
+
+        Route::post('/', [ProyectoController::class, 'store'])
+            ->middleware('permission:proyectos.crear');
+
+        Route::put('/{proyecto}', [ProyectoController::class, 'update'])
+            ->middleware('permission:proyectos.editar');
+
+        Route::patch('/{proyecto}/toggle', [ProyectoController::class, 'toggleStatus'])
+            ->middleware('permission:proyectos.editar');
+
+        Route::delete('/{proyecto}', [ProyectoController::class, 'destroy'])
+            ->middleware('permission:proyectos.eliminar');
     });
 });
 
