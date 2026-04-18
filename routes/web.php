@@ -203,6 +203,9 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
     Route::get('/excepciones/{excepcion}', [GastoExcepcionController::class, 'show'])
         ->middleware('permission:excepciones.ver');
+
+    Route::get('/gastos/{gasto}/timeline', [GastoController::class, 'timeline'])
+        ->middleware('permission:gastos.ver.todos');
 });
 
 require __DIR__ . '/settings.php';

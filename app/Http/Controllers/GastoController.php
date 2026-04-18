@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ApiResponse;
 use App\Http\Requests\Gasto\StoreGastoRequest;
+use App\Http\Resources\Gasto\GastoTimelineResource;
+use App\Models\GastoAuditoria;
 use App\Services\Gasto\GastoService;
 use Illuminate\Http\Request;
 
@@ -20,6 +22,19 @@ class GastoController extends Controller
         return ApiResponse::success(
             $resultado['gasto'],
             $resultado['mensaje']
+        );
+    }
+
+    public function timeline($gastoId)
+    {
+        $timeline = GastoAuditoria::where('gasto_id', $gastoId)
+            ->with('actor:id,name')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return ApiResponse::success(
+            GastoTimelineResource::collection($timeline),
+            'Timeline del gasto'
         );
     }
 }

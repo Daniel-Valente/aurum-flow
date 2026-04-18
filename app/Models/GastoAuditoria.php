@@ -24,4 +24,9 @@ class GastoAuditoria extends Model
         'datos_antes' => 'array',
         'datos_despues' => 'array'
     ];
+
+    public function actor()
+    {
+        return $this->belongsTo(User::class, 'actor_id');
+    }
 }
