@@ -69,6 +69,14 @@ class PermissionsSeeder extends Seeder
             'areas.eliminar',
 
             // ========================
+            // Centro Costo
+            // ========================
+            'centros_costos.ver',
+            'centros_costos.crear',
+            'centros_costos.editar',
+            'centros_costos.eliminar',
+
+            // ========================
             // PROYECTOS
             // ========================
             'proyectos.ver',

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Area\AreaController;
+use App\Http\Controllers\Admin\CentroCosto\CentroCostoController;
 use App\Http\Controllers\Admin\Empleado\EmpleadoController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Http\Request;
@@ -50,6 +51,9 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
             ->name('empleados.index')
             ->middleware('permission:empleados.ver');
 
+        Route::get('/list', [EmpleadoController::class, 'list'])
+            ->middleware('permission:empleados.ver');
+
         Route::post('/', [EmpleadoController::class, 'store'])
             ->name('empleados.store')
             ->middleware('permission:empleados.crear');
@@ -77,6 +81,9 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
         Route::get('/', [AreaController::class, 'index'])
             ->middleware('permission:areas.ver');
 
+        Route::get('/list', [AreaController::class, 'list'])
+            ->middleware('permission:areas.ver');
+
         Route::post('/', [AreaController::class, 'store'])
             ->middleware('permission:areas.crear');
 
@@ -88,9 +95,32 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
         Route::patch('/{area}/toggle', [AreaController::class, 'toggle'])
             ->middleware('permission:areas.editar');
+    });
 
-        Route::get('/list', [AreaController::class, 'list'])
-            ->middleware('permission:areas.ver');
+    /*
+    |--------------------------------------------------------------------------
+    | Centros Costos MODULE (ADMIN)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('admin/centros-costos')->group(function () {
+
+        Route::get('/', [CentroCostoController::class, 'index'])
+            ->middleware('permission:centros_costos.ver');
+
+        Route::get('/list', [CentroCostoController::class, 'list'])
+            ->middleware('permission:centros_costos.ver');
+
+        Route::post('/', [CentroCostoController::class, 'store'])
+            ->middleware('permission:centros_costos.crear');
+
+        Route::put('/{centro_costo}', [CentroCostoController::class, 'update'])
+            ->middleware('permission:centros_costos.editar');
+
+        Route::patch('/{centro_costo}/toggle', [CentroCostoController::class, 'toggleStatus'])
+            ->middleware('permission:centros_costos.editar');
+
+        Route::delete('/{centro_costo}', [CentroCostoController::class, 'destroy'])
+            ->middleware('permission:centros_costos.eliminar');
     });
 });
 

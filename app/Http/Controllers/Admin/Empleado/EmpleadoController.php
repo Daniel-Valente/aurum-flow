@@ -61,6 +61,16 @@ class EmpleadoController extends Controller
         ], 'Lista de empleados');
     }
 
+    public function list()
+    {
+        $empleados = Empleado::where('estatus', true)
+            ->with('centroCosto:id,nombre')
+            ->orderBy('nombre_completo')
+            ->get(['user_id', 'nombre_completo', 'centro_costo_id']);
+
+        return ApiResponse::success($empleados, 'Lista simple de empleados');
+    }
+
     public function store(StoreEmpleadoRequest $request, EmpleadoService $service)
     {
         $data = $service->create($request->validated());
