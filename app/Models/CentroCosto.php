@@ -13,7 +13,7 @@ class CentroCosto extends Model
 
         protected $fillable = [
         'nombre',
-        'clave',
+        'codigo',
         'estatus'
     ];
 
