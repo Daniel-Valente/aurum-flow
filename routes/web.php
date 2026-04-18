@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\Empleado\EmpleadoController;
 use App\Http\Controllers\Admin\PoliticaGasto\PoliticaGastoController;
 use App\Http\Controllers\Admin\Proyecto\ProyectoController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\GastoController;
+use App\Http\Controllers\GastoExcepcionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -189,6 +191,18 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
         Route::delete('/{politica}', [PoliticaGastoController::class, 'destroy'])
             ->middleware('permission:politicas.eliminar');
     });
+
+    Route::post('/gastos', [GastoController::class, 'store'])
+        ->middleware('permission:gastos.crear');
+
+    Route::post('/excepciones/{excepcion}/resolver', [GastoExcepcionController::class, 'resolver'])
+        ->middleware('permission:excepciones.aprobar.nivel1|excepciones.aprobar.nivel2');
+
+    Route::get('/excepciones', [GastoExcepcionController::class, 'index'])
+        ->middleware('permission:excepciones.ver');
+
+    Route::get('/excepciones/{excepcion}', [GastoExcepcionController::class, 'show'])
+        ->middleware('permission:excepciones.ver');
 });
 
 require __DIR__ . '/settings.php';

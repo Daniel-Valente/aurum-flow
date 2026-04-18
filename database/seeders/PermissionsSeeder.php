@@ -35,16 +35,17 @@ class PermissionsSeeder extends Seeder
             'gastos.crear',
             'gastos.editar',
             'gastos.eliminar',
-            'gastos.validar',
             'gastos.subir.comprobante',
 
             // ========================
             // EXCEPCIONES
             // ========================
             'excepciones.ver',
+            'excepciones.ver.todas',
             'excepciones.aprobar.nivel1',
             'excepciones.aprobar.nivel2',
-            'excepciones.rechazar',
+            'excepciones.rechazar.nivel1',
+            'excepciones.rechazar.nivel2',
 
             // ========================
             // AUDITORIA
@@ -56,6 +57,8 @@ class PermissionsSeeder extends Seeder
             // EMPLEADOS
             // ========================
             'empleados.ver',
+            'empleados.ver.propios',
+            'empleados.ver.area',
             'empleados.crear',
             'empleados.editar',
             'empleados.eliminar',

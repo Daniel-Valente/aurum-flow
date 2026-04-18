@@ -29,6 +29,11 @@ class Empleado extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function role()
+    {
+        return $this->user?->roles->first();
+    }
+
     public function area()
     {
         return $this->belongsTo(Area::class);

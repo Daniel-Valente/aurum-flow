@@ -14,7 +14,8 @@ class GastoExcepcion extends Model
         'nivel',
         'aprobado_por',
         'estatus',
-        'comentarios'
+        'comentarios',
+        'resuelto_en'
     ];
 
     protected $casts = [

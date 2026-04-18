@@ -65,11 +65,10 @@ class SystemInitSeeder extends Seeder
             'solicitudes.rechazar',
 
             'gastos.ver.todos',
-            'gastos.validar',
 
             'excepciones.ver',
             'excepciones.aprobar.nivel1',
-            'excepciones.rechazar',
+            'excepciones.rechazar.nivel1',
 
             'auditoria.ver',
 
