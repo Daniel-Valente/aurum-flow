@@ -18,6 +18,7 @@ class Solicitud extends Model
         'fecha_inicio',
         'fecha_fin',
         'motivo',
+        'motivo_cancelacion',
     ];
 
     protected $casts = [
@@ -44,5 +45,10 @@ class Solicitud extends Model
     public function proyecto()
     {
         return $this->belongsTo(Proyecto::class);
+    }
+
+    public function scopePropias($query, $user)
+    {
+        return $query->where('empleado_id', $user->empleado->id);
     }
 }

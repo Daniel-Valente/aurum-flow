@@ -4,7 +4,11 @@ namespace App\Services\Gasto;
 
 use App\Models\Concepto;
 use App\Models\Empleado;
+use App\Models\Gasto;
+use App\Models\GastoExcepcion;
 use App\Models\PoliticaGasto;
+use App\Models\Solicitud;
+use App\Services\Auditoria\AuditoriaService;
 use Carbon\Carbon;
 
 class ValidadorGastosService
@@ -44,7 +48,7 @@ class ValidadorGastosService
             ->first();
     }
 
-        private function aprobado($politica): array
+    private function aprobado($politica): array
     {
         return [
             'status' => 'aprobado',
@@ -69,5 +73,51 @@ class ValidadorGastosService
             'mensaje' => $mensaje,
             'politica_id' => null
         ];
+    }
+
+    public function validarSolicitud(Solicitud $solicitud)
+    {
+        foreach ($solicitud->gastos as $gasto) {
+            $this->validarGasto($gasto);
+        }
+    }
+
+    public function validarGasto(Gasto $gasto): void
+    {
+        $empleado = $gasto->solicitud->empleado;
+        $concepto = $gasto->concepto;
+        $monto = $gasto->monto;
+        $fecha = Carbon::parse($gasto->fecha_gasto);
+
+        $resultado = $this->validar($empleado, $concepto, $monto, $fecha);
+
+        if ($resultado['estatus'] === 'aprobado') {
+
+            $gasto->update([
+                'estatus' => 'aprobado'
+            ]);
+        } elseif ($resultado['estatus'] === 'rechazado') {
+
+            $gasto->update([
+                'estatus' => 'rechazado'
+            ]);
+        } elseif ($resultado['estatus'] === 'excepcion') {
+
+            $gasto->update([
+                'estatus' => 'excepcion'
+            ]);
+
+            GastoExcepcion::create([
+                'gasto_id' => $gasto->id,
+                'nivel' => 1,
+                'estatus' => 'pendiente'
+            ]);
+        }
+
+        app(AuditoriaService::class)->registrar([
+            'gasto_id' => $gasto->id,
+            'evento' => 'validado',
+            'datos_despues' => $gasto->fresh()->toArray()
+        ]);
     }
 }

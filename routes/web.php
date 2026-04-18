@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Proyecto\ProyectoController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\GastoExcepcionController;
+use App\Http\Controllers\SolicitudController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -180,6 +181,11 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
             ->middleware('permission:conceptos.editar');
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | POLITICAS MODULE (ADMIN)
+    |--------------------------------------------------------------------------
+    */
     Route::prefix('admin/politicas')->group(function () {
 
         Route::get('/', [PoliticaGastoController::class, 'index'])
@@ -206,6 +212,31 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
     Route::get('/gastos/{gasto}/timeline', [GastoController::class, 'timeline'])
         ->middleware('permission:gastos.ver.todos');
+
+    Route::prefix('solicitudes')->middleware('auth')->group(function () {
+
+        Route::post('/', [SolicitudController::class, 'store'])
+            ->middleware('permission:solicitudes.crear');
+
+        Route::post('/{id}/detalle', [SolicitudController::class, 'agregarDetalle'])
+            ->middleware('permission:solicitudes.editar');
+
+        Route::post('/{id}/enviar', [SolicitudController::class, 'enviar'])
+            ->middleware('permission:solicitudes.enviar');
+
+        Route::post('/{id}/resolver', [SolicitudController::class, 'resolver'])
+            ->middleware('permission:solicitudes.aprobar');
+
+        Route::get('/solicitudes', [SolicitudController::class, 'index'])
+            ->middleware('auth');
+
+        Route::get('/solicitudes/{id}', [SolicitudController::class, 'show'])
+            ->middleware('auth');
+
+        Route::patch('/solicitudes/{solicitud}/cancelar', [SolicitudController::class, 'cancelar']);
+        Route::patch('/solicitudes/{solicitud}/reabrir', [SolicitudController::class, 'reabrir']);
+        Route::patch('/solicitudes/{solicitud}/aprobar', [SolicitudController::class, 'aprobar']);
+    });
 });
 
 require __DIR__ . '/settings.php';
