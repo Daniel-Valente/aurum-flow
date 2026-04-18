@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Helpers\ApiResponse;
 use App\Http\Requests\Gasto\StoreGastoRequest;
 use App\Http\Resources\Gasto\GastoTimelineResource;
+use App\Models\Gasto;
 use App\Models\GastoAuditoria;
+use App\Models\GastoComprobante;
 use App\Services\Gasto\GastoService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class GastoController extends Controller
 {
@@ -35,6 +38,28 @@ class GastoController extends Controller
         return ApiResponse::success(
             GastoTimelineResource::collection($timeline),
             'Timeline del gasto'
+        );
+    }
+
+    public function subirComprobante(
+        Gasto $gasto,
+        Request $request,
+        GastoService $service
+    ) {
+        $request->validate([
+            'archivo' => 'required|file|mimes:pdf,jpg,png|max:5120',
+            'monto' => 'nullable|numeric',
+            'uuid' => 'nullable|string'
+        ]);
+
+        return ApiResponse::success(
+            $service->subirComprobante(
+                $gasto,
+                $request->user(),
+                $request->file('archivo'),
+                $request->all()
+            ),
+            'Comprobante subido'
         );
     }
 }

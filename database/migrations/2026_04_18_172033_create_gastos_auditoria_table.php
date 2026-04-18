@@ -21,6 +21,10 @@ return new class extends Migration
             $table->string('evento');
             // creado | validado | excepcion_creada | aprobado | rechazado
 
+            $table->foreignId('actor_id')->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->string('origen')->default('sistema');
             // sistema | api | manual
 

@@ -9,6 +9,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\GastoExcepcion;
 use App\Services\Auditoria\AuditoriaService;
+use App\Services\Gasto\Validadores\ComprobanteValidator;
+use App\Services\Solicitudes\SolicitudService;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class GastoService
 {
@@ -69,5 +72,49 @@ class GastoService
                 'mensaje' => $resultado['mensaje']
             ];
         });
+    }
+
+    public function subirComprobante(Gasto $gasto, $user, $file, array $data)
+    {
+        if (!$user->can('gastos.subir.comprobante')) {
+            throw new AuthorizationException('No autorizado');
+        }
+
+        if (!in_array($gasto->estatus, ['aprobado', 'excepcion'])) {
+            throw new \Exception('El gasto no puede ser comprobado');
+        }
+
+        // 🔥 VALIDACIÓN CENTRALIZADA
+        app(ComprobanteValidator::class)->validar($gasto, $data);
+
+        // 🔒 STORAGE PRIVADO
+        $path = $file->store('comprobantes', 'private');
+
+        $comprobante = $gasto->comprobantes()->create([
+            'archivo' => $path,
+            'tipo' => $data['tipo'] ?? null,
+            'uuid' => $data['uuid'] ?? null,
+            'monto' => $data['monto'] ?? null,
+            'subido_por' => $user->id
+        ]);
+
+        // 🔥 Evaluar si ya está comprobado
+        $this->evaluarComprobacion($gasto);
+
+        app(SolicitudService::class)
+            ->evaluarCierre($gasto->solicitud);
+
+        return $comprobante;
+    }
+
+    protected function evaluarComprobacion(Gasto $gasto)
+    {
+        $totalComprobado = $gasto->comprobantes()->sum('monto');
+
+        if ($totalComprobado >= $gasto->monto) {
+            $gasto->update([
+                'estatus' => 'comprobado'
+            ]);
+        }
     }
 }

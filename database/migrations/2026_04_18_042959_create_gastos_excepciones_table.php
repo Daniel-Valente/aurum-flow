@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('gastos_excepciones', function (Blueprint $table) {
             $table->id();
-            $table->foreign('gasto_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('gasto_id')->constrained()->cascadeOnDelete();
 
             $table->integer('nivel');
             // 1 | 2

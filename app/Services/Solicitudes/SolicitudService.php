@@ -4,6 +4,7 @@ namespace App\Services\Solicitudes;
 
 use App\Models\Gasto;
 use App\Models\Solicitud;
+use App\Models\SolicitudAuditoria;
 use App\Models\SolicitudDetalle;
 use App\Services\Auditoria\AuditoriaService;
 use App\Services\Gasto\ValidadorGastosService;
@@ -184,5 +185,39 @@ class SolicitudService
         });
 
         return $solicitud->load('gastos');
+    }
+
+    public function evaluarCierre(Solicitud $solicitud): void
+    {
+        if ($solicitud->estatus === 'Comprobado') {
+            return;
+        }
+
+        // 🔥 solo aplica si ya fue autorizada
+        if ($solicitud->estatus !== 'Autorizado') {
+            return;
+        }
+
+        $total = $solicitud->gastos()->count();
+
+        if ($total === 0) {
+            return;
+        }
+
+        $comprobados = $solicitud->gastos()
+            ->where('estatus', 'comprobado')
+            ->count();
+
+        SolicitudAuditoria::create([
+            'solicitud_id' => $solicitud->id,
+            'evento' => 'completada',
+            'actor_id' => auth()->id
+        ]);
+
+        if ($total === $comprobados) {
+            $solicitud->update([
+                'estatus' => 'Comprobado'
+            ]);
+        }
     }
 }

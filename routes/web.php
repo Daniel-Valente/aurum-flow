@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Empleado\EmpleadoController;
 use App\Http\Controllers\Admin\PoliticaGasto\PoliticaGastoController;
 use App\Http\Controllers\Admin\Proyecto\ProyectoController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\GastoComprobanteController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\GastoExcepcionController;
 use App\Http\Controllers\SolicitudController;
@@ -201,6 +202,11 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
     Route::post('/gastos', [GastoController::class, 'store'])
         ->middleware('permission:gastos.crear');
 
+    Route::get('/gastos/{gasto}/timeline', [GastoController::class, 'timeline'])
+        ->middleware('permission:gastos.ver.todos');
+
+    Route::post('/gastos/{gasto}/comprobante', [GastoController::class, 'subirComprobante']);
+
     Route::post('/excepciones/{excepcion}/resolver', [GastoExcepcionController::class, 'resolver'])
         ->middleware('permission:excepciones.aprobar.nivel1|excepciones.aprobar.nivel2');
 
@@ -209,9 +215,6 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
     Route::get('/excepciones/{excepcion}', [GastoExcepcionController::class, 'show'])
         ->middleware('permission:excepciones.ver');
-
-    Route::get('/gastos/{gasto}/timeline', [GastoController::class, 'timeline'])
-        ->middleware('permission:gastos.ver.todos');
 
     Route::prefix('solicitudes')->middleware('auth')->group(function () {
 
@@ -236,6 +239,9 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
         Route::patch('/solicitudes/{solicitud}/cancelar', [SolicitudController::class, 'cancelar']);
         Route::patch('/solicitudes/{solicitud}/reabrir', [SolicitudController::class, 'reabrir']);
         Route::patch('/solicitudes/{solicitud}/aprobar', [SolicitudController::class, 'aprobar']);
+
+        Route::get('/gastos/comprobantes/{comprobante}/download', [GastoComprobanteController::class, 'download'])
+            ->middleware(['auth', 'permission:gastos.ver.propios']);
     });
 });
 
