@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('monto_max', 12, 2);
 
             $table->string('tipo_limite')->default('Diario');
+            //Diario | Viaje
 
             $table->boolean('permite_excepcion')->default(false);
 
@@ -30,6 +31,13 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index(['role_id', 'concepto_id']);
+
+            $table->unique([
+                'role_id',
+                'concepto_id',
+                'tipo_limite',
+                'vigencia_desde'
+            ]);
         });
     }
 

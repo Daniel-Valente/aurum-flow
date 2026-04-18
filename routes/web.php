@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\Area\AreaController;
 use App\Http\Controllers\Admin\CentroCosto\CentroCostoController;
 use App\Http\Controllers\Admin\Concepto\ConceptoController;
 use App\Http\Controllers\Admin\Empleado\EmpleadoController;
+use App\Http\Controllers\Admin\PoliticaGasto\PoliticaGastoController;
 use App\Http\Controllers\Admin\Proyecto\ProyectoController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Http\Request;
@@ -175,6 +176,18 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
         Route::patch('/{concepto}/toggle', [ConceptoController::class, 'toggle'])
             ->middleware('permission:conceptos.editar');
+    });
+
+    Route::prefix('admin/politicas')->group(function () {
+
+        Route::get('/', [PoliticaGastoController::class, 'index'])
+            ->middleware('permission:politicas.ver');
+
+        Route::post('/', [PoliticaGastoController::class, 'store'])
+            ->middleware('permission:politicas.crear');
+
+        Route::delete('/{politica}', [PoliticaGastoController::class, 'destroy'])
+            ->middleware('permission:politicas.eliminar');
     });
 });
 
