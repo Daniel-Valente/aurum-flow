@@ -29,6 +29,7 @@ class UpdateCentroCostoRequest extends FormRequest
         return [
             'codigo' => 'required|string|max:50|unique:centros_costos,codigo,' . $this->centro_costo->id,
             'nombre' => 'required|string|max:255',
+            'estatus' => 'boolean'
         ];
     }
 }

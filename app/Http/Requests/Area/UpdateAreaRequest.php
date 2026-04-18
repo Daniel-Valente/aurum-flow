@@ -27,7 +27,8 @@ class UpdateAreaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => 'required|string|max:255|unique:areas,nombre,' . $this->area->id
+            'nombre' => 'required|string|max:255|unique:areas,nombre,' . $this->area->id,
+            'estatus' => 'boolean'
         ];
     }
 }

@@ -47,7 +47,8 @@ class UpdateEmpleadoRequest extends FormRequest
 
             'fecha_ingreso' => 'nullable|date',
 
-            'telefono' => 'nullable|string|max:20'
+            'telefono' => 'nullable|string|max:20',
+            'estatus' => 'boolean'
         ];
     }
 }

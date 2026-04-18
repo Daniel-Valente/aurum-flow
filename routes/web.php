@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\Area\AreaController;
 use App\Http\Controllers\Admin\CentroCosto\CentroCostoController;
+use App\Http\Controllers\Admin\Concepto\ConceptoController;
 use App\Http\Controllers\Admin\Empleado\EmpleadoController;
 use App\Http\Controllers\Admin\Proyecto\ProyectoController;
 use App\Http\Controllers\Admin\UserController;
@@ -100,7 +101,7 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Centros Costos MODULE (ADMIN)
+    | CENTROS COSTOS MODULE (ADMIN)
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin/centros-costos')->group(function () {
@@ -124,6 +125,11 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
             ->middleware('permission:centros_costos.eliminar');
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | PROYECTOS MODULE (ADMIN)
+    |--------------------------------------------------------------------------
+    */
     Route::prefix('admin/proyectos')->group(function () {
 
         Route::get('/', [ProyectoController::class, 'index'])
@@ -143,6 +149,32 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
         Route::delete('/{proyecto}', [ProyectoController::class, 'destroy'])
             ->middleware('permission:proyectos.eliminar');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONCEPTOS MODULE (ADMIN)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('admin/conceptos')->group(function () {
+
+        Route::get('/', [ConceptoController::class, 'index'])
+            ->middleware('permission:conceptos.ver');
+
+        Route::get('/list', [ConceptoController::class, 'list'])
+            ->middleware('permission:conceptos.ver');
+
+        Route::post('/', [ConceptoController::class, 'store'])
+            ->middleware('permission:conceptos.crear');
+
+        Route::put('/{concepto}', [ConceptoController::class, 'update'])
+            ->middleware('permission:conceptos.editar');
+
+        Route::delete('/{concepto}', [ConceptoController::class, 'destroy'])
+            ->middleware('permission:conceptos.eliminar');
+
+        Route::patch('/{concepto}/toggle', [ConceptoController::class, 'toggle'])
+            ->middleware('permission:conceptos.editar');
     });
 });
 
