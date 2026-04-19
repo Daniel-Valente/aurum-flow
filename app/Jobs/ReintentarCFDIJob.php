@@ -11,9 +11,12 @@ class ReintentarCFDIJob implements ShouldQueue
 {
     use Dispatchable, Queueable, SerializesModels;
 
-    public $queue = 'sat_low';
-
-    public function __construct(public $comprobanteId, public array $cfdiData) {}
+    public function __construct(
+        public $comprobanteId,
+        public array $cfdiData
+    ) {
+        $this->onQueue('sat_low');
+    }
 
     public function handle()
     {

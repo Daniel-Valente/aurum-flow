@@ -66,7 +66,7 @@ class GastoController extends Controller
 
     public function validarManual(GastoComprobante $comprobante, Request $request)
     {
-        $user = auth()->user;
+        $user = auth()->user();
 
         if (!$user->can('gastos.validar')) {
             throw new AuthorizationException();

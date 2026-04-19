@@ -6,13 +6,11 @@ use App\Http\Controllers\Admin\Concepto\ConceptoController;
 use App\Http\Controllers\Admin\Empleado\EmpleadoController;
 use App\Http\Controllers\Admin\PoliticaGasto\PoliticaGastoController;
 use App\Http\Controllers\Admin\Proyecto\ProyectoController;
-use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\GastoComprobanteController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\GastoExcepcionController;
 use App\Http\Controllers\SolicitudController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 
@@ -28,25 +26,6 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
 
     Route::view('dashboard', 'dashboard')
         ->name('dashboard');
-
-    Route::get('/cambiar-password', function () {
-        return view('auth.change-password');
-    })->name('password.change');
-
-    Route::post('/cambiar-password', function (Request $request) {
-        $request->validate([
-            'password' => 'required|min:8|confirmed'
-        ]);
-
-        $user = $request->user();
-
-        $user->update([
-            'password' => Hash::make($request->password),
-            'must_change_password' => false,
-        ]);
-
-        return redirect()->route('dashboard');
-    });
 
     /*
     |--------------------------------------------------------------------------
@@ -195,8 +174,13 @@ Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
         Route::post('/', [PoliticaGastoController::class, 'store'])
             ->middleware('permission:politicas.crear');
 
+        Route::put('/{politica}', [PoliticaGastoController::class, 'update']);
+
         Route::delete('/{politica}', [PoliticaGastoController::class, 'destroy'])
             ->middleware('permission:politicas.eliminar');
+
+        Route::get('/{politica}/versiones', [PoliticaGastoController::class, 'versiones']);
+        Route::get('/{politica}/auditoria', [PoliticaGastoController::class, 'auditoria']);
     });
 
     Route::post('/gastos', [GastoController::class, 'store'])

@@ -14,8 +14,6 @@ class ValidarCFDIJob implements ShouldQueue
 {
     use Dispatchable, Queueable, SerializesModels;
 
-    public $queue = 'sat_high';
-
     protected $comprobanteId;
     protected $cfdiData;
 
@@ -23,6 +21,8 @@ class ValidarCFDIJob implements ShouldQueue
     {
         $this->comprobanteId = $comprobanteId;
         $this->cfdiData = $cfdiData;
+
+        $this->onQueue('sat_high');
     }
 
     public function handle()
@@ -58,7 +58,6 @@ class ValidarCFDIJob implements ShouldQueue
                 'sat_last_error' => $e->getMessage(),
             ]);
 
-            // 🔥 EXPONENTIAL BACKOFF REAL
             $delay = match ($attempts) {
                 1 => 60,
                 2 => 300,

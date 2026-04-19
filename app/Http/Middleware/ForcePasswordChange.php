@@ -8,14 +8,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ForcePasswordChange
 {
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
-        if ($user && $user->must_change_password) {
-            if (!$request->routeIs('password.change')) {
-                return redirect()->route('password.change');
-            }
+        if ($user) {
+            view()->share('forcePasswordChange', $user->must_change_password);
         }
 
         return $next($request);

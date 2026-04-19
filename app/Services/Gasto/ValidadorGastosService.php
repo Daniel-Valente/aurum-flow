@@ -9,13 +9,17 @@ use App\Models\GastoExcepcion;
 use App\Models\PoliticaGasto;
 use App\Models\Solicitud;
 use App\Services\Auditoria\AuditoriaService;
+use App\Services\PoliticaGasto\PoliticaGastoService;
 use Carbon\Carbon;
 
 class ValidadorGastosService
 {
     public function validar(Empleado $empleado, Concepto $concepto, float $monto, Carbon $fecha): array
     {
-        $politica = $this->obtenerPolitica($empleado, $concepto, $fecha);
+        $roleId = $empleado->user->roles->first()?->id;
+
+        $politica = app(PoliticaGastoService::class)
+            ->getPoliticaAplicable($roleId, $concepto->id, $fecha);
 
         if (!$politica) {
             return $this->rechazado('No existe política configurada');
