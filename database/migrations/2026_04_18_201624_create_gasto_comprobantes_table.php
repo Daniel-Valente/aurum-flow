@@ -18,9 +18,13 @@ return new class extends Migration
 
             $table->string('archivo');
             $table->string('tipo')->nullable();
-            // factura | ticket
+            // factura | ticket | pdf
             $table->string('uuid')->nullable();
             // CFDI si aplica
+
+            $table->string('validacion_manual')->default('pendiente');
+            // pendiente | aprobado | rechazado
+            $table->foreignId('validado_por')->nullable()->constrained('users')->nullOnDelete();
 
             $table->decimal('monto', 12, 2)->nullable();
 

@@ -2,13 +2,21 @@
 
 namespace App\Services\CFDI;
 
+use App\Models\Gasto;
+
 class CFDIService
 {
-    /**
-     * Create a new class instance.
-     */
-    public function __construct()
+    public function procesar($file, Gasto $gasto): array
     {
-        //
+        $xmlContent = file_get_contents($file->getRealPath());
+
+        $data = app(CFDIParser::class)->parse($xmlContent);
+
+        app(CFDIValidator::class)->validar($data, $gasto);
+
+        return [
+            ...$data,
+            'sat_status' => 'pendiente'
+        ];
     }
 }

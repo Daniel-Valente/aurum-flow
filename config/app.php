@@ -123,4 +123,5 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'rfc_empresa' => env('RFC_EMPRESA', null),
 ];

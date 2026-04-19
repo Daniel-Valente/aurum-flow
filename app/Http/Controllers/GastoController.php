@@ -9,6 +9,7 @@ use App\Models\Gasto;
 use App\Models\GastoAuditoria;
 use App\Models\GastoComprobante;
 use App\Services\Gasto\GastoService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -61,5 +62,21 @@ class GastoController extends Controller
             ),
             'Comprobante subido'
         );
+    }
+
+    public function validarManual(GastoComprobante $comprobante, Request $request)
+    {
+        $user = auth()->user;
+
+        if (!$user->can('gastos.validar')) {
+            throw new AuthorizationException();
+        }
+
+        $comprobante->update([
+            'validacion_manual' => $request->accion, // aprobado | rechazado
+            'validado_por' => $user->id
+        ]);
+
+        return ApiResponse::success($comprobante, 'Validación actualizada');
     }
 }

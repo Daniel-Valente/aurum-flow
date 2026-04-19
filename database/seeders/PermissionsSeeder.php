@@ -36,6 +36,7 @@ class PermissionsSeeder extends Seeder
             'gastos.editar',
             'gastos.eliminar',
             'gastos.subir.comprobante',
+            'gastos.validar',
 
             // ========================
             // EXCEPCIONES

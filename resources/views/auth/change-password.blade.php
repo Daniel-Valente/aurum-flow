@@ -6,7 +6,7 @@
     Cambiar contraseña
 </x-auth-header>
 
-<x-layouts.auth.card>
+</x-layouts::auth>
 
     <form method="POST" action="{{ route('password.update') }}">
         @csrf
@@ -17,6 +17,6 @@
         <button type="submit">Guardar</button>
     </form>
 
-</x-layouts.auth.card>
+</x-layouts::auth>
 
 @endsection

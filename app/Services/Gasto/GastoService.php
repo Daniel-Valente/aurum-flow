@@ -2,13 +2,16 @@
 
 namespace App\Services\Gasto;
 
+use App\Jobs\ValidarCFDIJob;
 use App\Models\Concepto;
 use App\Models\Empleado;
 use App\Models\Gasto;
+use App\Models\GastoComprobante;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\GastoExcepcion;
 use App\Services\Auditoria\AuditoriaService;
+use App\Services\CFDI\CFDIService;
 use App\Services\Gasto\Validadores\ComprobanteValidator;
 use App\Services\Solicitudes\SolicitudService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -80,29 +83,40 @@ class GastoService
             throw new AuthorizationException('No autorizado');
         }
 
-        if (!in_array($gasto->estatus, ['aprobado', 'excepcion'])) {
-            throw new \Exception('El gasto no puede ser comprobado');
-        }
-
-        // 🔥 VALIDACIÓN CENTRALIZADA
-        app(ComprobanteValidator::class)->validar($gasto, $data);
-
-        // 🔒 STORAGE PRIVADO
         $path = $file->store('comprobantes', 'private');
+
+        $tipo = $data['tipo'];
+
+        $cfdiData = null;
+
+        if ($tipo === 'factura') {
+
+            $cfdiData = app(CFDIService::class)->procesar($file, $gasto);
+
+            if (GastoComprobante::where('uuid', $cfdiData['uuid'])->exists()) {
+                throw new \Exception('CFDI ya registrado');
+            }
+        }
 
         $comprobante = $gasto->comprobantes()->create([
             'archivo' => $path,
-            'tipo' => $data['tipo'] ?? null,
-            'uuid' => $data['uuid'] ?? null,
-            'monto' => $data['monto'] ?? null,
-            'subido_por' => $user->id
+            'tipo' => $tipo,
+            'uuid' => $cfdiData['uuid'] ?? null,
+            'monto' => $cfdiData['total'] ?? $data['monto'],
+            'subido_por' => $user->id,
+            'sat_status' => $tipo === 'factura' ? 'pendiente' : null,
+            'validacion_manual' => $tipo === 'pdf' ? 'pendiente' : null,
+            'meta_cfdi' => $cfdiData,
         ]);
 
-        // 🔥 Evaluar si ya está comprobado
-        $this->evaluarComprobacion($gasto);
+        if ($tipo === 'factura') {
+            dispatch(new ValidarCFDIJob(
+                $comprobante->id,
+                $cfdiData
+            ));
+        }
 
-        app(SolicitudService::class)
-            ->evaluarCierre($gasto->solicitud);
+        $this->evaluarComprobacion($gasto);
 
         return $comprobante;
     }
