@@ -11,24 +11,114 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
+
+                <flux:sidebar.group heading="General">
+                    <flux:sidebar.item icon="home"
+                        :href="route('dashboard')"
+                        :current="request()->routeIs('dashboard')"
+                        wire:navigate>
+                        Dashboard
                     </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                @can('solicitudes.ver.propias')
+                <flux:sidebar.group heading="Operación">
+
+                    <flux:sidebar.item icon="home"
+                        :href="route('solicitudes.index')"
+                        :current="request()->routeIs('solicitudes.index')"
+                        wire:navigate>
+                        Mis solicitudes
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="home"
+                        :href="route('gastos.index')"
+                        :current="request()->routeIs('gastos.index')"
+                        wire:navigate>
+                        Comprobar gastos
+                    </flux:sidebar.item>
+
+                    @can('solicitudes.aprobar')
+                    <flux:sidebar.item icon="home"
+                        :href="route('autorizaciones.index')"
+                        :current="request()->routeIs('autorizaciones.index')"
+                        wire:navigate>
+                        Autorizaciones
+                    </flux:sidebar.item>
+                    @endcan
+
+                    @can('auditoria.ver')
+                    <flux:sidebar.item icon="home"
+                        :href="route('auditoria.index')"
+                        :current="request()->routeIs('auditoria.index')"
+                        wire:navigate>
+                        Auditoría
+                    </flux:sidebar.item>
+                    @endcan
+
+                </flux:sidebar.group>
+                @endcan
+
+                @can('empleados.ver')
+                <flux:sidebar.group heading="Administración">
+
+                    <flux:sidebar.item icon="home"
+                        :href="route('empleados')"
+                        :current="request()->routeIs('empleados')"
+                        wire:navigate>
+                        Empleados
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="home"
+                        :href="route('proyectos')"
+                        :current="request()->routeIs('proyectos')"
+                        wire:navigate>
+                        Proyectos
+                    </flux:sidebar.item>
+
+                    @can('conceptos.ver')
+                    <flux:sidebar.item icon="home"
+                        :href="route('conceptos')"
+                        :current="request()->routeIs('conceptos')"
+                        wire:navigate>
+                        Conceptos
+                    </flux:sidebar.item>
+                    @endcan
+
+                    <flux:sidebar.item icon="home"
+                        :href="route('politicas')"
+                        :current="request()->routeIs('politicas')"
+                        wire:navigate>
+                        Políticas
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="home"
+                        :href="route('centros-costos')"
+                        :current="request()->routeIs('centros-costos')"
+                        wire:navigate>
+                        Centros de costo
+                    </flux:sidebar.item>
+
+                </flux:sidebar.group>
+                @endcan
+
+                @can('reportes.ver')
+                <flux:sidebar.group heading="Finanzas">
+
+                    <flux:sidebar.item icon="home"
+                        :href="route('reportes.index')"
+                        :current="request()->routeIs('reportes.index')"
+                        wire:navigate>
+                        Reportes
+                    </flux:sidebar.item>
+
+                </flux:sidebar.group>
+                @endcan
+
             </flux:sidebar.nav>
+
 
             <flux:spacer />
-
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>

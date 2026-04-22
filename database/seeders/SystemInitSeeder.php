@@ -60,6 +60,16 @@ class SystemInitSeeder extends Seeder
 
         // GERENTE
         $gerente->syncPermissions([
+            'solicitudes.ver.propias',
+            'solicitudes.crear',
+            'solicitudes.editar',
+            'solicitudes.enviar',
+
+            'gastos.ver.propios',
+            'gastos.crear',
+            'gastos.editar',
+            'gastos.subir.comprobante',
+            
             'solicitudes.ver.todas',
             'solicitudes.aprobar',
             'solicitudes.rechazar',
