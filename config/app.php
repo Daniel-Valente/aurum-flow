@@ -124,4 +124,6 @@ return [
     ],
 
     'rfc_empresa' => env('RFC_EMPRESA', null),
+    'locale' => 'es',
+    'fallback_locale' => 'es',
 ];

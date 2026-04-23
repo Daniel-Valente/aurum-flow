@@ -99,6 +99,13 @@
                         Centros de costo
                     </flux:sidebar.item>
 
+                    <flux:sidebar.item icon="home"
+                        :href="route('areas')"
+                        :current="request()->routeIs('areas')"
+                        wire:navigate>
+                        Áreas
+                    </flux:sidebar.item>
+
                 </flux:sidebar.group>
                 @endcan
 

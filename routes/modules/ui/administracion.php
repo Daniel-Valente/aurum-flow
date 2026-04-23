@@ -5,6 +5,7 @@ use App\Livewire\Conceptos\Index as ConceptosIndex;
 use App\Livewire\Empleados\Index as EmpleadosIndex;
 use App\Livewire\Politicas\Index as PoliticasIndex;
 use App\Livewire\Proyectos\Index as ProyectosIndex;
+use App\Livewire\Areas\Index as AreasIndex;
 
 Route::prefix('admin')->group(function () {
 
@@ -27,4 +28,6 @@ Route::prefix('admin')->group(function () {
     Route::get('/centros-costos', CentrosIndex::class)
         ->name('centros-costos')
         ->middleware('permission:centros_costos.ver');
+
+    Route::get('/areas', AreasIndex::class)->name('areas')->middleware('permission:areas.ver');
 });
