@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             PermissionsSeeder::class,
+            AreaSeeder::class,
+            CentroCostoSeeder::class,
             SystemInitSeeder::class,
         ]);
     }

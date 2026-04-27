@@ -17,7 +17,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
 
-    protected $fillable = ['name', 'email', 'password', 'must_change_password'];
+    protected $fillable = ['name', 'email', 'password', 'must_change_password', 'blocked'];
 
     protected $hidden = [
         'password',
@@ -33,6 +33,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
+            'blocked' => 'boolean',
         ];
     }
 

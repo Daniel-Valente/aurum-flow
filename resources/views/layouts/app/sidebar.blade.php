@@ -24,14 +24,14 @@
                 @can('solicitudes.ver.propias')
                 <flux:sidebar.group heading="Operación">
 
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="document-chart-bar"
                         :href="route('solicitudes.index')"
                         :current="request()->routeIs('solicitudes.index')"
                         wire:navigate>
                         Mis solicitudes
                     </flux:sidebar.item>
 
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="currency-dollar"
                         :href="route('gastos.index')"
                         :current="request()->routeIs('gastos.index')"
                         wire:navigate>
@@ -39,7 +39,7 @@
                     </flux:sidebar.item>
 
                     @can('solicitudes.aprobar')
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="document-check"
                         :href="route('autorizaciones.index')"
                         :current="request()->routeIs('autorizaciones.index')"
                         wire:navigate>
@@ -48,7 +48,7 @@
                     @endcan
 
                     @can('auditoria.ver')
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="book-open"
                         :href="route('auditoria.index')"
                         :current="request()->routeIs('auditoria.index')"
                         wire:navigate>
@@ -62,14 +62,14 @@
                 @can('empleados.ver')
                 <flux:sidebar.group heading="Administración">
 
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="user"
                         :href="route('empleados')"
                         :current="request()->routeIs('empleados')"
                         wire:navigate>
                         Empleados
                     </flux:sidebar.item>
 
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="briefcase"
                         :href="route('proyectos')"
                         :current="request()->routeIs('proyectos')"
                         wire:navigate>
@@ -77,7 +77,7 @@
                     </flux:sidebar.item>
 
                     @can('conceptos.ver')
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="clipboard-document-list"
                         :href="route('conceptos')"
                         :current="request()->routeIs('conceptos')"
                         wire:navigate>
@@ -85,21 +85,21 @@
                     </flux:sidebar.item>
                     @endcan
 
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="shield-exclamation"
                         :href="route('politicas')"
                         :current="request()->routeIs('politicas')"
                         wire:navigate>
                         Políticas
                     </flux:sidebar.item>
 
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="building-office"
                         :href="route('centros-costos')"
                         :current="request()->routeIs('centros-costos')"
                         wire:navigate>
                         Centros de costo
                     </flux:sidebar.item>
 
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="globe-alt"
                         :href="route('areas')"
                         :current="request()->routeIs('areas')"
                         wire:navigate>
@@ -112,7 +112,7 @@
                 @can('reportes.ver')
                 <flux:sidebar.group heading="Finanzas">
 
-                    <flux:sidebar.item icon="home"
+                    <flux:sidebar.item icon="chart-pie"
                         :href="route('reportes.index')"
                         :current="request()->routeIs('reportes.index')"
                         wire:navigate>

@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'force.password' => \App\Http\Middleware\ForcePasswordChange::class,
             'permission' => PermissionMiddleware::class,
+            'blocked' =>  \App\Http\Middleware\CheckUserBlocked::class
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

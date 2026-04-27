@@ -16,12 +16,22 @@ class Empleado extends Model
         'puesto',
         'area_id',
         'centro_costo_id',
-        'estatus'
+        'rfc',
+        'curp',
+        'numero_nomina',
+        'banco_nomina',
+        'cuenta_nomina',
+        'clabe_nomina',
+        'nss',
+        'fecha_ingreso',
+        'telefono',
+        'estatus',
     ];
 
     protected $casts = [
-        'estatus' => 'boolean',
-        'deleted_at' => 'datetime'
+        'estatus'      => 'boolean',
+        'fecha_ingreso' => 'date',
+        'deleted_at'   => 'datetime',
     ];
 
     public function user()
@@ -29,7 +39,7 @@ class Empleado extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function role()
+    public function getRoleAttribute()
     {
         return $this->user?->roles->first();
     }

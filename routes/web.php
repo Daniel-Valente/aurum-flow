@@ -22,7 +22,7 @@ Route::get('/', function (Request $request) {
     return redirect()->route('login');
 })->name('home');
 
-Route::middleware(['auth', 'verified', 'force.password'])->group(function () {
+Route::middleware(['auth', 'verified', 'force.password', 'blocked'])->group(function () {
     //UI
     require __DIR__.'/modules/ui/dashboard.php';
     require __DIR__.'/modules/ui/administracion.php';

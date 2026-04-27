@@ -20,7 +20,6 @@ return new class extends Migration
             $table->boolean('must_change_password')->default(true);
 
             $table->string('puesto')->nullable();
-            $table->string('area_departamento')->nullable();
 
             $table->foreignId('area_id')->nullable()->constrained('areas')->nullOnDelete();
             $table->foreignId('centro_costo_id')->nullable()->constrained('centros_costos')->nullOnDelete();

@@ -8,21 +8,28 @@ class CFDIValidator
 {
     public function validar(array $cfdiData, Gasto $gasto): void
     {
-        // UUID obligatorio
         if (empty($cfdiData['uuid'])) {
             throw new \Exception('CFDI sin UUID');
         }
 
-        // monto coincide
-        if ($cfdiData['total'] != $gasto->monto) {
-            throw new \Exception('El monto del CFDI no coincide con el gasto');
+        // ✅ Comparación de floats con tolerancia de 1 centavo
+        // != con floats es impreciso por representación binaria (0.1 + 0.2 !== 0.3)
+        if (abs($cfdiData['total'] - (float) $gasto->monto) > 0.01) {
+            throw new \Exception(sprintf(
+                'El monto del CFDI (%.2f) no coincide con el gasto (%.2f)',
+                $cfdiData['total'],
+                $gasto->monto
+            ));
         }
 
-        // 🔥 opcional: validar RFC empresa
         $rfcEmpresa = config('app.rfc_empresa');
 
-        if ($rfcEmpresa && $cfdiData['rfc_receptor'] !== $rfcEmpresa) {
-            throw new \Exception('RFC receptor no coincide con la empresa');
+        if ($rfcEmpresa && $cfdiData['rfc_receptor'] !== strtoupper($rfcEmpresa)) {
+            throw new \Exception(sprintf(
+                'RFC receptor "%s" no coincide con la empresa "%s"',
+                $cfdiData['rfc_receptor'],
+                strtoupper($rfcEmpresa)
+            ));
         }
     }
 }

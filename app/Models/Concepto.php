@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role;
 
 class Concepto extends Model
 {
@@ -66,5 +67,15 @@ class Concepto extends Model
     public function gastos()
     {
         return $this->hasMany(Gasto::class);
+    }
+
+    public function roles()
+    {
+        return $this->belongsToMany(
+            Role::class,
+            'concepto_rol',
+            'concepto_id',
+            'rol_id'
+        );
     }
 }

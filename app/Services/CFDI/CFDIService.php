@@ -8,7 +8,17 @@ class CFDIService
 {
     public function procesar($file, Gasto $gasto): array
     {
-        $xmlContent = file_get_contents($file->getRealPath());
+        $path = $file->getRealPath();
+
+        if (!$path || !file_exists($path)) {
+            throw new \Exception('Archivo CFDI no encontrado');
+        }
+
+        $xmlContent = file_get_contents($path);
+
+        if ($xmlContent === false || empty(trim($xmlContent))) {
+            throw new \Exception('No se pudo leer el archivo CFDI');
+        }
 
         $data = app(CFDIParser::class)->parse($xmlContent);
 
@@ -16,7 +26,7 @@ class CFDIService
 
         return [
             ...$data,
-            'sat_status' => 'pendiente'
+            'sat_status' => 'pendiente',
         ];
     }
 }

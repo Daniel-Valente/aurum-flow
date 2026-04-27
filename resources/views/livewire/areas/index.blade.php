@@ -140,8 +140,8 @@
 
             <div class="space-y-4">
                 <flux:field>
-                    <flux:label>
-                        Código <span class="text-red-500">*</span>
+                    <flux:label badge="Requerido">
+                        Código
                     </flux:label>
                     <flux:input
                         wire:model="codigo"
@@ -152,8 +152,8 @@
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>
-                        Nombre <span class="text-red-500">*</span>
+                    <flux:label badge="Requerido">
+                        Nombre
                     </flux:label>
                     <flux:input
                         wire:model="nombre"
