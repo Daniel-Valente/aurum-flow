@@ -29,7 +29,7 @@
             <div class="sm:w-48">
                 <flux:field>
                     <flux:label>Estatus</flux:label>
-                    <flux:select wire:model.live="estatus">
+                    <flux:select variant="listbox" wire:model.live="estatus">
                         <flux:select.option value="">Todos</flux:select.option>
                         <flux:select.option value="1">Activo</flux:select.option>
                         <flux:select.option value="0">Inactivo</flux:select.option>

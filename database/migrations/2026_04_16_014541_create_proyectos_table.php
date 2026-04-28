@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('nombre');
 
             $table->string('cliente')->nullable();
-            $table->string('tipo');
+            $table->string('tipo')->default('Proyecto');
 
             $table->text('descripcion')->nullable();
             $table->string('region')->nullable();

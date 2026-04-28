@@ -85,26 +85,32 @@
                     </flux:sidebar.item>
                     @endcan
 
+                    @can('politicas.ver')
                     <flux:sidebar.item icon="shield-exclamation"
                         :href="route('politicas')"
                         :current="request()->routeIs('politicas')"
                         wire:navigate>
                         Políticas
                     </flux:sidebar.item>
+                    @endcan
 
+                    @can('centros_costos.ver')
                     <flux:sidebar.item icon="building-office"
                         :href="route('centros-costos')"
                         :current="request()->routeIs('centros-costos')"
                         wire:navigate>
                         Centros de costo
                     </flux:sidebar.item>
+                    @endcan
 
+                    @can('areas.ver')
                     <flux:sidebar.item icon="globe-alt"
                         :href="route('areas')"
                         :current="request()->routeIs('areas')"
                         wire:navigate>
                         Áreas
                     </flux:sidebar.item>
+                    @endcan
 
                 </flux:sidebar.group>
                 @endcan

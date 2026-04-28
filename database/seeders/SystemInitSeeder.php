@@ -179,7 +179,16 @@ class SystemInitSeeder extends Seeder
             'empleados.crear',
             'empleados.editar',
             'empleados.eliminar',
+
             'proyectos.ver',
+            'proyectos.crear',
+            'proyectos.editar',
+            'proyectos.eliminar',
+
+            'politicas.ver',
+            'politicas.crear',
+            'politicas.editar',
+            'politicas.eliminar',
 
             'reportes.ver',
         ]);

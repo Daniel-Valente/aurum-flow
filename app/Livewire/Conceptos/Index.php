@@ -15,7 +15,7 @@ class Index extends Component
 
     public string $search = '';
     public string $estatus = '';
-    public string $rol = '';
+    public ?int $rolId = null;
     public string $tipo = '';
     public string $categoria = '';
     public string $vigencia = '';
@@ -75,7 +75,7 @@ class Index extends Component
                 estatus: $this->estatus,
                 categoria: $this->categoria,
                 vigencia: $this->vigencia,
-                rol: $this->rol
+                rolId: $this->rolId
             ),
         ]);
     }

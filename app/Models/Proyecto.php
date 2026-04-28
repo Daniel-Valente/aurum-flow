@@ -24,6 +24,7 @@ class Proyecto extends Model
         'fecha_inicio',
         'fecha_fin',
         'pais',
+        'estado',
         'ciudad',
         'estatus'
     ];

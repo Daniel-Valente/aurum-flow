@@ -111,7 +111,7 @@
                         <flux:label badge="Requerido">
                             Área / Departamento
                         </flux:label>
-                        <flux:select wire:model="area_id">
+                        <flux:select variant="listbox" wire:model="area_id">
                             @foreach ($areas as $area)
                                 <flux:select.option value="{{ $area['id'] }}">{{ $area['nombre'] }}</flux:select.option>
                             @endforeach
@@ -125,7 +125,7 @@
                         <flux:label badge="Requerido">
                             Rol
                         </flux:label>
-                        <flux:select wire:model="rol_id" required>
+                        <flux:select variant="listbox" wire:model="rol_id" required>
                             @foreach ($roles as $rol)
                                 <flux:select.option value="{{ $rol['id'] }}">{{ $rol['name'] }}</flux:select.option>
                             @endforeach
@@ -137,7 +137,7 @@
                         <flux:label badge="Requerido">
                             Centro de costo
                         </flux:label>
-                        <flux:select wire:model="centro_costo_id" required>
+                        <flux:select variant="listbox" wire:model="centro_costo_id" required>
                             @foreach ($centrosCostos as $centroCosto)
                                 <flux:select.option value="{{ $centroCosto['id'] }}">{{ $centroCosto['nombre'] }}</flux:select.option>
                             @endforeach

@@ -55,7 +55,7 @@
                 <flux:label badge="Requerido">
                     Tipo
                 </flux:label>
-                <flux:select wire:model="tipo_aplicacion">
+                <flux:select variant="listbox" wire:model="tipo_aplicacion">
                     <flux:select.option value=""></flux:select.option>
                     <flux:select.option value="Diario">Diario</flux:select.option>
                     <flux:select.option value="Evento">Evento</flux:select.option>

@@ -29,7 +29,7 @@
             <div class="sm:w-48">
                 <flux:field>
                     <flux:label>Estatus</flux:label>
-                    <flux:select wire:model.live="estatus">
+                    <flux:select variant="listbox" wire:model.live="estatus">
                         <flux:select.option value="">Todos</flux:select.option>
                         <flux:select.option value="1">Activo</flux:select.option>
                         <flux:select.option value="0">Inactivo</flux:select.option>
@@ -40,7 +40,7 @@
             <div class="sm:w-48">
                 <flux:field>
                     <flux:label>Rol</flux:label>
-                    <flux:select wire:model.live="rol">
+                    <flux:select variant="listbox" wire:model.live="rol">
                         <flux:select.option value="">Todos</flux:select.option>
                         @foreach ($roles as $role)
                             <flux:select.option value="{{ $role['name'] }}">
@@ -54,7 +54,7 @@
             <div class="sm:w-48">
                 <flux:field>
                     <flux:label>Centro de Costos</flux:label>
-                    <flux:select wire:model.live="centroCostoId">
+                    <flux:select variant="listbox" wire:model.live="centroCostoId">
                         <flux:select.option value="">Todos</flux:select.option>
                         @foreach ($centrosCostos as $centroCosto)
                             <flux:select.option value="{{ $centroCosto['id'] }}">{{ $centroCosto['nombre'] }}</flux:select.option>

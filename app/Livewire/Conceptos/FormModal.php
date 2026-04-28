@@ -221,7 +221,7 @@ class FormModal extends Component
         $this->roles = $empleadoService->roles();
     }
 
-    public function render()
+    public    function render()
     {
         return view('livewire.conceptos.form-modal');
     }
