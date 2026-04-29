@@ -108,11 +108,12 @@ class Index extends Component
     {
         if (! $this->deletingId) return;
 
-        $service->delete(Area::findOrFail($this->deletingId));
+        $area = Area::findOrFail($this->deletingId);
+        $service->toggleEstatus($area);
 
         $this->modal('area-delete')->close();
         $this->reset(['deletingId', 'deletingNombre']);
-        $this->dispatch('notify', type: 'success', message: 'Área eliminada correctamente.');
+        $this->dispatch('notify', type: 'success', message: 'Área dada de baja correctamente.');
     }
 
     private function resetForm(): void

@@ -109,11 +109,12 @@ class Index extends Component
     {
         if (! $this->deletingId) return;
 
-        $service->delete(CentroCosto::findOrFail($this->deletingId));
+        $centroCosto = CentroCosto::findOrFail($this->deletingId);
+        $service->toggleEstatus($centroCosto);
 
         $this->modal('centro-costo-delete')->close();
         $this->reset(['deletingId', 'deletingNombre']);
-        $this->dispatch('notify', type: 'success', message: 'Centro de Costo eliminado correctamente.');
+        $this->dispatch('notify', type: 'success', message: 'Centro de Costo dado de baja correctamente.');
     }
 
     private function resetForm(): void

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Proyectos;
 
+use App\Models\Proyecto;
 use App\Services\CentroCosto\CentroCostoService;
 use App\Services\Proyecto\ProyectoService;
 use Flux\Flux;
@@ -21,6 +22,9 @@ class Index extends Component
     public ?int $centroCostoId = null;
     public ?int $responsableId = null;
 
+    public ?int $deletingId = null;
+    public string $deletingNombre = '';
+
     public array $centrosCostos = [];
     public array $regiones = [];
 
@@ -38,6 +42,15 @@ class Index extends Component
     {
         $this->reset(['search', 'estatus', 'tipo', 'estadoOperativo', 'centroCostoId']);
         $this->resetPage();
+    }
+
+    public function getBadgeColorAttribute()
+    {
+        return match ($this->estado_operativo) {
+            'Draft' => 'gray',
+            'Activo' => 'green',
+            default => 'red',
+        };
     }
 
     public function mount(ProyectoService $proyectoService, CentroCostoService $centroService): void
@@ -66,6 +79,30 @@ class Index extends Component
     {
         $this->dispatch('openProyectoDetail', id: $id);
     }
+
+
+    public function openDelete(int $id): void
+    {
+        $proyecto = Proyecto::with(['centroCosto', 'responsable'])->findOrFail($id);
+
+        $this->deletingId     = $proyecto->id;
+        $this->deletingNombre = $proyecto->nombre;
+        $this->modal('proyecto-delete')->show();
+    }
+
+    public function delete(Proyecto $service): void
+    {
+        if (! $this->deletingId) return;
+        $proyecto = Proyecto::with(['centroCosto', 'responsable'])->findOrFail($this->deletingId);
+
+        $service->toggleEstatus($proyecto);
+
+        $this->modal('proyecto-delete')->close();
+        $this->reset(['deletingId', 'deletingNombre']);
+        $this->dispatch('notify', type: 'success', message: 'Empleado deshabilitado correctamente.');
+        Flux::toast('Empleado deshabilitado correctamente.');
+    }
+
 
     public function render(ProyectoService $service)
     {

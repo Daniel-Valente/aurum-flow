@@ -165,24 +165,26 @@
                                     />
                                 @endcan
 
-                                @can('empleados.eliminar')
-                                    @php
-                                        $rolEmpleado = $empleado->role?->name;
-                                        $puedeEliminar = auth()->user()->hasRole('admin') ||
-                                            (auth()->user()->hasRole('gerente') && $rolEmpleado === 'operativo');
-                                    @endphp
+                                @if ($empleado->estatus)
+                                    @can('empleados.eliminar')
+                                        @php
+                                            $rolEmpleado = $empleado->role?->name;
+                                            $puedeDeshabilitar = auth()->user()->hasRole('admin') ||
+                                                (auth()->user()->hasRole('gerente') && $rolEmpleado === 'operativo');
+                                        @endphp
 
-                                    @if ($puedeEliminar)
-                                        <flux:button
-                                            size="sm"
-                                            variant="ghost"
-                                            icon="trash"
-                                            inset="top bottom"
-                                            wire:click="openDelete({{ $empleado->id }})"
-                                            title="Desactivar"
-                                        />
-                                    @endif
-                                @endcan
+                                        @if ($puedeDeshabilitar)
+                                            <flux:button
+                                                size="sm"
+                                                variant="ghost"
+                                                icon="trash"
+                                                inset="top bottom"
+                                                wire:click="openDelete({{ $empleado->id }})"
+                                                title="Desactivar"
+                                            />
+                                        @endif
+                                    @endcan
+                                @endif
                             </div>
                         </flux:table.cell>
                     </flux:table.row>
@@ -220,7 +222,7 @@
                 <div>
                     <flux:heading size="lg">Deshabilitar empleado</flux:heading>
                     <flux:subheading class="mt-1">
-                        ¿Estás seguro deshabilidar la cuenta al empleado <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>?
+                        ¿Estás seguro deshabilitar la cuenta al empleado <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>?
                     </flux:subheading>
                 </div>
             </div>

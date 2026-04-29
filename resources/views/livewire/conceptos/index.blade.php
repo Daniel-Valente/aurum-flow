@@ -234,7 +234,7 @@
                                     icon="trash"
                                     insert="top bottom"
                                     wire:click=""
-                                    title="Eliminar"
+                                    title="Deshabilitar"
                                 />
                                 @endcan
                             </div>

@@ -93,16 +93,18 @@
                                     />
                                 @endcan
 
-                                @can('areas.eliminar')
-                                    <flux:button
-                                        size="sm"
-                                        variant="ghost"
-                                        icon="trash"
-                                        inset="top bottom"
-                                        wire:click="openDelete({{ $area->id }})"
-                                        title="Eliminar"
-                                    />
-                                @endcan
+                                @if ($area->estatus)
+                                    @can('areas.eliminar')
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon="trash"
+                                            inset="top bottom"
+                                            wire:click="openDelete({{ $area->id }})"
+                                            title="Deshabilitar"
+                                        />
+                                    @endcan
+                                @endif
                             </div>
                         </flux:table.cell>
 
@@ -161,17 +163,6 @@
                     />
                     <flux:error name="nombre" />
                 </flux:field>
-
-                <flux:field>
-                    <flux:field>
-                        <flux:label>Estatus</flux:label>
-                        <flux:switch
-                            wire:model="estatusForm"
-                            label="{{ $estatusForm ? 'Activo' : 'Inactivo' }}"
-                        />
-                        <flux:error name="estatusForm" />
-                    </flux:field>
-                </flux:field>
             </div>
 
             <div class="flex justify-end gap-3">
@@ -204,9 +195,9 @@
                     />
                 </div>
                 <div>
-                    <flux:heading size="lg">Eliminar área</flux:heading>
+                    <flux:heading size="lg">Deshabilitar área</flux:heading>
                     <flux:subheading class="mt-1">
-                        ¿Estás seguro de eliminar <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>? Esta acción no se puede deshacer.
+                        ¿Estás seguro de deshabilitar <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>? Esta acción no se puede deshacer.
                     </flux:subheading>
                 </div>
             </div>
@@ -222,8 +213,8 @@
                     wire:loading.attr="disabled"
                     wire:target="delete"
                 >
-                    <span wire:loading.remove wire:target="delete">Eliminar</span>
-                    <span wire:loading wire:target="delete">Eliminando...</span>
+                    <span wire:loading.remove wire:target="delete">Deshabilitar</span>
+                    <span wire:loading wire:target="delete">Deshabilitando...</span>
                 </flux:button>
             </div>
         </div>
