@@ -10,6 +10,8 @@ class PoliticaGasto extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'politicas_gastos';
+
     protected $fillable = [
         'role_id',
         'concepto_id',

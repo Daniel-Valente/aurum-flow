@@ -8,7 +8,7 @@ use App\Http\Requests\PoliticaGasto\StorePoliticaGastoRequest;
 use App\Models\PoliticaGasto;
 use App\Models\PoliticaGastoAuditoria;
 use App\Models\PoliticaGastoVersion;
-use App\Services\PoliticaGasto\PoliticaGastoService;
+use App\Services\Gasto\PoliticaGastoService;
 use Illuminate\Http\Request;
 
 class PoliticaGastoController extends Controller

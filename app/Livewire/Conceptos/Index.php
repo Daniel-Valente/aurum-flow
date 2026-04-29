@@ -35,7 +35,7 @@ class Index extends Component
 
     public function clearFilters(): void
     {
-        $this->reset(['search', 'estatus', 'rol', 'tipo', 'vigencia']);
+        $this->reset(['search', 'estatus', 'rolId', 'tipo', 'vigencia']);
         $this->resetPage();
     }
 

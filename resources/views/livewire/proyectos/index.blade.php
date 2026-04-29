@@ -216,7 +216,7 @@
                                             variant="ghost"
                                             icon="trash"
                                             insert="top bottom"
-                                            wire:click=""
+                                            wire:click="openDelete({{ $proyecto->id }})"
                                             title="Deshabilitar"
                                         />
                                     @endcan
