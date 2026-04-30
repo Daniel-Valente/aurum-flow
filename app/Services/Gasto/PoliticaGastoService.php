@@ -8,6 +8,7 @@ use App\Models\PoliticaGastoVersion;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class PoliticaGastoService
@@ -16,6 +17,8 @@ class PoliticaGastoService
         'created_at', 'monto_max', 'vigencia_desde', 'vigencia_hasta',
     ];
     private const ALLOWED_SORT_DIRS = ['asc', 'desc'];
+    private const LIST_CACHE_KEY       = 'politicas.list.activas';
+    private const LIST_CACHE_TTL       = 600;
 
     public function paginate(
         ?int   $roleId       = null,
@@ -42,7 +45,7 @@ class PoliticaGastoService
             )
             ->when($roleId,     fn($q) => $q->where('politicas_gastos.role_id',     $roleId))
             ->when($conceptoId, fn($q) => $q->where('politicas_gastos.concepto_id', $conceptoId))
-            ->when($estatus,    fn($q) => $q->where('politicas_gastos.estatus', $estatus))
+            ->when($estatus !== '', fn($q) => $q->where('politicas_gastos.estatus', $estatus))
             ->when($tipoLimite, fn($q) => $q->where('politicas_gastos.tipo_limite', $tipoLimite))
             ->when($vigencia === 'Vigente', fn($q) =>
                 $q->where(fn($q2) =>
@@ -161,6 +164,7 @@ class PoliticaGastoService
                 'vigencia_hasta'    => $data['vigencia_hasta']    ?? null,
                 'creado_por'        => $user->id,
                 'estatus'           => 'Aprobada',
+                'approved_at'       => now(),
                 'motivo'            => 'Creación inicial',
             ]);
 
@@ -254,6 +258,24 @@ class PoliticaGastoService
         });
     }
 
+        public function toggleEstatus(PoliticaGasto $politica, $user): PoliticaGasto
+    {
+        $antes = $politica->toArray();
+        $politica->update(['estatus' => !$politica->estatus]);
+
+        PoliticaGastoAuditoria::create([
+            'politica_id'   => $politica->id,
+            'evento'        => 'deleted',
+            'actor_id'      => $user->id,
+            'datos_antes'   => $antes,
+            'datos_despues' => null,
+        ]);
+
+        $this->flushCache();
+        return $politica->fresh();
+    }
+
+
     // -------------------------------------------------------------------------
     // Consultas para ValidadorGastosService
     // -------------------------------------------------------------------------
@@ -298,5 +320,10 @@ class PoliticaGastoService
             ->latest()
             ->get()
             ->keyBy('concepto_id'); // O(1) lookup en el loop del validador
+    }
+
+    private function flushCache(): void
+    {
+        Cache::forget(self::LIST_CACHE_KEY);
     }
 }

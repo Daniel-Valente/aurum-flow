@@ -166,7 +166,9 @@
 
                         <flux:table.cell>
                             <div class="flex flex-col gap-3">
-                                <span>${{ $proyecto->presupuesto_total ?? '0.00' }}</span>
+                                <span>
+                                    {{ Number::currency($proyecto->presupuesto_total ?? 0.00, in: 'MXN') }}
+                                </span>
                                 <span class="font-mono text-zinc-500 dark:text-zinc-400">
                                     {{ $proyecto->fecha_inicio?->format('Y-m-d') ?? '-' }} a {{ $proyecto->fecha_fin?->format('Y-m-d') ?? '-' }}
                                 </span>
@@ -258,7 +260,7 @@
                 <div>
                     <flux:heading size="lg">Deshabilitar proyecto</flux:heading>
                     <flux:subheading class="mt-1">
-                        ¿Estás seguro deshabilitar la cuenta al proyecto <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>?
+                        ¿Estás seguro deshabilitar el proyecto <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>?
                     </flux:subheading>
                 </div>
             </div>

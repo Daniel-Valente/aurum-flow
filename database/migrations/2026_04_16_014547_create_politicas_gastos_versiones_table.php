@@ -34,7 +34,7 @@ return new class extends Migration
             $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('aprobado_por')->nullable()->constrained('users')->nullOnDelete();
 
-            $table->timestamp('approved_at')->nullble();
+            $table->timestamp('approved_at')->nullable();
 
             $table->string('estatus')->default('Aprobada');
             // Borrador | Aprobada | Inactiva

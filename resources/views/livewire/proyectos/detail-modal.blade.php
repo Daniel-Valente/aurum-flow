@@ -73,7 +73,7 @@
                     {{ $proyecto->responsable?->nombre_completo ?? '-' }}
                 </x-components.detail-item>
                 <x-components.detail-item icon="credit-card" label="Presupuesto Total">
-                    {{ $proyecto->presupuesto_total ?? '0.00' }}
+                    {{ Number::currency($proyecto->presupuesto_total ?? 0.00, in: 'MXN') }}
                 </x-components.detail-item>
             </div>
         </div>
@@ -97,7 +97,7 @@
                     {{ $proyecto->region ?? '-' }}
                 </x-components.detail-item>
                 <x-components.detail-item icon="globe-americas" label="País">
-                    ${{ $proyecto->pais ?? '-' }}
+                    {{ $proyecto->pais ?? '-' }}
                 </x-components.detail-item>
             </div>
         </div>

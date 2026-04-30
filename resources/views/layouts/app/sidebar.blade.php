@@ -99,7 +99,7 @@
                         :href="route('centros-costos')"
                         :current="request()->routeIs('centros-costos')"
                         wire:navigate>
-                        Centros de costo
+                        Centro de costos
                     </flux:sidebar.item>
                     @endcan
 

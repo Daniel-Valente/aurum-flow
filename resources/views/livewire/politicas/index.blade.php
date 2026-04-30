@@ -129,27 +129,27 @@
                 <flux:table.column>Frecuencia</flux:table.column>
                 <flux:table.column>Vigencia</flux:table.column>
                 <flux:table.column>Estatus</flux:table.column>
-                <flux:table.column class="flex justify-end">ACciones</flux:table.column>
+                <flux:table.column class="flex justify-end">Acciones</flux:table.column>
             </flux:table.columns>
 
             <flux:table.rows>
                 @forelse ($politicas as $politica)
                     <flux:table.row :key="$politica->id">
                         <flux:table.cell size="xs" class="pl-4">
-                            {{ $politica->roles?->name ?? '-' }}
+                            {{ $politica->rol_nombre ?? '-' }}
                         </flux:table.cell>
 
                         <flux:table.cell variant="strong">
                             <div class="flex flex-col gap-3">
-                                <span>{{ $politica->conceptos?->nombre }}</span>
+                                <span>{{ $politica->concepto_nombre }}</span>
                                 <span size="xs" class="font-mono text-zinc-500 dark:text-zinc-400 px-4">
-                                    {{ $politica->conceptos?->codigo }}
+                                    {{ $politica->concepto_codigo }}
                                 </span>
                             </div>
                         </flux:table.cell>
 
                         <flux:table.cell>
-                            ${{ $politica->monto_max }}
+                            {{ Number::currency($politica->monto_max ?? 0.00, in: 'MXN') }}
                         </flux:table.cell>
 
                         <flux:table.cell>
@@ -180,6 +180,15 @@
                                     insert="top bottom"
                                     wire:click="openDetail({{ $politica->id }})"
                                     title="Ver"
+                                />
+
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="clock"
+                                    insert="top bottom"
+                                    wire:click=""
+                                    title="Historial"
                                 />
 
                                 @can('politicas.editar')
@@ -226,4 +235,42 @@
             </flux:table.rows>
         </flux:table>
     </flux:card>
+
+    @livewire('politicas.form-modal')
+    @livewire('politicas.detail-modal')
+
+    <flux:modal name="politica-delete" class="w-full max-w-sm">
+        <div class="space-y-6">
+            <div class="flex items-start gap-4">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                    <flux:icon
+                        name="exclamation-triangle"
+                        class="size-5 text-red-600 dark:text-red-400"
+                    />
+                </div>
+                <div>
+                    <flux:heading size="lg">Deshabilitar política</flux:heading>
+                    <flux:subheading class="mt-1">
+                        ¿Estás seguro deshabilitar la política <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>?
+                    </flux:subheading>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Cancelar</flux:button>
+                </flux:modal.close>
+
+                <flux:button
+                    variant="danger"
+                    wire:click="delete"
+                    wire:loading.attr="disabled"
+                    wire:target="delete"
+                >
+                    <span wire:loading.remove wire:target="delete">Deshabilitar</span>
+                    <span wire:loading wire:target="delete">Deshabilitando...</span>
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

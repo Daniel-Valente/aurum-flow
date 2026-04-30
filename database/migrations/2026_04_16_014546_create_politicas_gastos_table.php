@@ -27,6 +27,8 @@ return new class extends Migration
             $table->date('vigencia_desde')->nullable();
             $table->date('vigencia_hasta')->nullable();
 
+            $table->boolean('estatus')->default(true)->index();
+
             $table->timestamps();
             $table->softDeletes();
 

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Conceptos;
 
+use App\Models\Concepto;
 use App\Services\Concepto\ConceptoService;
 use App\Services\Empleado\EmpleadoService;
 use Flux\Flux;
@@ -22,6 +23,9 @@ class Index extends Component
 
     public array $roles = [];
     public array $categorias = [];
+
+    public ?int $deletingId = null;
+    public string $deletingNombre = '';
 
     public function updatingRol(): void
     {
@@ -58,12 +62,34 @@ class Index extends Component
     #[On('conceptoSaved')]
     public function onConceptoSaved(string $message): void
     {
-        Flux::toast($message);
+        Flux::toast(variant: 'success', text: $message);
     }
 
     public function openDetail(int $id): void
     {
         $this->dispatch('openConceptoDetail', id: $id);
+    }
+
+        public function openDelete(int $id): void
+    {
+        $concepto = Concepto::with('roles')->findOrFail($id);
+
+        $this->deletingId     = $concepto->id;
+        $this->deletingNombre = $concepto->nombre;
+        $this->modal('concepto-delete')->show();
+    }
+
+    public function delete(ConceptoService $service): void
+    {
+        if (! $this->deletingId) return;
+        $concepto = Concepto::with(['centroCosto', 'responsable'])->findOrFail($this->deletingId);
+
+        $service->toggle($concepto);
+
+        $this->modal('concepto-delete')->close();
+        $this->reset(['deletingId', 'deletingNombre']);
+        $this->dispatch('notify', type: 'success', message: 'Concepto deshabilitado correctamente.');
+        Flux::toast(variant: 'success', text: 'Concepto deshabilitado correctamente.');
     }
 
     public function render(ConceptoService $service)

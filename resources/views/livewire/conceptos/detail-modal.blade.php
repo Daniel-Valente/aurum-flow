@@ -55,7 +55,7 @@
 
         <div class="flex items-start gap-4 text-start text-xs leading-tight justify-between">
             <x-components.detail-item icon="currency-dollar" label="Tope de referencia">
-                ${{ $concepto->tope_referencia ?? '-' }}
+                {{ Number::currency($concepto->tope_referencia ?? 0.00, in: 'MXN') }}
             </x-components.detail-item>
             <flux:badge size="sm" color="blue" inset="top bottom">
                 {{ $concepto->categoria ?? '-' }}

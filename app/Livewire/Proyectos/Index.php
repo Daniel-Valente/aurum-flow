@@ -72,7 +72,7 @@ class Index extends Component
     #[On('proyectoSaved')]
     public function onProyectoSaved(string $message): void
     {
-        Flux::toast($message);
+        Flux::toast(variant: 'success', text: $message);
     }
 
     public function openDetail(int $id): void
@@ -90,7 +90,7 @@ class Index extends Component
         $this->modal('proyecto-delete')->show();
     }
 
-    public function delete(Proyecto $service): void
+    public function delete(ProyectoService $service): void
     {
         if (! $this->deletingId) return;
         $proyecto = Proyecto::with(['centroCosto', 'responsable'])->findOrFail($this->deletingId);
@@ -99,8 +99,8 @@ class Index extends Component
 
         $this->modal('proyecto-delete')->close();
         $this->reset(['deletingId', 'deletingNombre']);
-        $this->dispatch('notify', type: 'success', message: 'Empleado deshabilitado correctamente.');
-        Flux::toast('Empleado deshabilitado correctamente.');
+        $this->dispatch('notify', type: 'success', message: 'Proyecto deshabilitado correctamente.');
+        Flux::toast(variant: 'success', text: 'Proyecto deshabilitado correctamente.');
     }
 
 

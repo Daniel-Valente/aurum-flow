@@ -79,7 +79,7 @@ class Index extends Component
         $this->modal('empleado-delete')->close();
         $this->reset(['deletingId', 'deletingNombre']);
         $this->dispatch('notify', type: 'success', message: 'Empleado deshabilitado correctamente.');
-        Flux::toast('Empleado deshabilitado correctamente.');
+        Flux::toast(variant: 'success', text: 'Empleado deshabilitado correctamente.');
     }
 
     public function openCreate(): void
@@ -96,7 +96,7 @@ class Index extends Component
     public function onEmpleadoSaved(string $message): void
     {
         $this->dispatch('notify', type: 'success', message: $message);
-        Flux::toast($message);
+        Flux::toast(variant: 'success', text: $message);
     }
 
     public function openDetail(int $id): void

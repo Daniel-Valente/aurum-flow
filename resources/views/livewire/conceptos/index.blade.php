@@ -246,7 +246,7 @@
                             <div class="flex flex-col items-center gap-3">
                                 <flux:icon name="inbox" class="size-8 text-zinc-300 dark:text-zinc-600" />
                                 <flux:text class="text-zinc-400">No se encontraron conceptos</flux:text>
-                                @if ($search || $estatus !== '' || $rol !== '' || $tipo !== '' || $categoria !== '' || $vigencia !== '')
+                                @if ($search || $estatus !== '' || $rolId || $tipo !== '' || $categoria !== '' || $vigencia !== '')
                                     <flux:button size="sm" variant="ghost" wire:click="clearFilters">
                                         Limpiar filtros
                                     </flux:button>
@@ -261,4 +261,39 @@
 
     @livewire('conceptos.form-modal')
     @livewire('conceptos.detail-modal')
+
+    <flux:modal name="concepto-delete" class="w-full max-w-sm">
+        <div class="space-y-6">
+            <div class="flex items-start gap-4">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                    <flux:icon
+                        name="exclamation-triangle"
+                        class="size-5 text-red-600 dark:text-red-400"
+                    />
+                </div>
+                <div>
+                    <flux:heading size="lg">Deshabilitar concepto</flux:heading>
+                    <flux:subheading class="mt-1">
+                        ¿Estás seguro de deshabilitar el concepto <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>? Esta acción no se puede deshacer.
+                    </flux:subheading>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Cancelar</flux:button>
+                </flux:modal.close>
+
+                <flux:button
+                    variant="danger"
+                    wire:click="delete"
+                    wire:loading.attr="disabled"
+                    wire:target="delete"
+                >
+                    <span wire:loading.remove wire:target="delete">Deshabilitar</span>
+                    <span wire:loading wire:target="delete">Deshabilitando...</span>
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

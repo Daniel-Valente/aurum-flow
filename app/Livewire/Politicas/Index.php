@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Politicas;
 
+use App\Models\PoliticaGasto;
 use App\Services\Concepto\ConceptoService;
 use App\Services\Empleado\EmpleadoService;
 use App\Services\Gasto\PoliticaGastoService;
@@ -22,6 +23,9 @@ class Index extends Component
 
     public array $roles = [];
     public array $conceptos = [];
+
+    public ?int $deletingId = null;
+    public string $deletingNombre = '';
 
     public function updatingRol(): void
     {
@@ -63,7 +67,7 @@ class Index extends Component
     #[On('politicaSaved')]
     public function onPoliticaSaved(string $message): void
     {
-        Flux::toast($message);
+        Flux::toast(variant: 'success', text: $message);
     }
 
     public function openDetail(int $id): void
@@ -74,6 +78,34 @@ class Index extends Component
     public function openVersion(int $id): void
     {
         $this->dispatch('openPoliticaVersion', id: $id);
+    }
+
+        public function openDelete(int $id): void
+    {
+        $politica = PoliticaGasto::with([
+            'role:id,name',
+            'concepto:id,nombre'
+        ])->findOrFail($id);
+
+        $this->deletingId = $politica->id;
+        $this->deletingNombre = $politica->nombre;
+
+        $this->modal('area-delete')->show();
+    }
+
+    public function delete(PoliticaGastoService $service): void
+    {
+        if (! $this->deletingId) return;
+
+        $politica = PoliticaGasto::with([
+            'role:id,name',
+            'concepto:id,nombre'
+        ])->findOrFail($this->deletingId);
+        $service->toggleEstatus($politica, auth()->user());
+
+        $this->modal('politica-delete')->close();
+        $this->reset(['deletingId', 'deletingNombre']);
+        $this->dispatch('notify', type: 'success', message: 'Política dada de baja correctamente.');
     }
 
     public function render(PoliticaGastoService $service)

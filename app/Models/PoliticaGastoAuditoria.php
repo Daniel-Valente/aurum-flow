@@ -11,6 +11,16 @@ class PoliticaGastoAuditoria extends Model
 
     protected $table = 'politicas_gastos_auditoria';
 
+    protected $fillable = [
+        'politica_id',
+        'version_id',
+        'evento',
+        'actor_id',
+        'origen',
+        'datos_antes',
+        'datos_despues',
+    ];
+
     protected $casts = [
         'datos_antes' => 'array',
         'datos_despues' => 'array'
