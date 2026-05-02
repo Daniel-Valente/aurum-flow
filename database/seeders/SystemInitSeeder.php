@@ -199,6 +199,7 @@ class SystemInitSeeder extends Seeder
             'solicitudes.crear',
             'solicitudes.editar',
             'solicitudes.enviar',
+            'solicitudes.eliminar',
 
             'gastos.ver.propios',
             'gastos.crear',

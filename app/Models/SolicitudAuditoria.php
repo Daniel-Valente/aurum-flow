@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class SolicitudAuditoria extends Model
 {
+    protected $table = 'solicitudes_auditoria';
+
     public $timestamps = false;
 
     protected $fillable = [

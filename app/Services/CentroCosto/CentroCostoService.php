@@ -2,6 +2,7 @@
 
 namespace App\Services\CentroCosto;
 
+use App\Helpers\FolioHelper;
 use App\Models\CentroCosto;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
@@ -48,7 +49,7 @@ class CentroCostoService
     {
         $centroCosto = CentroCosto::create([
             'nombre'  => $data['nombre'],
-            'codigo'  => $data['codigo'],
+            'codigo'  => FolioHelper::generar('CECO'),
             'estatus' => $data['estatus'] ?? true,
         ]);
 

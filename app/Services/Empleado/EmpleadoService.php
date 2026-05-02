@@ -119,6 +119,8 @@ class EmpleadoService
                 'nss'             => $data['nss'],
                 'fecha_ingreso'   => $data['fecha_ingreso'] ?? null,
                 'telefono'        => $data['telefono'] ?? null,
+                'tarjeta_credito_corporativa_asignada' => $data['tarjeta_credito_corporativa_asignada'] ?? false,
+                'limite_credito_tarjeta' => $data['limite_credito_tarjeta'] ?? null,
                 'estatus'         => true,
             ]);
 
@@ -146,6 +148,8 @@ class EmpleadoService
                 'nss'             => $data['nss'],
                 'fecha_ingreso'   => $data['fecha_ingreso'] ?? null,
                 'telefono'        => $data['telefono'] ?? null,
+                'tarjeta_credito_corporativa_asignada' => $data['tarjeta_credito_corporativa_asignada'] ?? false,
+                'limite_credito_tarjeta' => $data['limite_credito_tarjeta'] ?? null,
             ]);
 
             $empleado->user?->update([

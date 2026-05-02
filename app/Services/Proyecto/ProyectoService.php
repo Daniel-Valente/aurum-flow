@@ -2,6 +2,7 @@
 
 namespace App\Services\Proyecto;
 
+use App\Helpers\FolioHelper;
 use App\Models\Proyecto;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
@@ -82,6 +83,7 @@ class ProyectoService
     {
         return Cache::remember(self::LIST_CACHE_KEY, self::LIST_CACHE_TTL, fn() =>
             Proyecto::where('estatus', true)
+                ->where('estado_operativo', 'Activo')
                 ->orderBy('nombre')
                 ->get(['id', 'nombre', 'codigo'])
                 ->toArray()
@@ -90,8 +92,14 @@ class ProyectoService
 
     public function create(array $data): Proyecto
     {
+        $codigo = match($data['tipo']) {
+            'Ruta' => FolioHelper::generar('RT'),
+            'Zona' => FolioHelper::generar('ZN'),
+            default => FolioHelper::generar('PRY')
+        };
+
         $proyecto = Proyecto::create([
-            'codigo'           => strtoupper(trim($data['codigo'])),
+            'codigo'           => $codigo,
             'nombre'           => $data['nombre'],
             'cliente'          => $data['cliente']          ?? null,
             'tipo'             => $data['tipo'],

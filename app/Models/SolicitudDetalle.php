@@ -9,7 +9,11 @@ class SolicitudDetalle extends Model
     protected $fillable = [
         'solicitud_id',
         'concepto_id',
-        'monto_estimado'
+        'monto_estimado',
+    ];
+
+    protected $casts = [
+        'monto_estimado' => 'decimal:2',
     ];
 
     public function solicitud()

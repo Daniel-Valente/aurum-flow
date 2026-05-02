@@ -38,6 +38,9 @@ return new class extends Migration
 
             $table->string('telefono')->nullable();
 
+            $table->boolean('tarjeta_credito_corporativa_asignada')->default(false);
+            $table->decimal('limite_credito_tarjeta', 10, 2)->nullable();
+
             $table->boolean('estatus')->default(true)->index();
 
             $table->timestamps();

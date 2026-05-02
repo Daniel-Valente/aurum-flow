@@ -70,6 +70,12 @@ class Index extends Component
         Flux::toast(variant: 'success', text: $message);
     }
 
+    #[On('politicaError')]
+    public function onPoliticaError(string $message): void
+    {
+        Flux::toast(variant: 'danger', text: $message);
+    }
+
     public function openDetail(int $id): void
     {
         $this->dispatch('openPoliticaDetail', id: $id);
@@ -80,7 +86,7 @@ class Index extends Component
         $this->dispatch('openPoliticaVersion', id: $id);
     }
 
-        public function openDelete(int $id): void
+    public function openDelete(int $id): void
     {
         $politica = PoliticaGasto::with([
             'role:id,name',
@@ -95,7 +101,7 @@ class Index extends Component
 
     public function delete(PoliticaGastoService $service): void
     {
-        if (! $this->deletingId) return;
+        if (!$this->deletingId) return;
 
         $politica = PoliticaGasto::with([
             'role:id,name',

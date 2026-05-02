@@ -16,22 +16,19 @@ return new class extends Migration
 
             $table->string('codigo')->unique();
             $table->string('nombre');
-
             $table->string('categoria')->nullable();
             $table->string('descripcion')->nullable();
 
+            // Diario | Evento | Viaje — ritmo de aplicación del concepto
             $table->string('tipo_aplicacion', 20)->default('Diario')->index();
-            //Diario | Evento | Viaje
 
             $table->integer('orden')->default(0);
 
-            $table->boolean('requiere_factura')->default(true);
-            $table->boolean('requiere_comprobante')->default(true);
-            $table->boolean('requiere_uuid')->default(false);
-            $table->boolean('permite_sin_factura')->default(false);
+            // Naturaleza fiscal — propiedad del tipo de gasto, no del rol
+            // El hospedaje genera IVA acreditable; viáticos de alimentación pueden ser exentos
             $table->boolean('aplica_iva')->default(true);
-            $table->boolean('acumulable_dia')->default(true);
 
+            // Precio promedio de mercado (informativo para el validador y reportes)
             $table->decimal('tope_referencia', 10, 2)->nullable();
 
             $table->date('vigencia_desde')->nullable();

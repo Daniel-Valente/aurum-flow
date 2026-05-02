@@ -34,6 +34,8 @@ class FormModal extends Component
     public string $banco_nomina = '';
     public string $cuenta_nomina = '';
     public string $clabe_nomina = '';
+    public bool $tarjeta_credito_corporativa_asignada = false;
+    public ?string $limite_credito_tarjeta = null;
 
     #[On('openEmpleadoForm')]
     public function open(?int $id = null): void
@@ -60,6 +62,8 @@ class FormModal extends Component
             $this->nss             = $empleado->nss ?? '';
             $this->fecha_ingreso   = $empleado->fecha_ingreso?->format('Y-m-d') ?? '';
             $this->telefono        = $empleado->telefono ?? '';
+            $this->tarjeta_credito_corporativa_asignada = $empleado->tarjeta_credito_corporativa_asignada ?? false;
+            $this->limite_credito_tarjeta = $empleado->limite_credito_tarjeta ?? null;
         } else {
             $this->resetForm();
 
@@ -99,6 +103,8 @@ class FormModal extends Component
             'nss'           => 'required|string|max:11',
             'telefono'      => 'nullable|string|max:10',
             'fecha_ingreso' => 'nullable|date',
+            'limite_credito_tarjeta' => 'nullable|numeric|min:0',
+            'tarjeta_credito_corporativa_asignada' => 'boolean'
         ], messages: [
             'nombre_completo.required' => 'El nombre completo es obligatorio.',
             'email.required'           => 'El email es obligatorio.',
@@ -121,8 +127,10 @@ class FormModal extends Component
             'numero_nomina.required'   => 'El número de nómina es obligatorio.',
             'banco_nomina.required'    => 'El banco es obligatorio.',
             'cuenta_nomina.required'   => 'La cuenta de nómina es obligatoria.',
-            'cuenta_nomina.required'   => 'La cuenta de nómina es obligatoria.',
             'telefono.max'             => 'El Teléfono debe tener exactamente 10 caracteres.',
+            'limite_credito_tarjeta.numeric'  => 'El límite de crédito debe ser un número.',
+            'limite_credito_tarjeta.min'      => 'El límite de crédito no puede ser negativo.',
+
         ]);
 
         $data = [
@@ -141,6 +149,8 @@ class FormModal extends Component
             'nss' => $this->nss,
             'fecha_ingreso' => $this->fecha_ingreso,
             'telefono' => $this->telefono,
+            'tarjeta_credito_corporativa_asignada' => $this->tarjeta_credito_corporativa_asignada,
+            'limite_credito_tarjeta' => $this->limite_credito_tarjeta,
             'estatus' => true,
         ];
 

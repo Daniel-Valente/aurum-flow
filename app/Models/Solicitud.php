@@ -10,6 +10,8 @@ class Solicitud extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'solicitudes';
+
     protected $fillable = [
         'folio',
         'empleado_id',
@@ -18,10 +20,14 @@ class Solicitud extends Model
         'fecha_inicio',
         'fecha_fin',
         'motivo',
-        'motivo_cancelacion',
+        'fecha_solicitud',
+        'monto_total',
+        'motivo_rechazo',
+        'estatus'
     ];
 
     protected $casts = [
+        'fecha_solicitud' => 'date',
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
         'monto_total' => 'decimal:2'

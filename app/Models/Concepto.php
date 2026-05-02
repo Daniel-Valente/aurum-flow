@@ -15,37 +15,35 @@ class Concepto extends Model
         'nombre',
         'categoria',
         'descripcion',
+
+        // Diario | Evento | Viaje — define el "ritmo" del concepto
         'tipo_aplicacion',
+
         'orden',
 
-        'requiere_factura',
-        'requiere_comprobante',
-        'requiere_uuid',
-        'permite_sin_factura',
+        // Naturaleza fiscal — no varía por rol, es propia del concepto
         'aplica_iva',
-        'acumulable_dia',
 
+        // Precio promedio de mercado (referencia informativa para el validador)
         'tope_referencia',
 
         'vigencia_desde',
         'vigencia_hasta',
 
-        'estatus'
+        'estatus',
     ];
 
     protected $casts = [
-        'requiere_factura' => 'boolean',
-        'requiere_comprobante' => 'boolean',
-        'requiere_uuid' => 'boolean',
-        'permite_sin_factura' => 'boolean',
-        'aplica_iva' => 'boolean',
-        'acumulable_dia' => 'boolean',
-        'estatus' => 'boolean',
-
-        'tope_referencia' => 'decimal:2',
-        'vigencia_desde' => 'date',
-        'vigencia_hasta' => 'date'
+        'aplica_iva'       => 'boolean',
+        'estatus'          => 'boolean',
+        'tope_referencia'  => 'decimal:2',
+        'vigencia_desde'   => 'date',
+        'vigencia_hasta'   => 'date',
     ];
+
+    // -------------------------------------------------------------------------
+    // Relaciones
+    // -------------------------------------------------------------------------
 
     public function solicitudes()
     {
@@ -69,6 +67,10 @@ class Concepto extends Model
         return $this->hasMany(Gasto::class);
     }
 
+    /**
+     * Roles que tienen este concepto habilitado.
+     * Tabla pivot: concepto_rol (concepto_id, rol_id)
+     */
     public function roles()
     {
         return $this->belongsToMany(
@@ -77,5 +79,30 @@ class Concepto extends Model
             'concepto_id',
             'rol_id'
         );
+    }
+
+    /**
+     * Políticas de gasto activas que aplican a este concepto.
+     */
+    public function politicas()
+    {
+        return $this->hasMany(PoliticaGasto::class);
+    }
+
+    // -------------------------------------------------------------------------
+    // Scopes
+    // -------------------------------------------------------------------------
+
+    public function scopeVigente($query)
+    {
+        return $query
+            ->where(function ($q) {
+                $q->whereNull('vigencia_desde')
+                  ->orWhere('vigencia_desde', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('vigencia_hasta')
+                  ->orWhere('vigencia_hasta', '>=', now());
+            });
     }
 }

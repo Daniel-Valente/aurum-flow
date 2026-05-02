@@ -14,34 +14,55 @@ return new class extends Migration
         Schema::create('politicas_gastos_versiones', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('politica_id')->constrained('politicas_gastos')->cascadeOnDelete();
+            // Referencia a la política padre
+            $table->foreignId('politica_id')
+                ->constrained('politicas_gastos')
+                ->cascadeOnDelete();
 
+            // --- Snapshot completo al momento de la versión ---
             $table->foreignId('role_id')->constrained();
             $table->foreignId('concepto_id')->constrained();
 
             $table->decimal('monto_max', 12, 2);
 
-            $table->string('tipo_limite')->default('Diario');
             // Diario | Viaje | Evento
+            $table->string('tipo_limite', 20)->default('Diario');
 
+            // Tramos documentales (snapshot)
+            $table->decimal('monto_libre', 12, 2)->nullable();
+            $table->decimal('monto_comprobante', 12, 2)->nullable();
+            $table->decimal('monto_factura', 12, 2)->nullable();
+
+            $table->boolean('valida_sat')->default(false);
+            $table->boolean('acumulable_dia')->default(true);
             $table->boolean('permite_excepcion')->default(false);
 
             $table->date('vigencia_desde')->nullable();
             $table->date('vigencia_hasta')->nullable();
 
+            // --- Metadatos de la versión ---
             $table->string('motivo')->nullable();
 
-            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('aprobado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('creado_por')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            $table->foreignId('aprobado_por')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
             $table->timestamp('approved_at')->nullable();
 
-            $table->string('estatus')->default('Aprobada');
             // Borrador | Aprobada | Inactiva
+            $table->string('estatus', 20)->default('Aprobada');
 
             $table->timestamps();
 
+            // Índice principal para las consultas del validador
             $table->index(['role_id', 'concepto_id', 'estatus']);
+            $table->index(['politica_id', 'estatus']);
         });
     }
 

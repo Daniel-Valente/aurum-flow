@@ -17,11 +17,27 @@ return new class extends Migration
             $table->foreignId('role_id')->constrained();
             $table->foreignId('concepto_id')->constrained();
 
+            // Tope absoluto autorizado en este tipo de límite
             $table->decimal('monto_max', 12, 2);
 
-            $table->string('tipo_limite')->default('Diario');
-            //Diario | Viaje
+            // Diario | Viaje | Evento
+            $table->string('tipo_limite', 20)->default('Diario');
 
+            // --- Tramos documentales ---
+            // Hasta aquí, sin documento requerido (libre)
+            $table->decimal('monto_libre', 12, 2)->nullable();
+            // De aquí en adelante, ticket / recibo es suficiente
+            $table->decimal('monto_comprobante', 12, 2)->nullable();
+            // De aquí en adelante, CFDI (XML + PDF) es obligatorio
+            $table->decimal('monto_factura', 12, 2)->nullable();
+
+            // Al recibir un CFDI con UUID, consultarlo ante el SAT automáticamente
+            $table->boolean('valida_sat')->default(false);
+
+            // El concepto puede registrarse varias veces el mismo día (por este rol)
+            $table->boolean('acumulable_dia')->default(true);
+
+            // Se puede superar monto_max con justificación aprobada
             $table->boolean('permite_excepcion')->default(false);
 
             $table->date('vigencia_desde')->nullable();
@@ -34,11 +50,12 @@ return new class extends Migration
 
             $table->index(['role_id', 'concepto_id']);
 
+            // Una sola política vigente por rol + concepto + tipo de límite + inicio de vigencia
             $table->unique([
                 'role_id',
                 'concepto_id',
                 'tipo_limite',
-                'vigencia_desde'
+                'vigencia_desde',
             ]);
         });
     }

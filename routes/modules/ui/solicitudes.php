@@ -1,7 +1,7 @@
 <?php
 
+use App\Livewire\Solicitudes\Detail\Show;
 use App\Livewire\Solicitudes\Index;
-use App\Livewire\Solicitudes\Show;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('mis-solicitudes')->name('solicitudes.')->group(function () {

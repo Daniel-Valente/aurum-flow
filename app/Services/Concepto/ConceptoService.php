@@ -2,6 +2,7 @@
 
 namespace App\Services\Concepto;
 
+use App\Helpers\FolioHelper;
 use App\Models\Concepto;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
@@ -13,19 +14,23 @@ class ConceptoService
         'nombre', 'codigo', 'categoria', 'tipo_aplicacion',
         'orden', 'created_at',
     ];
-    private const ALLOWED_SORT_DIRS  = ['asc', 'desc'];
-    private const LIST_CACHE_TTL     = 600; // 10 min
+    private const ALLOWED_SORT_DIRS = ['asc', 'desc'];
+    private const LIST_CACHE_TTL    = 600; // 10 min
+
+    // -------------------------------------------------------------------------
+    // Listado paginado
+    // -------------------------------------------------------------------------
 
     public function paginate(
-        string  $search          = '',
-        string  $tipoAplicacion  = '',
-        string  $estatus         = '',
-        string  $categoria       = '',
-        string  $vigencia        = '',
-        ?int    $rolId           = null,
-        string  $sortBy          = 'orden',
-        string  $sortDir         = 'asc',
-        int     $perPage         = 15,
+        string $search         = '',
+        string $tipoAplicacion = '',
+        string $estatus        = '',
+        string $categoria      = '',
+        string $vigencia       = '',
+        ?int   $rolId          = null,
+        string $sortBy         = 'orden',
+        string $sortDir        = 'asc',
+        int    $perPage        = 15,
     ): LengthAwarePaginator {
         $sortBy  = in_array($sortBy,  self::ALLOWED_SORT_COLUMNS, true) ? $sortBy  : 'orden';
         $sortDir = in_array($sortDir, self::ALLOWED_SORT_DIRS,    true) ? $sortDir : 'asc';
@@ -71,6 +76,10 @@ class ConceptoService
             ->paginate($perPage);
     }
 
+    // -------------------------------------------------------------------------
+    // Lista plana para selects / dropdowns (cacheada)
+    // -------------------------------------------------------------------------
+
     public function list(?int $rolId = null): array
     {
         $cacheKey = 'conceptos.list.' . ($rolId ?? 'todos');
@@ -79,25 +88,28 @@ class ConceptoService
             Concepto::query()
                 ->with('roles')
                 ->where('estatus', true)
-                ->where(fn($q) =>
-                    $q->whereNull('vigencia_desde')
-                      ->orWhere('vigencia_desde', '<=', now())
-                )
-                ->where(fn($q) =>
-                    $q->whereNull('vigencia_hasta')
-                      ->orWhere('vigencia_hasta', '>=', now())
-                )
+                ->vigente()
                 ->when($rolId, fn($q) =>
                     $q->where(fn($q2) =>
+                        // Conceptos asignados a este rol O sin restricción de rol
                         $q2->whereHas('roles', fn($r) => $r->where('roles.id', $rolId))
                            ->orWhereDoesntHave('roles')
                     )
                 )
+                ->orderBy('orden')
                 ->orderBy('nombre')
-                ->get()
+                ->get([
+                    'id', 'codigo', 'nombre', 'categoria',
+                    'tipo_aplicacion', 'aplica_iva', 'tope_referencia',
+                    'vigencia_desde', 'vigencia_hasta',
+                ])
                 ->toArray()
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Crear
+    // -------------------------------------------------------------------------
 
     public function create(array $data): Concepto
     {
@@ -106,18 +118,16 @@ class ConceptoService
 
         $concepto = Concepto::create([
             'nombre'          => $data['nombre'],
-            'codigo'          => strtoupper(trim($data['codigo'])),
+            'codigo'          => FolioHelper::generar('CONC'),
             'categoria'       => $data['categoria']       ?? null,
-            'tipo_aplicacion' => $data['tipo_aplicacion'] ?? null,
+            'tipo_aplicacion' => $data['tipo_aplicacion'] ?? 'Diario',
             'descripcion'     => $data['descripcion']     ?? null,
             'orden'           => $data['orden']           ?? 0,
-            'requiere_factura' => $data['requiere_factura'] ?? false,
-            'requiere_comprobante' => $data['requiere_comprobante'] ?? false,
-            'requiere_uuid' => $data['requiere_uuid'] ?? false,
-            'permite_sin_factura' => $data['permite_sin_factura'] ?? false,
-            'aplica_iva' => $data['aplica_iva'] ?? false,
-            'acumulable_dia' => $data['acumulable_dia'] ?? false,
+
+            // Naturaleza fiscal del concepto (no regla por rol)
+            'aplica_iva'      => $data['aplica_iva']      ?? true,
             'tope_referencia' => $data['tope_referencia'] ?? null,
+
             'vigencia_desde'  => $data['vigencia_desde']  ?? null,
             'vigencia_hasta'  => $data['vigencia_hasta']  ?? null,
             'estatus'         => $data['estatus']         ?? true,
@@ -133,6 +143,10 @@ class ConceptoService
         return $concepto->load('roles');
     }
 
+    // -------------------------------------------------------------------------
+    // Actualizar
+    // -------------------------------------------------------------------------
+
     public function update(Concepto $concepto, array $data): Concepto
     {
         $roles = $data['roles'] ?? [];
@@ -145,18 +159,16 @@ class ConceptoService
             'tipo_aplicacion' => $data['tipo_aplicacion'] ?? $concepto->tipo_aplicacion,
             'descripcion'     => $data['descripcion']     ?? $concepto->descripcion,
             'orden'           => $data['orden']           ?? $concepto->orden,
-            'requiere_factura' => $data['requiere_factura'] ?? $concepto->requiere_factura,
-            'requiere_comprobante' => $data['requiere_comprobante'] ?? $concepto->requiere_comprobante,
-            'requiere_uuid' => $data['requiere_uuid'] ?? $concepto->requiere_uuid,
-            'permite_sin_factura' => $data['permite_sin_factura'] ?? $concepto->permite_sin_factura,
-            'aplica_iva' => $data['aplica_iva'] ?? $concepto->aplica_iva,
-            'acumulable_dia' => $data['acumulable_dia'] ?? $concepto->acumulable_dia,
+
+            'aplica_iva'      => $data['aplica_iva']      ?? $concepto->aplica_iva,
             'tope_referencia' => $data['tope_referencia'] ?? $concepto->tope_referencia,
+
             'vigencia_desde'  => $data['vigencia_desde']  ?? $concepto->vigencia_desde,
             'vigencia_hasta'  => $data['vigencia_hasta']  ?? $concepto->vigencia_hasta,
             'estatus'         => $data['estatus']         ?? $concepto->estatus,
         ]);
 
+        // sync vacío = desvincula todos los roles si se envía array vacío
         $ids = Role::whereIn('name', $roles)->pluck('id');
         $concepto->roles()->sync($ids);
 
@@ -165,15 +177,23 @@ class ConceptoService
         return $concepto->load('roles');
     }
 
+    // -------------------------------------------------------------------------
+    // Eliminar
+    // -------------------------------------------------------------------------
+
     public function delete(Concepto $concepto): bool
     {
         $concepto->roles()->sync([]);
-        $concepto->delete();
+        $concepto->delete($concepto->id);
 
         $this->flushCache();
 
         return true;
     }
+
+    // -------------------------------------------------------------------------
+    // Toggle estatus
+    // -------------------------------------------------------------------------
 
     public function toggle(Concepto $concepto): Concepto
     {
@@ -182,6 +202,10 @@ class ConceptoService
 
         return $concepto->fresh();
     }
+
+    // -------------------------------------------------------------------------
+    // Catálogos auxiliares para filtros
+    // -------------------------------------------------------------------------
 
     public function categorias(): array
     {
@@ -194,6 +218,10 @@ class ConceptoService
                 ->toArray()
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Cache
+    // -------------------------------------------------------------------------
 
     private function flushCache(): void
     {

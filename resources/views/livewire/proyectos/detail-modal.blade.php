@@ -1,106 +1,159 @@
 <flux:modal name="proyecto-detail" flyout variant="floating" class="md:w-lg">
     @if ($proyecto)
-    <div class="space-y-6">
-        <div class="flex items-start gap-4">
-            <div class="flex size-14 items-center justify-center rounded-full">
-                <div class="p-0 text-sm font-normal">
-                    <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                        <flux:avatar :name="$proyecto->nombre" :initials="strtoupper(substr($proyecto->nombre, 0, 1))" />
-                        <div class="grid flex-1 text-start text-sm leading-tight">
-                            <flux:heading class="truncate">
-                                {{ $proyecto->nombre }}
-                            </flux:heading>
-                            <div class=" mt-1 flex items-start gap-4 text-start justify-between">
-                                <flux:text class="font-mono text-sm flex-1">
-                                    {{ $proyecto->codigo }}
-                                </flux:text>
-                                <flux:badge
-                                    color="{{
-                                        $proyecto->tipo === 'Proyecto' ? 'orange' :
-                                        ($proyecto->tipo === 'Ruta' ? 'purple' : 'pink')
-                                    }}"
-                                    size="sm"
-                                    inset="top bottom"
-                                >
-                                    {{ $proyecto->tipo }}
-                                </flux:badge>
-                            </div>
-                        </div>
-                    </div>
+    <div class="flex flex-col gap-6">
+
+        {{-- ── Header ───────────────────────────────────────────── --}}
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <flux:avatar
+                    :name="$proyecto->nombre"
+                    :initials="strtoupper(substr($proyecto->nombre, 0, 1))"
+                    size="lg"
+                />
+
+                <div class="flex flex-col gap-0.5">
+                    <flux:heading size="lg" class="leading-tight">
+                        {{ $proyecto->nombre }}
+                    </flux:heading>
+                    <span class="text-xs font-mono text-zinc-400 tracking-wide">
+                        {{ $proyecto->codigo }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <flux:badge
+                    size="sm"
+                    color="{{
+                        $proyecto->tipo === 'Proyecto' ? 'orange' :
+                        ($proyecto->tipo === 'Ruta' ? 'purple' : 'pink')
+                    }}"
+                >
+                    {{ $proyecto->tipo }}
+                </flux:badge>
+
+                @if ($proyecto->estatus)
+                    <flux:badge size="sm" color="green">Activo</flux:badge>
+                @else
+                    <flux:badge size="sm" color="red">Inactivo</flux:badge>
+                @endif
+            </div>
+        </div>
+
+        {{-- ── Descripción ─────────────────────────────────────── --}}
+        @if ($proyecto->descripcion)
+            <flux:text class="text-sm text-zinc-500 leading-relaxed">
+                {{ $proyecto->descripcion }}
+            </flux:text>
+        @endif
+
+        <flux:separator />
+
+        {{-- ── Configuración ───────────────────────────────────── --}}
+        <div>
+            <flux:subheading class="mb-3 text-xs uppercase tracking-widest text-zinc-400">
+                Configuración
+            </flux:subheading>
+
+            <div class="grid grid-cols-2 gap-3">
+
+                {{-- Prioridad --}}
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Prioridad</span>
+                    <flux:badge size="sm" color="blue">
+                        {{ $proyecto->prioridad ?? '—' }}
+                    </flux:badge>
+                </div>
+
+                {{-- Centro de costo --}}
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Centro de costo</span>
+                    <span class="text-sm text-zinc-700">
+                        {{ $proyecto->centroCosto?->nombre ?? '—' }}
+                    </span>
+                </div>
+
+                {{-- Responsable --}}
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Responsable</span>
+                    <span class="text-sm text-zinc-700">
+                        {{ $proyecto->responsable?->nombre_completo ?? '—' }}
+                    </span>
+                </div>
+
+                {{-- Cliente --}}
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Cliente</span>
+                    <span class="text-sm text-zinc-700">
+                        {{ $proyecto->cliente ?? '—' }}
+                    </span>
+                </div>
+
+                {{-- Presupuesto --}}
+                <div class="col-span-2 flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Presupuesto total</span>
+                    <span class="text-sm font-mono text-zinc-700">
+                        {{ Number::currency($proyecto->presupuesto_total ?? 0, in: 'MXN') }}
+                    </span>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- ── Fechas ───────────────────────────────────────────── --}}
+        <div>
+            <flux:subheading class="mb-3 text-xs uppercase tracking-widest text-zinc-400">
+                Vigencia
+            </flux:subheading>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Inicio</span>
+                    <span class="text-sm font-mono">
+                        {{ $proyecto->fecha_inicio?->format('d/m/Y') ?? '—' }}
+                    </span>
+                </div>
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Fin</span>
+                    <span class="text-sm font-mono">
+                        {{ $proyecto->fecha_fin?->format('d/m/Y') ?? '—' }}
+                    </span>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-start gap-4 text-sm leading-tight">
-            <x-components.detail-item icon="cube-transparent" label="Prioridad">
-                {{ $proyecto->prioridad }}
-            </x-components.detail-item>
-        </div>
+        {{-- ── Ubicación ───────────────────────────────────────── --}}
+        <div>
+            <flux:subheading class="mb-3 text-xs uppercase tracking-widest text-zinc-400">
+                Ubicación
+            </flux:subheading>
 
-        <div class="flex items-start gap-4 text-sm leading-tight">
-            <x-components.detail-item icon="clipboard" label="Descripción">
-                <flux:text style="max-width: 16rem">{{ $proyecto->descripcion ?? '-' }}</flux:text>
-            </x-components.detail-item>
-        </div>
+            <div class="grid grid-cols-2 gap-3">
 
-        <div class="mt-2 flex items-start gap-4 text-start text-xs leading-tight justify-between">
-            <div class="truncate font-light text-sm">
-                {{ $proyecto->fecha_inicio?->format('Y-m-d') ?? '-' }} a {{ $proyecto->fecha_fin?->format('Y-m-d') ?? '-' }}
-            </div>
-            @if ($proyecto->estatus)
-                <flux:badge size="sm" color="green" inset="top bottom">Activo</flux:badge>
-            @else
-                <flux:badge size="sm" color="red" inset="top bottom">Inactivo</flux:badge>
-            @endif
-        </div>
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Ciudad</span>
+                    <span class="text-sm">{{ $proyecto->ciudad ?? '—' }}</span>
+                </div>
 
-        <flux:separator />
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Estado</span>
+                    <span class="text-sm">{{ $proyecto->estado ?? '—' }}</span>
+                </div>
 
-        <div class="spayce-y-3">
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="user" label="Cliente">
-                    {{ $proyecto->cliente ?? '-' }}
-                </x-components.detail-item>
-                <x-components.detail-item icon="building-office" label="Centro de Costos">
-                    {{ $proyecto->centroCosto?->nombre ?? '-' }}
-                </x-components.detail-item>
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Región</span>
+                    <span class="text-sm">{{ $proyecto->region ?? '—' }}</span>
+                </div>
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">País</span>
+                    <span class="text-sm">{{ $proyecto->pais ?? '—' }}</span>
+                </div>
+
             </div>
         </div>
 
-        <div class="spayce-y-3">
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="user" label="Responsable">
-                    {{ $proyecto->responsable?->nombre_completo ?? '-' }}
-                </x-components.detail-item>
-                <x-components.detail-item icon="credit-card" label="Presupuesto Total">
-                    {{ Number::currency($proyecto->presupuesto_total ?? 0.00, in: 'MXN') }}
-                </x-components.detail-item>
-            </div>
-        </div>
-
-        <flux:separator />
-
-        <div class="spayce-y-3">
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="globe-americas" label="Ciudad">
-                    {{ $proyecto->ciudad ?? '-' }}
-                </x-components.detail-item>
-                <x-components.detail-item icon="globe-americas" label="Estado">
-                    {{ $proyecto->estado ?? '-' }}
-                </x-components.detail-item>
-            </div>
-        </div>
-
-        <div class="spayce-y-3">
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="globe-americas" label="Región">
-                    {{ $proyecto->region ?? '-' }}
-                </x-components.detail-item>
-                <x-components.detail-item icon="globe-americas" label="País">
-                    {{ $proyecto->pais ?? '-' }}
-                </x-components.detail-item>
-            </div>
-        </div>
     </div>
     @endif
 </flux:modal>

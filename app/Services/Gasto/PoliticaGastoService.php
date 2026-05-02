@@ -16,19 +16,23 @@ class PoliticaGastoService
     private const ALLOWED_SORT_COLUMNS = [
         'created_at', 'monto_max', 'vigencia_desde', 'vigencia_hasta',
     ];
-    private const ALLOWED_SORT_DIRS = ['asc', 'desc'];
-    private const LIST_CACHE_KEY       = 'politicas.list.activas';
-    private const LIST_CACHE_TTL       = 600;
+    private const ALLOWED_SORT_DIRS  = ['asc', 'desc'];
+    private const LIST_CACHE_KEY     = 'politicas.list.activas';
+    private const LIST_CACHE_TTL     = 600; // 10 min
+
+    // -------------------------------------------------------------------------
+    // Listado paginado con joins para nombre de rol y concepto
+    // -------------------------------------------------------------------------
 
     public function paginate(
-        ?int   $roleId       = null,
-        ?int   $conceptoId   = null,
-        string $tipoLimite   = '',
-        string $vigencia     = '',
+        ?int   $roleId      = null,
+        ?int   $conceptoId  = null,
+        string $tipoLimite  = '',
+        string $vigencia    = '',
         string $estatus     = '',
-        string $sortBy       = 'created_at',
-        string $sortDir      = 'desc',
-        int    $perPage      = 15,
+        string $sortBy      = 'created_at',
+        string $sortDir     = 'desc',
+        int    $perPage     = 15,
     ): LengthAwarePaginator {
         $sortBy  = in_array($sortBy,  self::ALLOWED_SORT_COLUMNS, true) ? $sortBy  : 'created_at';
         $sortDir = in_array($sortDir, self::ALLOWED_SORT_DIRS,    true) ? $sortDir : 'desc';
@@ -39,14 +43,18 @@ class PoliticaGastoService
             ->join('conceptos', 'conceptos.id', '=', 'politicas_gastos.concepto_id')
             ->select(
                 'politicas_gastos.*',
-                'roles.name       AS rol_nombre',
-                'conceptos.nombre AS concepto_nombre',
-                'conceptos.codigo AS concepto_codigo',
+                'roles.name        AS rol_nombre',
+                'conceptos.nombre  AS concepto_nombre',
+                'conceptos.codigo  AS concepto_codigo',
             )
             ->when($roleId,     fn($q) => $q->where('politicas_gastos.role_id',     $roleId))
             ->when($conceptoId, fn($q) => $q->where('politicas_gastos.concepto_id', $conceptoId))
-            ->when($estatus !== '', fn($q) => $q->where('politicas_gastos.estatus', $estatus))
-            ->when($tipoLimite, fn($q) => $q->where('politicas_gastos.tipo_limite', $tipoLimite))
+            ->when($estatus !== '', fn($q) =>
+                $q->where('politicas_gastos.estatus', filter_var($estatus, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $estatus)
+            )
+            ->when($tipoLimite, fn($q) =>
+                $q->where('politicas_gastos.tipo_limite', $tipoLimite)
+            )
             ->when($vigencia === 'Vigente', fn($q) =>
                 $q->where(fn($q2) =>
                     $q2->whereNull('politicas_gastos.vigencia_desde')
@@ -72,7 +80,7 @@ class PoliticaGastoService
     }
 
     // -------------------------------------------------------------------------
-    // Lista plana para selects / dropdowns
+    // Lista plana para selects / dropdowns (con cache)
     // -------------------------------------------------------------------------
 
     public function list(?int $roleId = null): array
@@ -85,6 +93,8 @@ class PoliticaGastoService
             ->get([
                 'id', 'role_id', 'concepto_id',
                 'monto_max', 'tipo_limite',
+                'monto_libre', 'monto_comprobante', 'monto_factura',
+                'valida_sat', 'acumulable_dia',
                 'permite_excepcion',
                 'vigencia_desde', 'vigencia_hasta',
             ])
@@ -92,39 +102,41 @@ class PoliticaGastoService
     }
 
     // -------------------------------------------------------------------------
-    // Historial de versiones para el modal "Historial de Versiones"
-    // Columnas: VERSION | LÍMITE | TIPO | VIGENCIA | ESTATUS | CREADO | ACTOR
+    // Historial de versiones (modal "Historial de Versiones")
+    // Columnas: # | LÍMITE | TIPO | VIGENCIA | MONTOS | ESTATUS | ACTOR
     // -------------------------------------------------------------------------
 
     public function versiones(PoliticaGasto $politica): Collection
     {
         return PoliticaGastoVersion::query()
             ->where('politica_id', $politica->id)
-            // JOIN para obtener el nombre del actor (columna ACTOR del modal)
-            ->leftJoin('users',     'users.id',         '=', 'politicas_gastos_versiones.creado_por')
-            ->leftJoin('empleados', 'empleados.user_id','=', 'users.id')
+            ->leftJoin('users',     'users.id',          '=', 'politicas_gastos_versiones.creado_por')
+            ->leftJoin('empleados', 'empleados.user_id', '=', 'users.id')
             ->select(
                 'politicas_gastos_versiones.id',
                 'politicas_gastos_versiones.monto_max',
                 'politicas_gastos_versiones.tipo_limite',
+                'politicas_gastos_versiones.monto_libre',
+                'politicas_gastos_versiones.monto_comprobante',
+                'politicas_gastos_versiones.monto_factura',
+                'politicas_gastos_versiones.valida_sat',
+                'politicas_gastos_versiones.acumulable_dia',
                 'politicas_gastos_versiones.permite_excepcion',
                 'politicas_gastos_versiones.vigencia_desde',
                 'politicas_gastos_versiones.vigencia_hasta',
                 'politicas_gastos_versiones.estatus',
                 'politicas_gastos_versiones.motivo',
                 'politicas_gastos_versiones.created_at',
-                // "Admin Aurum" como aparece en la imagen — usa nombre_completo o el name del user
                 DB::raw("COALESCE(empleados.nombre_completo, users.name, 'Sistema') AS actor_nombre"),
             )
             ->orderByDesc('politicas_gastos_versiones.id')
             ->get()
             ->values()
-            // Número de versión legible (#9, #8…) basado en el id de la versión
             ->map(fn($v) => tap($v, fn($v) => $v->version_numero = '#' . $v->id));
     }
 
     // -------------------------------------------------------------------------
-    // Crear política — valida duplicado, crea versión inicial y auditoría
+    // Crear — valida duplicado, crea versión inicial y auditoría
     // -------------------------------------------------------------------------
 
     public function create(array $data, $user): PoliticaGasto
@@ -137,44 +149,35 @@ class PoliticaGastoService
             ->exists();
 
         if ($exists) {
-            throw new \Exception(
-                'Ya existe una política vigente para este rol, concepto y tipo de límite'
+            throw new \App\Exceptions\PoliticaDuplicadaException(
+                'Ya existe una política vigente para este rol, concepto y tipo de límite.'
             );
         }
 
         return DB::transaction(function () use ($data, $user) {
-            $politica = PoliticaGasto::create([
-                'role_id'           => $data['role_id'],
-                'concepto_id'       => $data['concepto_id'],
-                'tipo_limite'       => $data['tipo_limite'],
-                'monto_max'         => $data['monto_max'],
-                'permite_excepcion' => $data['permite_excepcion'] ?? false,
-                'vigencia_desde'    => $data['vigencia_desde']    ?? null,
-                'vigencia_hasta'    => $data['vigencia_hasta']    ?? null,
-            ]);
+            $campos = $this->camposDesdeData($data);
 
-            $version = PoliticaGastoVersion::create([
-                'politica_id'       => $politica->id,
-                'role_id'           => $data['role_id'],
-                'concepto_id'       => $data['concepto_id'],
-                'tipo_limite'       => $data['tipo_limite'],
-                'monto_max'         => $data['monto_max'],
-                'permite_excepcion' => $data['permite_excepcion'] ?? false,
-                'vigencia_desde'    => $data['vigencia_desde']    ?? null,
-                'vigencia_hasta'    => $data['vigencia_hasta']    ?? null,
-                'creado_por'        => $user->id,
-                'estatus'           => 'Aprobada',
-                'approved_at'       => now(),
-                'motivo'            => 'Creación inicial',
-            ]);
+            $politica = PoliticaGasto::create($campos);
+
+            $version = PoliticaGastoVersion::create(array_merge($campos, [
+                'politica_id' => $politica->id,
+                'creado_por'  => $user->id,
+                'estatus'     => 'Aprobada',
+                'approved_at' => now(),
+                'motivo'      => 'Creación inicial',
+            ]));
 
             PoliticaGastoAuditoria::create([
                 'politica_id'   => $politica->id,
                 'version_id'    => $version->id,
                 'evento'        => 'created',
                 'actor_id'      => $user->id,
+                'origen'        => $data['origen'] ?? 'manual',
+                'datos_antes'   => null,
                 'datos_despues' => $politica->toArray(),
             ]);
+
+            $this->flushCache();
 
             return $politica->load(['role:id,name', 'concepto:id,nombre,codigo']);
         });
@@ -187,49 +190,32 @@ class PoliticaGastoService
     public function update(PoliticaGasto $politica, array $data, $user): PoliticaGasto
     {
         return DB::transaction(function () use ($politica, $data, $user) {
-            // Captura "antes" ANTES del update — getOriginal() es poco confiable
+            // Captura "antes" ANTES del update — getOriginal() es poco confiable después del save
             $antes = $politica->toArray();
 
-            $politica->update([
-                'role_id'           => $data['role_id'],
-                'concepto_id'       => $data['concepto_id'],
-                'tipo_limite'       => $data['tipo_limite'],
-                'monto_max'         => $data['monto_max'],
-                'permite_excepcion' => $data['permite_excepcion'] ?? $politica->permite_excepcion,
-                'vigencia_desde'    => $data['vigencia_desde']    ?? null,
-                'vigencia_hasta'    => $data['vigencia_hasta']    ?? null,
-            ]);
+            $campos = $this->camposDesdeData($data, $politica);
 
-            // Nueva versión — aparecerá en el modal como #N
-            $version = PoliticaGastoVersion::create([
-                'politica_id'       => $politica->id,
-                'role_id'           => $data['role_id'],
-                'concepto_id'       => $data['concepto_id'],
-                'tipo_limite'       => $data['tipo_limite'],
-                'monto_max'         => $data['monto_max'],
-                'permite_excepcion' => $data['permite_excepcion'] ?? $politica->permite_excepcion,
-                'vigencia_desde'    => $data['vigencia_desde']    ?? null,
-                'vigencia_hasta'    => $data['vigencia_hasta']    ?? null,
-                'creado_por'        => $user->id,
-                'estatus'           => 'Aprobada',
-                'motivo'            => $data['motivo'] ?? 'Actualización',
-            ]);
+            $politica->update($campos);
+
+            $version = PoliticaGastoVersion::create(array_merge($campos, [
+                'politica_id' => $politica->id,
+                'creado_por'  => $user->id,
+                'estatus'     => 'Aprobada',
+                'approved_at' => now(),
+                'motivo'      => $data['motivo'] ?? 'Actualización',
+            ]));
 
             PoliticaGastoAuditoria::create([
                 'politica_id'   => $politica->id,
                 'version_id'    => $version->id,
                 'evento'        => 'updated',
                 'actor_id'      => $user->id,
+                'origen'        => $data['origen'] ?? 'manual',
                 'datos_antes'   => $antes,
-                // Sin fresh() — construimos "despues" con los datos ya en memoria
-                'datos_despues' => array_merge($antes, [
-                    'monto_max'         => $data['monto_max'],
-                    'tipo_limite'       => $data['tipo_limite'],
-                    'permite_excepcion' => $data['permite_excepcion'] ?? $politica->permite_excepcion,
-                    'vigencia_desde'    => $data['vigencia_desde'] ?? null,
-                    'vigencia_hasta'    => $data['vigencia_hasta'] ?? null,
-                ]),
+                'datos_despues' => array_merge($antes, $campos),
             ]);
+
+            $this->flushCache();
 
             return $politica->load(['role:id,name', 'concepto:id,nombre,codigo']);
         });
@@ -244,48 +230,60 @@ class PoliticaGastoService
         return DB::transaction(function () use ($politica, $user) {
             $antes = $politica->toArray();
 
-            $politica->delete(); // SoftDelete
+            $politica->delete($politica->id); // SoftDelete
 
             PoliticaGastoAuditoria::create([
                 'politica_id'   => $politica->id,
+                'version_id'    => null,
                 'evento'        => 'deleted',
                 'actor_id'      => $user->id,
+                'origen'        => 'manual',
                 'datos_antes'   => $antes,
                 'datos_despues' => null,
             ]);
+
+            $this->flushCache();
 
             return true;
         });
     }
 
-        public function toggleEstatus(PoliticaGasto $politica, $user): PoliticaGasto
+    // -------------------------------------------------------------------------
+    // Toggle estatus — CORREGIDO: evento 'status_changed' (no 'deleted')
+    // -------------------------------------------------------------------------
+
+    public function toggleEstatus(PoliticaGasto $politica, $user): PoliticaGasto
     {
         $antes = $politica->toArray();
+
         $politica->update(['estatus' => !$politica->estatus]);
 
         PoliticaGastoAuditoria::create([
             'politica_id'   => $politica->id,
-            'evento'        => 'deleted',
+            'version_id'    => null,
+            'evento'        => 'status_changed', // ← corregido (antes decía 'deleted')
             'actor_id'      => $user->id,
+            'origen'        => 'manual',
             'datos_antes'   => $antes,
-            'datos_despues' => null,
+            'datos_despues' => ['estatus' => $politica->estatus],
         ]);
 
         $this->flushCache();
+
         return $politica->fresh();
     }
-
 
     // -------------------------------------------------------------------------
     // Consultas para ValidadorGastosService
     // -------------------------------------------------------------------------
 
     /**
-     * Política vigente para un rol/concepto/fecha — validación individual.
+     * Versión aprobada y vigente para un rol/concepto en una fecha — validación individual.
+     * Retorna la versión más reciente que aplique.
      */
     public function getPoliticaAplicable(int $roleId, int $conceptoId, $fecha): ?PoliticaGastoVersion
     {
-        return PoliticaGastoVersion::where('role_id',    $roleId)
+        return PoliticaGastoVersion::where('role_id', $roleId)
             ->where('concepto_id', $conceptoId)
             ->where('estatus',     'Aprobada')
             ->where(fn($q) =>
@@ -303,6 +301,8 @@ class PoliticaGastoService
     /**
      * Políticas para múltiples conceptos en una sola query — evita N+1
      * en ValidadorGastosService::validarSolicitud().
+     *
+     * Retorna Collection indexada por concepto_id para lookup O(1).
      */
     public function getPoliticasBulk(int $roleId, array $conceptoIds, $fecha): Collection
     {
@@ -319,7 +319,49 @@ class PoliticaGastoService
             )
             ->latest()
             ->get()
-            ->keyBy('concepto_id'); // O(1) lookup en el loop del validador
+            ->keyBy('concepto_id');
+    }
+
+    /**
+     * Determina el nivel de documento requerido para un monto dado.
+     * Delega al modelo para mantener la lógica centralizada.
+     *
+     * @return 'ninguno'|'comprobante'|'cfdi'
+     */
+    public function nivelDocumentoRequerido(PoliticaGasto $politica, float $monto): string
+    {
+        return $politica->evaluarComprobacion($monto);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers privados
+    // -------------------------------------------------------------------------
+
+    /**
+     * Construye el array de campos comunes para create y update.
+     * Cuando $politica no es null, usa sus valores actuales como fallback.
+     */
+    private function camposDesdeData(array $data, ?PoliticaGasto $politica = null): array
+    {
+        return [
+            'role_id'           => $data['role_id'],
+            'concepto_id'       => $data['concepto_id'],
+            'tipo_limite'       => $data['tipo_limite'],
+
+            'monto_max'         => $data['monto_max'],
+
+            // Tramos documentales — null = tramo no configurado para ese nivel
+            'monto_libre'       => $data['monto_libre']       ?? ($politica?->monto_libre       ?? null),
+            'monto_comprobante' => $data['monto_comprobante'] ?? ($politica?->monto_comprobante ?? null),
+            'monto_factura'     => $data['monto_factura']     ?? ($politica?->monto_factura     ?? null),
+
+            'valida_sat'        => $data['valida_sat']        ?? ($politica?->valida_sat        ?? false),
+            'acumulable_dia'    => $data['acumulable_dia']    ?? ($politica?->acumulable_dia    ?? true),
+            'permite_excepcion' => $data['permite_excepcion'] ?? ($politica?->permite_excepcion ?? false),
+
+            'vigencia_desde'    => $data['vigencia_desde']    ?? null,
+            'vigencia_hasta'    => $data['vigencia_hasta']    ?? null,
+        ];
     }
 
     private function flushCache(): void

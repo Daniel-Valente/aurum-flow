@@ -1,89 +1,178 @@
 <flux:modal name="empleado-detail" flyout variant="floating" class="md:w-lg">
     @if ($empleado)
-    <div class="space-y-6">
-        <div class="flex items-start gap-4">
-            <div class="flex size-14 items-center justify-center rounded-full">
-                <div class="p-0 text-sm font-normal">
-                    <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                        <flux:avatar
-                            :name="$empleado->nombre_completo"
-                            :initials="$empleado->user?->initials()"
-                        />
+    <div class="flex flex-col gap-6">
 
-                        <div class="grid flex-1 text-start text-sm leading-tight">
-                            <flux:heading class="truncate">{{ $empleado->nombre_completo }}</flux:heading>
-                            <flux:text class="truncate">{{ $empleado->user?->email }}</flux:text>
-                        </div>
-                    </div>
+        {{-- ── Header ─────────────────────────────────────────────────── --}}
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <flux:avatar
+                    :name="$empleado->nombre_completo"
+                    :initials="$empleado->user?->initials()"
+                    size="lg"
+                />
+
+                <div class="flex flex-col gap-0.5">
+                    <flux:heading size="lg" class="leading-tight">
+                        {{ $empleado->nombre_completo }}
+                    </flux:heading>
+                    <span class="text-xs text-zinc-400">
+                        {{ $empleado->user?->email }}
+                    </span>
                 </div>
             </div>
-        </div>
-        <div class="flex items-start gap-4 text-start text-xs leading-tight justify-between">
-            <flux:text class="truncate font-light text-xs">{{ $empleado->puesto }} - {{ $empleado->area?->nombre }}</flux:text>
+
             @if ($empleado->estatus)
-            <flux:badge size="sm" color="green" inset="top bottom">Activo</flux:badge>
+                <flux:badge size="sm" color="green">Activo</flux:badge>
             @else
-            <flux:badge size="sm" color="red" inset="top bottom">Inactivo</flux:badge>
+                <flux:badge size="sm" color="red">Inactivo</flux:badge>
             @endif
         </div>
-        <div class="flex items-start gap-4 text-start text-xs leading-tight justify-between">
-            <x-components.detail-item icon="building-office" label="Centro de Costo">
-                {{ $empleado->centroCosto?->nombre ?? '-' }}
-            </x-components.detail-item>
-            <flux:badge size="sm" color="blue" inset="top bottom">
-                {{ $empleado->user?->roles->first()->name ?? 'Sin rol' }}
-            </flux:badge>
+
+        {{-- ── Contexto laboral ─────────────────────────────────────── --}}
+        <div class="grid grid-cols-2 gap-3">
+
+            <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                <span class="text-[10px] uppercase text-zinc-400">Puesto</span>
+                <span class="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                    {{ $empleado->puesto ?? '—' }}
+                </span>
+            </div>
+
+            <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                <span class="text-[10px] uppercase text-zinc-400">Área</span>
+                <span class="text-sm text-zinc-700 dark:text-zinc-200">
+                    {{ $empleado->area?->nombre ?? '—' }}
+                </span>
+            </div>
+
+            <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                <span class="text-[10px] uppercase text-zinc-400">Centro de costo</span>
+                <span class="text-sm text-zinc-700 dark:text-zinc-200">
+                    {{ $empleado->centroCosto?->nombre ?? '—' }}
+                </span>
+            </div>
+
+            <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                <span class="text-[10px] uppercase text-zinc-400">Rol</span>
+                <flux:badge size="sm" color="blue">
+                    {{ $empleado->user?->roles->first()->name ?? 'Sin rol' }}
+                </flux:badge>
+            </div>
+
         </div>
 
-        <div class="space-y-3">
-            <flux:separator text="Información Personal" />
+        <flux:separator />
 
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="phone" label="Teléfono">
-                    {{ $empleado->telefono ?? '-' }}
-                </x-components.detail-item>
-                <x-components.detail-item icon="calendar" label="Fecha de ingreso">
-                    {{ $empleado->fecha_ingreso?->isoFormat('D [de] MMMM [de] YYYY') ?? '-' }}
-                </x-components.detail-item>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="identification" label="RFC">
-                    {{ $empleado->rfc ?? '-' }}
-                </x-components.detail-item>
-                <x-components.detail-item icon="identification" label="CURP">
-                    {{ $empleado->curp ?? '-' }}
-                </x-components.detail-item>
-            </div>
+        {{-- ── Información personal ─────────────────────────────────── --}}
+        <div>
+            <flux:subheading class="mb-3 text-xs uppercase tracking-widest text-zinc-400">
+                Información personal
+            </flux:subheading>
 
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="identification" label="NSS">
-                    {{ $empleado->nss ?? '-' }}
-                </x-components.detail-item>
-            </div>
-        </div>
+            <div class="grid grid-cols-2 gap-3">
 
-        <div class="space-y-3">
-            <flux:separator text="Información Financiera" />
-
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="hashtag" label="Número de nómina">
-                    <span class="font-mono">{{ $empleado->numero_nomina?? '-' }}</span>
-                </x-components.detail-item>
-                <x-components.detail-item icon="building-library" label="Banco">
-                    {{ $empleado->banco_nomina ?? '-' }}
-                </x-components.detail-item>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-3 sm:justify-between items-start">
-                <x-components.detail-item icon="credit-card" label="Cuenta">
-                    <span class="font-mono">
-                        {{ $empleado->cuenta_nomina ?? '-' }}
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Teléfono</span>
+                    <span class="text-sm text-zinc-700 dark:text-zinc-200">
+                        {{ $empleado->telefono ?? '—' }}
                     </span>
-                </x-components.detail-item>
-                <x-components.detail-item icon="identification" label="CLABE">
-                    <span class="font-mono">{{ $empleado->clabe_nomina ?? '-' }}</span>
-                </x-components.detail-item>
+                </div>
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Fecha ingreso</span>
+                    <span class="text-sm font-mono text-zinc-700 dark:text-zinc-200">
+                        {{ $empleado->fecha_ingreso?->format('d/m/Y') ?? '—' }}
+                    </span>
+                </div>
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">RFC</span>
+                    <span class="text-sm font-mono text-zinc-700 dark:text-zinc-200">
+                        {{ $empleado->rfc ?? '—' }}
+                    </span>
+                </div>
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">CURP</span>
+                    <span class="text-sm font-mono text-zinc-700 dark:text-zinc-200">
+                        {{ $empleado->curp ?? '—' }}
+                    </span>
+                </div>
+
+                <div class="col-span-2 flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">NSS</span>
+                    <span class="text-sm font-mono text-zinc-700 dark:text-zinc-200">
+                        {{ $empleado->nss ?? '—' }}
+                    </span>
+                </div>
+
             </div>
         </div>
+
+        {{-- ── Información financiera ───────────────────────────────── --}}
+        <div>
+            <flux:subheading class="mb-3 text-xs uppercase tracking-widest text-zinc-400">
+                Información financiera
+            </flux:subheading>
+
+            <div class="grid grid-cols-2 gap-3">
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Nómina</span>
+                    <span class="text-sm font-mono">
+                        {{ $empleado->numero_nomina ?? '—' }}
+                    </span>
+                </div>
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Banco</span>
+                    <span class="text-sm">
+                        {{ $empleado->banco_nomina ?? '—' }}
+                    </span>
+                </div>
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">Cuenta</span>
+                    <span class="text-sm font-mono">
+                        {{ $empleado->cuenta_nomina ?? '—' }}
+                    </span>
+                </div>
+
+                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-[10px] uppercase text-zinc-400">CLABE</span>
+                    <span class="text-sm font-mono">
+                        {{ $empleado->clabe_nomina ?? '—' }}
+                    </span>
+                </div>
+
+            </div>
+
+            {{-- ── Tarjeta corporativa ───────────────────────────── --}}
+            <div class="mt-4 rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 space-y-3">
+
+                <div class="flex items-center justify-between">
+                    <span class="text-xs uppercase text-zinc-400">Tarjeta corporativa</span>
+
+                    @if ($empleado->tarjeta_credito_corporativa_asignada)
+                        <flux:badge size="sm" color="emerald">Asignada</flux:badge>
+                    @else
+                        <flux:badge size="sm" color="zinc">No asignada</flux:badge>
+                    @endif
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <span class="text-[10px] uppercase text-zinc-400">Límite de crédito</span>
+                    <span class="text-sm font-mono text-zinc-700 dark:text-zinc-200">
+                        {{ $empleado->limite_credito_tarjeta
+                            ? Number::currency($empleado->limite_credito_tarjeta, in: 'MXN')
+                            : '—' }}
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
     @endif
 </flux:modal>

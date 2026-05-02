@@ -26,6 +26,8 @@ class Empleado extends Model
         'fecha_ingreso',
         'telefono',
         'estatus',
+        'tarjeta_credito_corporativa_asignada',
+        'limite_credito_tarjeta'
     ];
 
     protected $casts = [
