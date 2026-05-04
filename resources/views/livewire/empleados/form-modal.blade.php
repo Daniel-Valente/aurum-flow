@@ -90,7 +90,7 @@
 
                         <flux:field>
                             <flux:label badge="Requerido">Área / Departamento</flux:label>
-                            <flux:select variant="listbox" wire:model="area_id">
+                            <flux:select variant="listbox" wire:model="area_id" :disabled="$esGerente">
                                 @foreach ($areas as $area)
                                     <flux:select.option value="{{ $area['id'] }}">{{ $area['nombre'] }}</flux:select.option>
                                 @endforeach
@@ -112,7 +112,7 @@
 
                         <flux:field>
                             <flux:label badge="Requerido">Centro de costo</flux:label>
-                            <flux:select variant="listbox" wire:model="centro_costo_id" required>
+                            <flux:select variant="listbox" wire:model="centro_costo_id" :disabled="$esGerente" required>
                                 @foreach ($centrosCostos as $centro)
                                     <flux:select.option value="{{ $centro['id'] }}">{{ $centro['nombre'] }}</flux:select.option>
                                 @endforeach
@@ -180,7 +180,7 @@
                         <div class="p-4 space-y-4">
 
                             <flux:field variant="inline">
-                                <flux:checkbox wire:model="tarjeta_credito_corporativa_asignada" />
+                                <flux:checkbox wire:model.live="tarjeta_credito_corporativa_asignada" />
                                 <div>
                                     <flux:label class="text-sm font-medium">
                                         Tarjeta asignada

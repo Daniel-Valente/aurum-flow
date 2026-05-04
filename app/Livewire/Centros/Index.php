@@ -16,9 +16,8 @@ class Index extends Component
     public string $estatus = '';
 
     public ?int $editingId = null;
-    public string $codigo = '';
     public string $nombre = '';
-    public bool $estatusForm = true;
+    public string $cuenta_contable = '';
 
     public ?int $deletingId = null;
     public string $deletingNombre = '';
@@ -50,10 +49,9 @@ class Index extends Component
     {
         $centroCosto = CentroCosto::findOrFail($id);
 
-        $this->editingId = $centroCosto->id;
-        $this->codigo = $centroCosto->codigo;
-        $this->nombre = $centroCosto->nombre;
-        $this->estatusForm = (bool) $centroCosto->estatus;
+        $this->editingId       = $centroCosto->id;
+        $this->nombre          = $centroCosto->nombre;
+        $this->cuenta_contable = $centroCosto->cuenta_contable;
 
         $this->resetValidation();
         $this->modal('centro-costo-form')->show();
@@ -62,24 +60,20 @@ class Index extends Component
     public function save(CentroCostoService $service): void
     {
         $this->validate([
-            'codigo' => [
-                'required', 'string', 'max:20',
-                Rule::unique('centros_costos', 'codigo')->ignore($this->editingId),
-            ],
             'nombre' => 'required|string|max:100',
-            'estatusForm' => 'boolean'
+            'cuenta_contable' => 'required|string|max:20',
         ], messages: [
-            'codigo.required'   => 'El código es obligatorio.',
-            'codigo.max'        => 'El código no puede tener más de :max caracteres.',
-            'codigo.unique'     => 'Este código ya está registrado.',
             'nombre.required'   => 'El nombre es obligatorio.',
             'nombre.max'        => 'El nombre no puede tener más de :max caracteres.',
+
+            'cuenta_contable.required'   => 'La cuenta contable es obligatoria.',
+            'cuenta_contable.max'   => 'La cuenta contable no puede tener más de :max caracteres.',
         ]);
 
         $data = [
-            'codigo' => strtoupper(trim($this->codigo)),
             'nombre' => trim($this->nombre),
-            'estatus' => $this->estatusForm
+            'cuenta_contable' => $this->cuenta_contable,
+            'estatus' => true
         ];
 
         if ($this->editingId) {
@@ -119,8 +113,7 @@ class Index extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['editingId', 'codigo', 'nombre']);
-        $this->estatusForm = true;
+        $this->reset(['editingId', 'nombre', 'cuenta_contable']);
         $this->resetValidation();
     }
 

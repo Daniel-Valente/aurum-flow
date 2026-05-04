@@ -124,13 +124,6 @@ class FormModal extends Component
     public function save(ProyectoService $service): void
     {
         $this->validate([
-            'codigo' => [
-                'required',
-                'string',
-                'max:20',
-                Rule::unique('proyectos', 'codigo')->ignore($this->editingId)
-            ],
-
             'tipo' => 'required|in:Proyecto,Ruta,Zona',
 
             'nombre' => 'required|string|max:255',
@@ -155,12 +148,6 @@ class FormModal extends Component
             'pais' => 'nullable|string|max:100',
 
         ], messages: [
-
-            'codigo.required' => 'El código es obligatorio.',
-            'codigo.string' => 'El código debe ser texto.',
-            'codigo.max' => 'El código no puede exceder 20 caracteres.',
-            'codigo.unique' => 'Este código ya está en uso.',
-
             'tipo.required' => 'El tipo es obligatorio.',
             'tipo.in' => 'El tipo seleccionado no es válido.',
 
@@ -206,7 +193,6 @@ class FormModal extends Component
         ]);
 
         $data = [
-            'codigo' => $this->codigo,
             'nombre' => $this->nombre,
             'cliente' => $this->cliente,
             'tipo' => $this->tipo,

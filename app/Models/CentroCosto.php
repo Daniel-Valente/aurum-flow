@@ -14,6 +14,7 @@ class CentroCosto extends Model
         protected $fillable = [
         'nombre',
         'codigo',
+        'cuenta_contable',
         'estatus'
     ];
 

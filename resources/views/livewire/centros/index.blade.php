@@ -56,6 +56,7 @@
             <flux:table.columns>
                 <flux:table.column class="pl-4">Código</flux:table.column>
                 <flux:table.column>Nombre</flux:table.column>
+                <flux:table.column>Cuenta Contable</flux:table.column>
                 <flux:table.column>Estatus</flux:table.column>
                 <flux:table.column class="flex justify-end">Acciones</flux:table.column>
             </flux:table.columns>
@@ -70,6 +71,10 @@
 
                         <flux:table.cell variant="strong">
                             {{ $centroCosto->nombre }}
+                        </flux:table.cell>
+
+                        <flux:table.cell>
+                            {{ $centroCosto->cuenta_contable }}
                         </flux:table.cell>
 
                         <flux:table.cell>
@@ -143,18 +148,6 @@
             <div class="space-y-4">
                 <flux:field>
                     <flux:label badge="Requerido">
-                        Código
-                    </flux:label>
-                    <flux:input
-                        wire:model="codigo"
-                        placeholder="Ej. CC-001"
-                        class="uppercase"
-                    />
-                    <flux:error name="codigo" />
-                </flux:field>
-
-                <flux:field>
-                    <flux:label badge="Requerido">
                         Nombre
                     </flux:label>
                     <flux:input
@@ -162,6 +155,17 @@
                         placeholder="Ej. Oficina Central"
                     />
                     <flux:error name="nombre" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label badge="Requerido">
+                        Cuenta contable
+                    </flux:label>
+                    <flux:input
+                        wire:model="cuenta_contable"
+                        placeholder="Ej. 102-01-001"
+                    />
+                    <flux:error name="cuenta_contable" />
                 </flux:field>
             </div>
 

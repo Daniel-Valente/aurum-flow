@@ -46,10 +46,9 @@ class AuditoriaService
             'datos_antes'   => isset($data['antes'])   ? json_encode($data['antes'])   : null,
             'datos_despues' => isset($data['despues']) ? json_encode($data['despues']) : null,
             'created_at'    => $now,
-            'updated_at'    => $now,
         ], $rows);
 
-        DB::table('gasto_auditorias')->insert($insert);
+        GastoAuditoria::insert($insert);
     }
 }
 

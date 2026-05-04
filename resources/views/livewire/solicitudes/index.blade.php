@@ -1,6 +1,5 @@
 <div class="space-y-6">
 
-    {{-- ── Header ────────────────────────────────────────────────────────── --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
             <flux:heading size="xl">Mis Solicitudes</flux:heading>
@@ -14,7 +13,6 @@
         @endcan
     </div>
 
-    {{-- ── KPIs ────────────────────────────────────────────────────────────── --}}
     <div class="grid gap-4 md:grid-cols-4">
 
         <div class="flex items-center justify-between rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4">
@@ -71,7 +69,6 @@
 
     </div>
 
-    {{-- ── Filtros ──────────────────────────────────────────────────────────── --}}
     <flux:card>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
 
@@ -124,7 +121,6 @@
         </div>
     </flux:card>
 
-    {{-- ── Tabla ────────────────────────────────────────────────────────────── --}}
     <flux:card class="p-0">
 
         <div class="flex flex-col gap-1 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
@@ -334,7 +330,6 @@
 
     </flux:card>
 
-    {{-- ── Modales ──────────────────────────────────────────────────────────── --}}
     @livewire('solicitudes.form-modal')
 
     <flux:modal name="solicitud-creada" class="w-full max-w-md">
@@ -373,14 +368,26 @@
                 </div>
                 <div>
                     <flux:heading size="lg">Cancelar solicitud</flux:heading>
-                    <flux:subheading class="mt-1">
-                        ¿Seguro que deseas cancelar la solicitud
-                        <span class="font-semibold text-zinc-900 dark:text-zinc-100">
-                            {{ $deletingNombre }}
-                        </span>?
-                        Esta acción puede revertirse reabriendo la solicitud.
-                    </flux:subheading>
                 </div>
+            </div>
+
+            <div class="mt-2">
+                <flux:subheading class="mt-1">
+                    ¿Seguro que deseas cancelar la solicitud
+                    <span class="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {{ $deletingNombre }}
+                    </span>?
+                    Esta acción puede revertirse reabriendo la solicitud.
+                </flux:subheading>
+            </div>
+
+            <div class="mt-2">
+                <flux:field>
+                    <flux:label badge="Requerido">Motivo de cancelación</flux:label>
+                    <flux:textarea resize="none" wire:model="motivo_cancelacion" />
+
+                    <flux:error name="motivo_cancelacion" />
+                </flux:field>
             </div>
 
             <div class="flex justify-end gap-3">

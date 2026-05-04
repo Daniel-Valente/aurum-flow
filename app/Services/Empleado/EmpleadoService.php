@@ -51,10 +51,7 @@ class EmpleadoService
                 'centros_costos.nombre as centro_costo_nombre',
             )
             // Restricción por centro de costo para gerente
-            ->when(
-                $user->hasRole('gerente') && $empleado?->centro_costo_id,
-                fn($q) => $q->where('empleados.centro_costo_id', $empleado->centro_costo_id)
-            )
+            ->when($user->hasRole('manager'), fn($q) => $this->aplicarScopeManager($q, $user))
             // Búsqueda — ILIKE usa índice GIN trgm en PostgreSQL
             ->when($search, fn($q) =>
                 $q->where(fn($q2) =>
@@ -179,5 +176,32 @@ class EmpleadoService
 
             return true;
         });
+    }
+
+    private function aplicarScopeManager($query, $user): void
+    {
+        $empleado = $user->empleado;
+
+        if (!$empleado) {
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        // ¿Hay otros managers en el mismo área?
+        $otrosManagers = \App\Models\Empleado::whereHas('user.roles', fn($q) =>
+            $q->where('name', 'manager')
+        )
+        ->where('area_id', $empleado->area_id)
+        ->where('id', '!=', $empleado->id)
+        ->exists();
+
+        if ($otrosManagers) {
+            // Varios managers en el área → scope = área + centro de costo propio
+            $query->where('empleados.area_id', $empleado->area_id)
+                ->where('empleados.centro_costo_id', $empleado->centro_costo_id);
+        } else {
+            // Único manager del área → ve toda el área sin filtro de CC
+            $query->where('empleados.area_id', $empleado->area_id);
+        }
     }
 }

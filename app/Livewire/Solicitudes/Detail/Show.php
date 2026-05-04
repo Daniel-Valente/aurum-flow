@@ -7,8 +7,11 @@ use App\Models\SolicitudAuditoria;
 use App\Models\SolicitudDetalle;
 use App\Services\Concepto\ConceptoService;
 use App\Services\Gasto\PoliticaGastoService;
+use App\Services\Solicitudes\SolicitudAprobacionService;
 use App\Services\Solicitudes\SolicitudService;
 use Flux;
+use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Show extends Component
@@ -21,13 +24,19 @@ class Show extends Component
 
     public array $conceptos = [];
     public array $detalles = [];
-    public array $aprobadores = [];
+    public array $aprobadores        = [];
+    public int   $aprobacionesMinimo = 2;
+    public int   $aprobacionesTotal  = 0;
+    public int   $aprobacionesFaltan = 0;
 
     public int $kpi_ok           = 0;
     public int $kpi_limite       = 0;
     public int $kpi_excedido     = 0;
     public int $kpi_sin_politica = 0;
     public float $total          = 0.00;
+
+    public array $justificaciones          = [];
+    public bool  $mostrandoJustificaciones = false;
 
     public function mount(Solicitud $solicitud, ConceptoService $conceptoService): void
     {
@@ -98,6 +107,14 @@ class Show extends Component
 
     public function enviar(SolicitudService $service): void
     {
+        $excedidosSinJustificar = collect($this->detalles)
+            ->filter(fn($d) => $d['semaforo'] === 'excedido' && empty($d['justificacion_exceso']));
+
+        if ($excedidosSinJustificar->isNotEmpty()) {
+            $this->dispatch('abrirJustificaciones');
+            return;
+        }
+
         try {
             $service->enviar($this->solicitud, auth()->user());
             $this->solicitud = $this->solicitud->fresh();
@@ -105,8 +122,59 @@ class Show extends Component
             $this->calcularStep();
             $this->dispatch('solicitudEnviada', message: 'Solicitud enviada a revisión.');
         } catch(\App\Exceptions\Solicitudes\SolicitudBloqueadaException $e) {
+            $this->dispatch('solicitudError', message: $e->getMessage());
+        } catch(\Exception $e) {
+            $this->dispatch('solicitudError', message: $e->getMessage());
+        }
+    }
 
-            Flux::toast(variant: 'danger', text: $e->getMessage(), heading: 'Error con la solicitud');
+    #[On('solicitudEnviada')]
+    public function onAutorizacionResuelta(string $message): void
+    {
+        Flux::toast(variant: 'success', text: $message);
+    }
+
+    #[On('solicitudError')]
+    public function onAutorizacionError(string $message): void
+    {
+        Flux::toast(variant: 'danger', text: $message);
+    }
+
+    #[On('abrirJustificaciones')]
+    public function abrirJustificaciones(): void
+    {
+        $this->justificaciones = collect($this->detalles)
+            ->filter(fn($d) => $d['semaforo'] === 'excedido')
+            ->mapWithKeys(fn($d) => [$d['id'] => $d['justificacion_exceso'] ?? ''])
+            ->toArray();
+
+        $this->mostrandoJustificaciones = true;
+    }
+
+    public function guardarJustificacionesYEnviar(SolicitudService $service): void
+    {
+        $rules = collect($this->justificaciones)
+            ->mapWithKeys(fn($v, $id) => ["justificaciones.{$id}" => 'required|string|min:10|max:500'])
+            ->toArray();
+
+        $this->validate($rules, [
+            'justificaciones.*.required' => 'La justificación es obligatoria.',
+            'justificaciones.*.min'      => 'Mínimo 10 caracteres.',
+        ]);
+
+        try {
+            $service->enviarJustificaciones($this->solicitud, $this->justificaciones);
+
+            $this->mostrandoJustificaciones = false;
+            $this->solicitud = $this->solicitud->fresh(['detalles.concepto']);
+            $this->sincronizarDetalles();
+
+            $service->enviar($this->solicitud, auth()->user());
+            $this->solicitud = $this->solicitud->fresh();
+            $this->calcularStep();
+
+            $this->dispatch('solicitudEnviada', message: 'Solicitud enviada con justificaciones.');
+        } catch(\App\Exceptions\Solicitudes\SolicitudBloqueadaException $e) {
             $this->dispatch('solicitudError', message: $e->getMessage());
         } catch(\Exception $e) {
             $this->dispatch('solicitudError', message: $e->getMessage());
@@ -168,31 +236,13 @@ class Show extends Component
 
     private function cargarAprobadores(): void
     {
-        $auditorias = SolicitudAuditoria::where('solicitud_id', $this->solicitud->id)
-            ->whereIn('evento', ['aprobado', 'rechazado'])
-            ->with('actor:id,name')
-            ->orderBy('created_at')
-            ->get();
+        $resultado = app(SolicitudAprobacionService::class)
+            ->aprobadoresDe($this->solicitud);
 
-        $rolesAprobadores = [
-            ['rol' => 'Admin',    'nombre' => 'Administrador'],
-            ['rol' => 'Gerente',  'nombre' => 'Gerente de área'],
-            ['rol' => 'Finanzas', 'nombre' => 'Finanzas'],
-        ];
-
-        $this->aprobadores = collect($rolesAprobadores)->map(function ($rolDef) use ($auditorias) {
-            $auditoria = $auditorias->first(function ($a) use ($rolDef) {
-                return $a->actor?->roles?->pluck('name')->contains($rolDef['rol']);
-            });
-
-            return [
-                'rol'      => $rolDef['rol'],
-                'nombre'   => $auditoria?->actor?->name ?? $rolDef['nombre'],
-                'aprobado' => $auditoria?->evento === 'aprobado',
-                'rechazado'=> $auditoria?->evento === 'rechazado',
-                'fecha'    => $auditoria?->created_at?->format('d/m/Y H:i'),
-            ];
-        })->toArray();
+        $this->aprobadores        = $resultado['aprobadores'];
+        $this->aprobacionesMinimo = $resultado['minimo'];
+        $this->aprobacionesTotal  = $resultado['aprobadas'];
+        $this->aprobacionesFaltan = $resultado['faltan'];
     }
 
     private function calcularKpis(): void

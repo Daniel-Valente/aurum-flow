@@ -15,10 +15,11 @@ class Index extends Component
 
     public string $search       = '';
     public string $estatus      = '';
-    public string $cumplimiento = '';  // ok | con_excepcion | rechazado | sin_captura
+    public string $cumplimiento = '';
 
     public ?int   $deletingId     = null;
     public string $deletingNombre = '';
+    public string $motivo_cancelacion = '';
 
     public ?int  $createdId    = null;
     public string $createdFolio = '';
@@ -71,6 +72,8 @@ class Index extends Component
         $this->deletingId     = $id;
         $this->deletingNombre = $solicitud->folio;
 
+        $this->resetValidation();
+
         $this->modal('solicitud-delete')->show();
     }
 
@@ -80,12 +83,21 @@ class Index extends Component
             return;
         }
 
+        $this->validate([
+            'motivo_cancelacion' => 'required|string|min:10|max:500'
+        ], messages: [
+            'motivo_cancelacion.required' => 'El motivo de cancelación es obligatorio',
+            'motivo_cancelacion.min'      => 'El motivo debe tener al menos 10 caracteres',
+            'motivo_cancelacion.max'      => 'El motivo de cancelación no puede exceder 500 caracteres.'
+        ]);
+
         try {
             $solicitud = Solicitud::findOrFail($this->deletingId);
-            $service->cancelar($solicitud, auth()->user());
+
+            $service->cancelar($solicitud, auth()->user(), $this->motivo_cancelacion);
 
             $this->modal('solicitud-delete')->close();
-            $this->reset(['deletingId', 'deletingNombre']);
+            $this->reset(['deletingId', 'deletingNombre', 'motivo_cancelacion']);
 
             Flux::toast(variant: 'success', text: 'Solicitud cancelada correctamente.');
         } catch (\Exception $e) {

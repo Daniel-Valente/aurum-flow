@@ -10,6 +10,7 @@ class SolicitudDetalle extends Model
         'solicitud_id',
         'concepto_id',
         'monto_estimado',
+        'justificacion_exceso',
     ];
 
     protected $casts = [

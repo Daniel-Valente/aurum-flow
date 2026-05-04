@@ -159,7 +159,11 @@
                                         <flux:table.cell>{{ $detalle['concepto_nombre'] }}</flux:table.cell>
                                         <flux:table.cell>{{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}</flux:table.cell>
                                         <flux:table.cell>{{ $detalle['tipo_aplicacion'] }}</flux:table.cell>
-                                        <flux:table.cell>—</flux:table.cell>{{-- límite de política (opcional) --}}
+                                        <flux:table.cell>
+                                            <span class="font-mono text-sm text-zinc-500">
+                                                {{ $detalle['limite_politica'] ? Number::currency($detalle['limite_politica'], in: 'MXN') : '—' }}
+                                            </span>
+                                        </flux:table.cell>{{-- límite de política (opcional) --}}
                                         <flux:table.cell>
                                             @php $color = match($detalle['semaforo']) {
                                                 'ok'           => 'green',
@@ -230,8 +234,11 @@
                             <flux:icon.clock class="size-4 text-amber-500 shrink-0" />
                             <span class="text-sm text-amber-700 dark:text-amber-400">
                                 Tu solicitud está en revisión. Se requieren
-                                <span class="font-semibold">2 de 3 aprobaciones</span>
+                                <span class="font-semibold">{{ $aprobacionesTotal }} / {{ $aprobacionesMinimo }} aprobaciones</span>
                                 para continuar.
+                                @if ($aprobacionesFaltan > 0)
+                                    <span class="text-xs opacity-75">· Faltan {{ $aprobacionesFaltan }}</span>
+                                @endif
                             </span>
                         </div>
 
@@ -383,7 +390,7 @@
 
                     <flux:table>
                         <flux:table.columns>
-                            <flux:table.column class="pl-4">Concepto</flux:table.column>
+                            <flux:table.column class="pl-4"><span class="pl-4">Concepto</span></flux:table.column>
                             <flux:table.column>Tipo</flux:table.column>
                             <flux:table.column>Monto estimado</flux:table.column>
                             <flux:table.column>Límite política</flux:table.column>
@@ -421,7 +428,7 @@
                                 @endphp
                                 <flux:table.row :key="$detalle['id']">
                                     <flux:table.cell class="pl-4">
-                                        <div class="flex flex-col">
+                                        <div class="pl-4 flex flex-col">
                                             <span class="font-medium text-sm">{{ $detalle['concepto_nombre'] }}</span>
                                         </div>
                                     </flux:table.cell>
@@ -479,5 +486,65 @@
         @endif
 
     </div>
+
+    <flux:modal name="justificacion-excesos" wire:model="mostrandoJustificaciones">
+        <div class="flex flex-col gap-5">
+
+            <div>
+                <flux:heading size="lg">Justificación requerida</flux:heading>
+                <flux:subheading>
+                    Los siguientes conceptos exceden el límite de política.
+                    Explica el motivo antes de enviar.
+                </flux:subheading>
+            </div>
+
+            @foreach ($detalles as $detalle)
+                @if ($detalle['semaforo'] === 'excedido')
+                    <div class="rounded-lg border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/10 p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-sm">{{ $detalle['concepto_nombre'] }}</span>
+                            <div class="flex items-center gap-2 text-xs font-mono">
+                                <span class="text-zinc-400 line-through">
+                                    {{ Number::currency($detalle['limite_politica'], in: 'MXN') }}
+                                </span>
+                                <span class="text-rose-600 font-bold">
+                                    {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <flux:field>
+                            <flux:label>Justificación del exceso</flux:label>
+                            <flux:textarea
+                                wire:model="justificaciones.{{ $detalle['id'] }}"
+                                placeholder="Ej: El hotel recomendado estaba lleno, se ocupó la opción más cercana disponible..."
+                                resize="none"
+                                rows="2"
+                            />
+                            <flux:error name="justificaciones.{{ $detalle['id'] }}" />
+                        </flux:field>
+                    </div>
+                @endif
+            @endforeach
+
+            <div class="flex justify-between gap-3">
+                <flux:button variant="ghost" wire:click="$set('mostrandoJustificaciones', false)">
+                    Cancelar
+                </flux:button>
+                <flux:button
+                    variant="primary"
+                    color="green"
+                    icon="paper-airplane"
+                    wire:click="guardarJustificacionesYEnviar"
+                    wire:loading.attr="disabled"
+                    wire:target="guardarJustificacionesYEnviar"
+                >
+                    <span wire:loading.remove wire:target="guardarJustificacionesYEnviar">Enviar solicitud</span>
+                    <span wire:loading wire:target="guardarJustificacionesYEnviar">Enviando…</span>
+                </flux:button>
+            </div>
+
+        </div>
+    </flux:modal>
 
 </div>

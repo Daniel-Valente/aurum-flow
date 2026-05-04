@@ -161,7 +161,22 @@
                             </div>
                         </flux:table.cell>
 
-                        <flux:table.cell></flux:table.cell>
+                        <flux:table.cell>
+                            @php
+                                $estado = $politica->estado_vigencia;
+
+                                $color = match($estado) {
+                                    'Vigente' => 'green',
+                                    'Futura' => 'blue',
+                                    'Expirada' => 'red',
+                                    'Sin vigencia' => 'gray',
+                                };
+                            @endphp
+
+                            <flux:badge color="{{ $color }}">
+                                {{ $estado }}
+                            </flux:badge>
+                        </flux:table.cell>
 
                         <flux:table.cell>
                             @if ($politica->estatus)

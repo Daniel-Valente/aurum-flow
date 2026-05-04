@@ -60,4 +60,9 @@ class User extends Authenticatable
     {
         return $this->roles->pluck('name')->contains($role);
     }
+
+    public function puedeHacerComprobacionManual(): bool
+    {
+        return $this->empleado?->tarjeta_corporativa_asignada === true;
+    }
 }

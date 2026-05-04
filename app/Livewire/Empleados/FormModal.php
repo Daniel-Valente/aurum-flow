@@ -14,6 +14,7 @@ use Spatie\Permission\Models\Role;
 class FormModal extends Component
 {
     public ?int $editingId = null;
+    public bool $esGerente = false;
 
     public array $roles = [];
     public array $centrosCostos = [];
@@ -69,6 +70,9 @@ class FormModal extends Component
 
             if ($authUser->hasRole('gerente') && $authEmpleado?->centro_costo_id) {
                 $this->centro_costo_id = $authEmpleado->centro_costo_id;
+                $this->area_id         = $authEmpleado->area_id;
+
+                $this->esGerente = true;
             }
         }
 

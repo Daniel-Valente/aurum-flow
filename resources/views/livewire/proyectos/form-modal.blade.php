@@ -32,12 +32,12 @@
                                 <flux:label badge="Requerido">Código</flux:label>
                                 <flux:input
                                     wire:model="codigo"
-                                    placeholder="Ej. PRY-0001"
+                                    placeholder="Ej. PRY-2026-0001"
                                     required
-                                    :disabled="$editingId !== null"
+                                    :disabled="true"
                                 />
                                 <flux:description class="text-xs">
-                                    Identificador único del proyecto.
+                                    Identificador único del proyecto, este identificador se genera en automático.
                                 </flux:description>
                                 <flux:error name="codigo" />
                             </flux:field>

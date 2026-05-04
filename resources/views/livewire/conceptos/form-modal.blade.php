@@ -22,9 +22,9 @@
                         placeholder="Ej. CON-ALIM"
                         class="uppercase"
                         required
-                        :disabled="$editingId !== null"
+                        :disabled="true"
                     />
-                    <flux:description class="text-[11px]">Máx. 20 caracteres. No editable tras crear.</flux:description>
+                    <flux:description class="text-[11px]">Se genera en automático</flux:description>
                     <flux:error name="codigo" />
                 </flux:field>
             </div>

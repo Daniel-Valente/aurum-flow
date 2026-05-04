@@ -206,32 +206,174 @@ class SolicitudService
                 'proyectos.nombre          AS proyecto_nombre',
                 'areas.nombre              AS area_nombre',
             )
-            // Solo pendientes — esta vista es exclusivamente para autorizar
             ->where('solicitudes.estatus', 'Pendiente')
-            // Gerente: solo su área; admin: todas
+            // ── Scope por rol ──────────────────────────────────────────────────
             ->when(
-                $user->hasRole('gerente') && $user->empleado?->area_id,
+                // ✅ manager (antes gerente) — solo su área
+                $user->hasRole('manager') && $user->empleado?->area_id,
                 fn($q) => $q->where('solicitudes.area_id', $user->empleado->area_id)
             )
             ->when(
-                $search,
-                fn($q) =>
-                $q->where(
-                    fn($q2) =>
+                // ✅ finanzas — ve todas (sin filtro de área)
+                // admin también ve todas, no necesita when
+                $user->hasRole('finanzas'),
+                fn($q) => $q // sin restricción adicional
+            )
+            // ── Excluye las propias — nadie aprueba su propia solicitud ────────
+            ->when(
+                $user->empleado?->id,
+                fn($q) => $q->where('solicitudes.empleado_id', '!=', $user->empleado->id)
+            )
+            // ── Excluye las que este rol ya resolvió ───────────────────────────
+            ->whereNotExists(function ($q) use ($user) {
+                $roleId = $user->roles->first()?->id;
+                $q->select('id')
+                ->from('solicitud_aprobaciones')
+                ->whereColumn('solicitud_id', 'solicitudes.id')
+                ->where('role_id', $roleId);
+            })
+            // ── Filtros de búsqueda ────────────────────────────────────────────
+            ->when($search, fn($q) =>
+                $q->where(fn($q2) =>
                     $q2->where('solicitudes.folio', 'ilike', "%{$search}%")
-                        ->orWhere('empleados.nombre_completo', 'ilike', "%{$search}%")
+                    ->orWhere('empleados.nombre_completo', 'ilike', "%{$search}%")
                 )
             )
-            ->when(
-                $proyectoId,
-                fn($q) =>
+            ->when($proyectoId, fn($q) =>
                 $q->where('solicitudes.proyecto_id', $proyectoId)
             )
-            // Filtro de área solo disponible para admin
-            ->when(
-                $areaId && $user->hasRole('admin'),
-                fn($q) =>
+            ->when($areaId && $user->hasRole('admin'), fn($q) =>
                 $q->where('solicitudes.area_id', $areaId)
+            )
+            ->orderBy("solicitudes.{$sortBy}", $sortDir)
+            ->paginate($perPage);
+    }
+
+    public function paginateAutorizados(
+        $user,
+        string  $search       = '',
+        string  $cumplimiento = '',  // ok | con_excepcion | rechazado | sin_captura
+        ?int    $proyectoId   = null,
+        ?string $fechaInicio  = null,
+        ?string $fechaFin     = null,
+        string  $sortBy       = 'created_at',
+        string  $sortDir      = 'desc',
+        int     $perPage      = 15,
+    ): LengthAwarePaginator {
+        $sortBy  = in_array($sortBy,  self::ALLOWED_SORT_COLUMNS, true) ? $sortBy  : 'created_at';
+        $sortDir = in_array($sortDir, self::ALLOWED_SORT_DIRS,    true) ? $sortDir : 'desc';
+        $perPage = min($perPage, 100);
+
+        return Solicitud::query()
+            ->leftJoin('proyectos', 'proyectos.id', '=', 'solicitudes.proyecto_id')
+            ->leftJoin('areas',     'areas.id',     '=', 'solicitudes.area_id')
+            ->select(
+                'solicitudes.*',
+                'proyectos.nombre AS proyecto_nombre',
+                'proyectos.codigo AS proyecto_codigo',
+                'areas.nombre     AS area_nombre',
+
+                // ── Columna: monto aprobable (suma de gastos en estatus aprobado/pendiente)
+                DB::raw('(
+                    SELECT COALESCE(SUM(g.monto), 0)
+                    FROM gastos g
+                    WHERE g.solicitud_id = solicitudes.id
+                    AND g.deleted_at IS NULL
+                    AND g.estatus IN (\'aprobado\', \'pendiente\', \'excepcion\')
+                ) AS monto_aprobable'),
+
+                // ── Columna: monto comprobado (gastos con comprobante aceptado)
+                DB::raw('(
+                    SELECT COALESCE(SUM(g.monto), 0)
+                    FROM gastos g
+                    WHERE g.solicitud_id = solicitudes.id
+                    AND g.deleted_at IS NULL
+                    AND g.estatus = \'comprobado\'
+                ) AS monto_comprobado'),
+
+                // ── Columna: excepciones nivel 1 pendientes
+                DB::raw('(
+                    SELECT COUNT(*)
+                    FROM gastos_excepciones ge
+                    INNER JOIN gastos g ON g.id = ge.gasto_id
+                    WHERE g.solicitud_id = solicitudes.id
+                    AND ge.nivel = 1
+                ) AS excepciones_n1'),
+
+                // ── Columna: excepciones nivel 2 pendientes
+                DB::raw('(
+                    SELECT COUNT(*)
+                    FROM gastos_excepciones ge
+                    INNER JOIN gastos g ON g.id = ge.gasto_id
+                    WHERE g.solicitud_id = solicitudes.id
+                    AND ge.nivel = 2
+                ) AS excepciones_n2'),
+
+                // ── Columna: cumplimiento calculado
+                // Usada para el filtro y para mostrar el badge en la tabla
+                DB::raw("(
+                    CASE
+                        WHEN NOT EXISTS (
+                            SELECT 1 FROM gastos g
+                            WHERE g.solicitud_id = solicitudes.id AND g.deleted_at IS NULL
+                        ) THEN 'sin_captura'
+                        WHEN EXISTS (
+                            SELECT 1 FROM gastos g
+                            WHERE g.solicitud_id = solicitudes.id
+                            AND g.deleted_at IS NULL
+                            AND g.estatus = 'rechazado'
+                        ) THEN 'rechazado'
+                        WHEN EXISTS (
+                            SELECT 1 FROM gastos_excepciones ge
+                            INNER JOIN gastos g ON g.id = ge.gasto_id
+                            WHERE g.solicitud_id = solicitudes.id
+                        ) THEN 'con_excepcion'
+                        ELSE 'ok'
+                    END
+                ) AS cumplimiento_calculado"),
+            )
+            // ── Scope por permisos (solo las propias en esta vista)
+            ->where('solicitudes.empleado_id', $user->empleado->id)
+            ->where('solicitudes.estatus', 'Autorizado')
+            // ── Filtros
+            ->when($search, fn($q) =>
+                $q->where(fn($q2) =>
+                    $q2->where('solicitudes.folio',  'ilike', "%{$search}%")
+                    ->orWhere('solicitudes.motivo', 'ilike', "%{$search}%")
+                    ->orWhere('proyectos.nombre',   'ilike', "%{$search}%")
+                )
+            )
+            ->when($proyectoId, fn($q) =>
+                $q->where('solicitudes.proyecto_id', $proyectoId)
+            )
+            ->when($fechaInicio, fn($q) =>
+                $q->whereDate('solicitudes.fecha_inicio', '>=', $fechaInicio)
+            )
+            ->when($fechaFin, fn($q) =>
+                $q->whereDate('solicitudes.fecha_fin', '<=', $fechaFin)
+            )
+            // ── Filtro de cumplimiento — filtra sobre la subquery calculada
+            ->when($cumplimiento, fn($q) =>
+                $q->havingRaw("(
+                    CASE
+                        WHEN NOT EXISTS (
+                            SELECT 1 FROM gastos g
+                            WHERE g.solicitud_id = solicitudes.id AND g.deleted_at IS NULL
+                        ) THEN 'sin_captura'
+                        WHEN EXISTS (
+                            SELECT 1 FROM gastos g
+                            WHERE g.solicitud_id = solicitudes.id
+                            AND g.deleted_at IS NULL
+                            AND g.estatus = 'rechazado'
+                        ) THEN 'rechazado'
+                        WHEN EXISTS (
+                            SELECT 1 FROM gastos_excepciones ge
+                            INNER JOIN gastos g ON g.id = ge.gasto_id
+                            WHERE g.solicitud_id = solicitudes.id
+                        ) THEN 'con_excepcion'
+                        ELSE 'ok'
+                    END
+                ) = ?", [$cumplimiento])
             )
             ->orderBy("solicitudes.{$sortBy}", $sortDir)
             ->paginate($perPage);
@@ -419,6 +561,20 @@ class SolicitudService
         return $solicitud;
     }
 
+    public function enviarJustificaciones(Solicitud $solicitud, $justificaciones): Solicitud
+    {
+        return DB::transaction(function () use ($justificaciones, $solicitud) {
+            // Persiste las justificaciones
+            foreach ($justificaciones as $detalleId => $texto) {
+                SolicitudDetalle::where('id', $detalleId)
+                    ->where('solicitud_id', $solicitud->id)
+                    ->update(['justificacion_exceso' => $texto]);
+            }
+
+            return $solicitud;
+        });
+    }
+
     // -------------------------------------------------------------------------
     // Resolver (aprobar o rechazar — endpoint unificado)
     // -------------------------------------------------------------------------
@@ -429,44 +585,20 @@ class SolicitudService
             throw new AuthorizationException('No autorizado para resolver solicitudes');
         }
 
-        if ($user->hasRole('gerente')) {
-            if ($user->empleado->area_id !== ($solicitud->empleado->area_id ?? null)) {
+        // Manager: scope de área
+        if ($user->hasRole('manager')) {
+            $areaEmpleado = $solicitud->empleado->area_id ?? null;
+            if ($user->empleado?->area_id !== $areaEmpleado) {
                 throw new AuthorizationException('Solicitud fuera de tu área');
             }
         }
 
-        if ($solicitud->estatus !== 'Pendiente') {
-            throw new \Exception('Solicitud ya procesada');
-        }
+        // ✅ Delega toda la lógica al SolicitudAprobacionService
+        $resultado = app(SolicitudAprobacionService::class)
+            ->resolver($solicitud, $user, $accion, $motivo);
 
-        if ($accion === 'rechazado') {
-            if (!$user->can('solicitudes.rechazar')) {
-                throw new AuthorizationException('No autorizado para rechazar');
-            }
-
-            $solicitud->update([
-                'estatus'        => 'Rechazado',
-                'motivo_rechazo' => $motivo,
-            ]);
-
-            $this->auditoria($solicitud, 'rechazado', $user, ['motivo_rechazo' => $motivo]);
-
-            return $solicitud;
-        }
-
-        if (!$user->can('solicitudes.aprobar')) {
-            throw new AuthorizationException('No autorizado para aprobar');
-        }
-
-        return DB::transaction(function () use ($solicitud, $user) {
-            $solicitud->update(['estatus' => 'Autorizado']);
-
-            app(SolicitudGastoService::class)->generarGastos($solicitud);
-
-            $this->auditoria($solicitud, 'aprobado', $user);
-
-            return $solicitud;
-        });
+        // Recarga para devolver el estatus actualizado
+        return $solicitud->fresh();
     }
 
     // -------------------------------------------------------------------------
@@ -529,25 +661,8 @@ class SolicitudService
             throw new AuthorizationException('No autorizado para aprobar solicitudes');
         }
 
-        if ($solicitud->estatus !== 'Pendiente') {
-            throw new \Exception('Solicitud no válida para aprobación');
-        }
-
-        return DB::transaction(function () use ($solicitud, $user) {
-            Solicitud::lockForUpdate()->findOrFail($solicitud->id);
-
-            if ($solicitud->gastos()->exists()) {
-                throw new \Exception('La solicitud ya tiene gastos generados');
-            }
-
-            $solicitud->update(['estatus' => 'Autorizado']);
-
-            app(SolicitudGastoService::class)->generarGastos($solicitud);
-
-            $this->auditoria($solicitud, 'aprobado', $user);
-
-            return $solicitud->load('gastos');
-        });
+        // ✅ Reutiliza resolver() con acción 'aprobado'
+        return $this->resolver($solicitud, 'aprobado', null, $user);
     }
 
     // -------------------------------------------------------------------------

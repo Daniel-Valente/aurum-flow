@@ -29,6 +29,7 @@ class CentroCostoService
             ->when($search, fn($q) =>
                 $q->where('nombre', 'ilike', "%{$search}%")
                   ->orWhere('codigo', 'ilike', "%{$search}%")
+                  ->orWhere('cuenta_contable', 'ilike', "%{$search}%")
             )
             ->when($estatus !== '', fn($q) => $q->where('estatus', $estatus))
             ->orderBy($sortBy, $sortDir)
@@ -40,7 +41,7 @@ class CentroCostoService
         return Cache::remember(self::LIST_CACHE_KEY, self::LIST_CACHE_TTL, fn() =>
             CentroCosto::where('estatus', true)
                 ->orderBy('nombre')
-                ->get(['id', 'nombre', 'codigo'])
+                ->get(['id', 'nombre', 'codigo', 'cuenta_contable'])
                 ->toArray()
         );
     }
@@ -49,6 +50,7 @@ class CentroCostoService
     {
         $centroCosto = CentroCosto::create([
             'nombre'  => $data['nombre'],
+            'cuenta_contable' => $data['cuenta_contable'],
             'codigo'  => FolioHelper::generar('CECO'),
             'estatus' => $data['estatus'] ?? true,
         ]);
@@ -62,7 +64,7 @@ class CentroCostoService
     {
         $centroCosto->update([
             'nombre'  => $data['nombre'],
-            'codigo'  => $data['codigo'],
+            'cuenta_contable' => $data['cuenta_contable'] ?? $centroCosto->cuenta_contable,
             'estatus' => $data['estatus'] ?? $centroCosto->estatus,
         ]);
 

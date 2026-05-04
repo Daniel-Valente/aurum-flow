@@ -190,40 +190,54 @@ class FormModal extends Component
      */
     private function validarTramos(): bool
     {
-        $libre       = $this->monto_libre       !== null ? (float) $this->monto_libre       : null;
-        $comprobante = $this->monto_comprobante !== null ? (float) $this->monto_comprobante : null;
-        $factura     = $this->monto_factura     !== null ? (float) $this->monto_factura     : null;
-        $max         = (float) $this->monto_max;
+        $libre       = filled($this->monto_libre)       ? (float) $this->monto_libre       : null;
+        $comprobante = filled($this->monto_comprobante) ? (float) $this->monto_comprobante : null;
+        $factura     = filled($this->monto_factura)     ? (float) $this->monto_factura     : null;
+        $max         = filled($this->monto_max)         ? (float) $this->monto_max         : null;
+
+        // Sin monto_max no hay nada que validar
+        if ($max === null || $max <= 0) {
+            return true;
+        }
 
         $ok = true;
 
-        // El libre debe ser menor que el comprobante
+        // libre < comprobante
         if ($libre !== null && $comprobante !== null && $libre >= $comprobante) {
             $this->addError('monto_libre', 'El monto libre debe ser menor al monto de comprobante.');
             $ok = false;
         }
 
-        // El comprobante debe ser menor que la factura
+        // comprobante < factura
         if ($comprobante !== null && $factura !== null && $comprobante >= $factura) {
             $this->addError('monto_comprobante', 'El monto de comprobante debe ser menor al monto de factura.');
             $ok = false;
         }
 
-        // El libre debe ser menor que la factura (si no hay comprobante intermedio)
+        // libre < factura (sin comprobante intermedio)
         if ($libre !== null && $factura !== null && $comprobante === null && $libre >= $factura) {
             $this->addError('monto_libre', 'El monto libre debe ser menor al monto de factura.');
             $ok = false;
         }
 
-        // Todos los tramos deben ser menores al monto_max
-        foreach (['monto_libre' => $libre, 'monto_comprobante' => $comprobante, 'monto_factura' => $factura] as $campo => $valor) {
-            if ($valor !== null && $valor >= $max) {
-                $this->addError($campo, 'Este monto debe ser menor al monto máximo ($' . number_format($max, 2) . ').');
-                $ok = false;
-            }
+        // Cada tramo debe ser ESTRICTAMENTE menor al monto_max
+        // Mensaje específico por campo para no confundir al usuario
+        if ($libre !== null && $libre >= $max) {
+            $this->addError('monto_libre', 'El monto libre debe ser menor al máximo (' . number_format($max, 2) . ').');
+            $ok = false;
         }
 
-        // Si valida_sat=true, debe tener monto_factura definido
+        if ($comprobante !== null && $comprobante >= $max) {
+            $this->addError('monto_comprobante', 'El monto de comprobante debe ser menor al máximo (' . number_format($max, 2) . ').');
+            $ok = false;
+        }
+
+        if ($factura !== null && $factura >= $max) {
+            $this->addError('monto_factura', 'El monto de factura debe ser menor al máximo (' . number_format($max, 2) . ').');
+            $ok = false;
+        }
+
+        // Si valida_sat=true debe tener factura definida
         if ($this->valida_sat && $factura === null) {
             $this->addError('monto_factura', 'Debes definir el monto de factura si activas la validación SAT.');
             $ok = false;

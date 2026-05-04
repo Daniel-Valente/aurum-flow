@@ -11,12 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('centros_costos', function (Blueprint $table) {
+        Schema::create('flujos_aprobacion', function (Blueprint $table) {
             $table->id();
-            $table->string('codigo')->unique();
-            $table->string('nombre');
-            $table->string('cuenta_contable');
+
+            $table->string('tipo_solicitud')->default('viaticos');
+
+            $table->foreignId('role_id')->constrained();
+
+            $table->integer('orden')->default(1);
+
+            $table->boolean('requerido')->default(false);
+
+            $table->integer('minimo_aprobaciones')->default(2);
+
             $table->boolean('estatus')->default(true);
+
             $table->timestamps();
         });
     }
@@ -26,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('centros_costos');
+        Schema::dropIfExists('flujos_aprobacion');
     }
 };

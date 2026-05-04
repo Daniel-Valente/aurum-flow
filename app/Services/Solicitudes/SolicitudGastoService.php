@@ -40,15 +40,6 @@ class SolicitudGastoService
             ])->all();
 
             Gasto::insert($gastos);
-
-            // Recarga solicitud con los gastos recién insertados Y relaciones
-            // necesarias para que ValidadorGastosService no haga N+1
-            $solicitud->load([
-                'gastos.concepto',
-                'empleado.user.roles',
-            ]);
-
-            app(ValidadorGastosService::class)->validarSolicitud($solicitud);
         });
     }
 }

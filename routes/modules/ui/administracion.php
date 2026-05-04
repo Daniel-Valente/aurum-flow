@@ -11,7 +11,7 @@ Route::prefix('admin')->group(function () {
 
     Route::get('/empleados', EmpleadosIndex::class)
         ->name('empleados')
-        ->middleware('permission:empleados.ver');
+        ->middleware('permission:empleados.ver.propios|empleados.ver.area|empleados.ver.todos');
 
     Route::get('/proyectos', ProyectosIndex::class)
         ->name('proyectos')

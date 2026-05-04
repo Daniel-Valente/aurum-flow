@@ -144,5 +144,24 @@ class PoliticaGasto extends Model
 
         return ['valido' => true, 'nivel' => $nivel];
     }
+
+    public function getEstadoVigenciaAttribute()
+    {
+        $now = now();
+
+        if (is_null($this->vigencia_desde) && is_null($this->vigencia_hasta)) {
+            return 'Sin vigencia';
+        }
+
+        if ($this->vigencia_desde && $this->vigencia_desde > $now) {
+            return 'Futura';
+        }
+
+        if ($this->vigencia_hasta && $this->vigencia_hasta < $now) {
+            return 'Expirada';
+        }
+
+        return 'Vigente';
+    }
 }
 

@@ -2,13 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class GastoAuditoria extends Model
 {
+    use HasFactory;
+
     public $timestamps = false;
 
     protected $table = 'gastos_auditoria';
+
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'gasto_id',

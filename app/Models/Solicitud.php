@@ -23,6 +23,8 @@ class Solicitud extends Model
         'fecha_solicitud',
         'monto_total',
         'motivo_rechazo',
+        'motivo_cancelacion',
+        'motivo_rechazo',
         'estatus'
     ];
 

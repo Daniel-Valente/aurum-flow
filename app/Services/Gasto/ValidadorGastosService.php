@@ -5,6 +5,7 @@ namespace App\Services\Gasto;
 use App\Models\Empleado;
 use App\Models\Concepto;
 use App\Models\Gasto;
+use App\Models\GastoAuditoria;
 use App\Models\GastoExcepcion;
 use App\Models\Solicitud;
 use App\Services\Auditoria\AuditoriaService;
@@ -94,7 +95,6 @@ class ValidadorGastosService
                 'datos_antes'   => null,
                 'datos_despues' => json_encode(['estatus' => $estatus]),
                 'created_at'    => $now,
-                'updated_at'    => $now,
             ];
         }
 
@@ -110,7 +110,7 @@ class ValidadorGastosService
 
         // Insert masivo de auditorías
         if (!empty($auditorias)) {
-            DB::table('gasto_auditorias')->insert($auditorias);
+            GastoAuditoria::insert($auditorias);
         }
     }
 

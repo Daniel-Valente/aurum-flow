@@ -94,12 +94,6 @@ class FormModal extends Component
     public function save(ConceptoService $service): void
     {
         $this->validate([
-            'codigo' => [
-                'required',
-                'string',
-                'max:20',
-                Rule::unique('conceptos', 'codigo')->ignore($this->editingId),
-            ],
             'nombre'          => 'required|string|max:255',
             'categoria'       => 'nullable|string|max:255',
             'descripcion'     => 'nullable|string|max:500',
@@ -116,10 +110,6 @@ class FormModal extends Component
             'rolesSeleccionados'   => 'array',
             'rolesSeleccionados.*' => 'exists:roles,name',
         ], messages: [
-            'codigo.required'          => 'El código es obligatorio.',
-            'codigo.max'               => 'El código no puede exceder 20 caracteres.',
-            'codigo.unique'            => 'Este código ya está en uso.',
-
             'nombre.required'          => 'El nombre es obligatorio.',
 
             'tipo_aplicacion.required' => 'El tipo de aplicación es obligatorio.',
@@ -137,7 +127,6 @@ class FormModal extends Component
         ]);
 
         $data = [
-            'codigo'          => $this->codigo,
             'nombre'          => $this->nombre,
             'categoria'       => $this->categoria       ?: null,
             'descripcion'     => $this->descripcion     ?: null,

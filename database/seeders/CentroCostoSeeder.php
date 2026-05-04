@@ -17,8 +17,8 @@ class CentroCostoSeeder extends Seeder
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         CentroCosto::firstOrCreate(
-            ['codigo' => 'CC-001'],
-            ['nombre' => 'Oficina Central', 'estatus' => true]
+            ['codigo' => 'CECO-2026-001'],
+            ['nombre' => 'Oficina Central', 'cuenta_contable' => '102-01-001', 'estatus' => true]
         );
     }
 }

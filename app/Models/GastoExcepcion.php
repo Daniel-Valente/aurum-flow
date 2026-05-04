@@ -9,13 +9,11 @@ class GastoExcepcion extends Model
 {
     use HasFactory;
 
+    protected $table = 'gastos_excepciones';
+
     protected $fillable = [
-        'gasto_id',
-        'nivel',
-        'aprobado_por',
-        'estatus',
-        'comentarios',
-        'resuelto_en'
+        'gasto_id', 'nivel', 'aprobado_por',
+        'estatus', 'comentario', 'resuelto_en'
     ];
 
     protected $casts = [

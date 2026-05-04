@@ -13,12 +13,11 @@ class PermissionsSeeder extends Seeder
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // Permisos — separados por dominio
         $permisos = [
-
-            // ========================
-            // SOLICITUDES
-            // ========================
+            // Solicitudes
             'solicitudes.ver.propias',
+            'solicitudes.ver.area',
             'solicitudes.ver.todas',
             'solicitudes.crear',
             'solicitudes.editar',
@@ -27,10 +26,9 @@ class PermissionsSeeder extends Seeder
             'solicitudes.aprobar',
             'solicitudes.rechazar',
 
-            // ========================
-            // GASTOS
-            // ========================
+            // Gastos
             'gastos.ver.propios',
+            'gastos.ver.area',
             'gastos.ver.todos',
             'gastos.crear',
             'gastos.editar',
@@ -38,76 +36,58 @@ class PermissionsSeeder extends Seeder
             'gastos.subir.comprobante',
             'gastos.validar',
 
-            // ========================
-            // EXCEPCIONES
-            // ========================
+            // Excepciones
             'excepciones.ver',
-            'excepciones.ver.todas',
             'excepciones.aprobar.nivel1',
             'excepciones.aprobar.nivel2',
             'excepciones.rechazar.nivel1',
             'excepciones.rechazar.nivel2',
 
-            // ========================
-            // AUDITORIA
-            // ========================
+            // Auditoría
             'auditoria.ver',
             'auditoria.revisar',
 
-            // ========================
-            // EMPLEADOS
-            // ========================
-            'empleados.ver',
+            // Empleados
             'empleados.ver.propios',
             'empleados.ver.area',
+            'empleados.ver.todos',
             'empleados.crear',
             'empleados.editar',
             'empleados.eliminar',
 
-            // ========================
-            // Areas
-            // ========================
+            // Áreas
             'areas.ver',
             'areas.crear',
             'areas.editar',
             'areas.eliminar',
 
-            // ========================
-            // Centro Costo
-            // ========================
+            // Centros de costo
             'centros_costos.ver',
             'centros_costos.crear',
             'centros_costos.editar',
             'centros_costos.eliminar',
 
-            // ========================
-            // PROYECTOS
-            // ========================
+            // Proyectos
             'proyectos.ver',
             'proyectos.crear',
             'proyectos.editar',
             'proyectos.eliminar',
 
-            // ========================
-            // CONCEPTOS
-            // ========================
+            // Conceptos
             'conceptos.ver',
             'conceptos.crear',
             'conceptos.editar',
             'conceptos.eliminar',
 
-            // ========================
-            // POLITICAS
-            // ========================
+            // Políticas
             'politicas.ver',
             'politicas.crear',
             'politicas.editar',
             'politicas.eliminar',
 
-            // ========================
-            // REPORTES
-            // ========================
+            // Reportes
             'reportes.ver',
+            'reportes.exportar',
         ];
 
         foreach ($permisos as $permiso) {

@@ -59,7 +59,7 @@
                 </flux:sidebar.group>
                 @endcan
 
-                @can('empleados.ver')
+                @canany(['empleados.ver.propios', 'empleados.ver.area', 'empleados.ver.todos'])
                 <flux:sidebar.group heading="Administración">
 
                     <flux:sidebar.item icon="user"
@@ -69,12 +69,14 @@
                         Empleados
                     </flux:sidebar.item>
 
+                    @can('proyectos.ver')
                     <flux:sidebar.item icon="briefcase"
                         :href="route('proyectos')"
                         :current="request()->routeIs('proyectos')"
                         wire:navigate>
                         Proyectos
                     </flux:sidebar.item>
+                    @endcan
 
                     @can('conceptos.ver')
                     <flux:sidebar.item icon="clipboard-document-list"
