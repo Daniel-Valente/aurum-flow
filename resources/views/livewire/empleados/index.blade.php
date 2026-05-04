@@ -5,9 +5,14 @@
             <flux:subheading>Gestiona los empleados de la organización.</flux:subheading>
         </div>
         @can('empleados.crear')
-            <flux:button variant="primary" icon="plus" wire:click="openCreate">
-                Nuevo Empleado
-            </flux:button>
+            <div class="flex gap-2">
+                <flux:button variant="ghost" icon="arrow-up-tray" wire:click="openImport">
+                    Importar Excel
+                </flux:button>
+                <flux:button variant="primary" icon="plus" wire:click="openCreate">
+                    Nuevo Empleado
+                </flux:button>
+            </div>
         @endcan
     </div>
 
@@ -209,6 +214,7 @@
 
     @livewire('empleados.detail-modal')
     @livewire('empleados.form-modal')
+    @livewire('empleados.import-modal')
 
     <flux:modal name="empleado-delete" class="w-full max-w-sm">
         <div class="space-y-6">

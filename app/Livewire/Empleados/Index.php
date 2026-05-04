@@ -104,6 +104,17 @@ class Index extends Component
         $this->dispatch('openEmpleadoDetail', id: $id);
     }
 
+    #[On('empleadosImportados')]
+    public function onEmpleadosImportados(int $total): void
+    {
+        Flux::toast(variant: 'success', text: "{$total} empleados importados correctamente.");
+    }
+
+    public function openImport(): void
+    {
+        $this->dispatch('openImportEmpleados');
+    }
+
     public function render(EmpleadoService $service)
     {
         return view('livewire.empleados.index', [
