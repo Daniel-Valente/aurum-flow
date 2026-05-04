@@ -181,7 +181,7 @@
 
                     <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 space-y-2">
                         <div class="flex items-center gap-1.5">
-                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
                             <span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Sin documento</span>
                         </div>
                         <flux:input
@@ -198,7 +198,7 @@
 
                     <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 space-y-2">
                         <div class="flex items-center gap-1.5">
-                            <span class="inline-block w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
+                            <span class="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
                             <span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Ticket / recibo</span>
                         </div>
                         <flux:input
@@ -215,7 +215,7 @@
 
                     <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 space-y-2">
                         <div class="flex items-center gap-1.5">
-                            <span class="inline-block w-2 h-2 rounded-full bg-rose-400 flex-shrink-0"></span>
+                            <span class="inline-block w-2 h-2 rounded-full bg-rose-400 shrink-0"></span>
                             <span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">CFDI obligatorio</span>
                         </div>
                         <flux:input
