@@ -26,20 +26,27 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-ARG FLUX_USERNAME
-ARG FLUX_PASSWORD
-RUN composer config --global http-basic.composer.fluxui.dev "$FLUX_USERNAME" "$FLUX_PASSWORD"
-# Copiar archivos de dependencias primero (Mejora el caché de Docker)
+# ✅ Nombres de argumentos que coinciden exactamente con tu compose.yaml
+ARG FLUX_EMAIL
+ARG FLUX_KEY
+
+# ✅ Prevenir errores de memoria de Composer y dar permisos de root en Docker
+ENV COMPOSER_MEMORY_LIMIT=-1
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+# ✅ Configurar autenticación para Flux
+RUN composer config --global http-basic.composer.fluxui.dev "$FLUX_EMAIL" "$FLUX_KEY"
+
+# ✅ Copiar archivos de dependencias primero (¡Excelente para el caché!)
 COPY composer.json composer.lock ./
 
-# Instalar dependencias
+# ✅ Instalar dependencias sin fallos
 RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader
 
 # Ahora copiar el resto del código
 COPY . .
 
 RUN npm ci
-
 RUN npm run build && rm -rf node_modules
 
 COPY entrypoint.sh /entrypoint.sh
