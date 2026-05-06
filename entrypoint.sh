@@ -4,12 +4,23 @@ set -e
 cd /var/www/html
 
 echo "🔧 Ajustando configuración de DB para Docker..."
-sed -i 's/^DB_HOST=.*/DB_HOST=postgres/' .env
-sed -i 's/^DB_PORT=.*/DB_PORT=5432/' .env
+if [ -f .env ]; then
+    echo "🔧 Ajustando configuración de DB para Docker..."
+    sed -i 's/^DB_HOST=.*/DB_HOST=postgres/' .env
+    sed -i 's/^DB_PORT=.*/DB_PORT=5432/' .env
+else
+    echo "⚠️ .env no existe, usando variables del entorno"
+fi
 
 echo "🔑 Verificando APP_KEY..."
-if ! grep -q "^APP_KEY=base64:" .env 2>/dev/null; then
-    php artisan key:generate --no-interaction
+if [ -f .env ]; then
+    echo "🔑 Verificando APP_KEY..."
+
+    if ! grep -q "^APP_KEY=base64:" .env 2>/dev/null; then
+        php artisan key:generate --no-interaction
+    fi
+else
+    echo "⚠️ Sin .env, APP_KEY debe venir del entorno"
 fi
 
 echo "📦 Regenerando manifest de paquetes..."
