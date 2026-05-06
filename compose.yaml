@@ -7,11 +7,8 @@ services:
       POSTGRES_DB: laravel_db
       POSTGRES_USER: laravel_user
       POSTGRES_PASSWORD: secret
-    ports:
-      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U laravel_user -d laravel_db"]
       interval: 10s
@@ -20,31 +17,38 @@ services:
 
   app:
     build:
-        context: .
-        args:
-            - FLUX_USERNAME=${FLUX_EMAIL} # O la variable que contenga tu email de Flux
-            - FLUX_PASSWORD=${FLUX_KEY}
+      context: .
+      dockerfile: Dockerfile
     container_name: laravel_app
     restart: unless-stopped
     working_dir: /var/www/html
-    volumes:
-      - .:/var/www/html
-      - storage_data:/var/www/html/storage
     ports:
-      - "8000:8000"
+      - "8000:80" # <-- Ajusta el "80" al puerto interno que exponga tu Dockerfile
+    volumes:
+      - storage_data:/var/www/html/storage
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      # Variables core obligatorias para Laravel
+      APP_NAME: "Aurum Flow"
+      APP_ENV: production
+      APP_KEY: "base64:PON_TU_APP_KEY_AQUI=" # <-- Reemplaza por tu key real
+      APP_DEBUG: false
+      APP_URL: "https://tu-dominio.com"
+      
+      # Variables de Base de Datos
       DB_CONNECTION: pgsql
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      FRESH_DB: ${FRESH_DB:-false}
-      FLUX_EMAIL: ${FLUX_EMAIL}
-      FLUX_KEY: ${FLUX_KEY}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: laravel_db
+      DB_USERNAME: laravel_user
+      DB_PASSWORD: secret
+      
+      # Variables personalizadas
+      FRESH_DB: "false"
+      FLUX_EMAIL: valente.gar.daniel@gmail.com
+      FLUX_KEY: a550edb3-99c9-430d-8af2-5abcd3820adb
 
 volumes:
   pgdata:
