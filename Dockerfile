@@ -26,6 +26,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+ARG FLUX_USERNAME
+ARG FLUX_PASSWORD
+RUN composer config --global http-basic.composer.fluxui.dev "$FLUX_USERNAME" "$FLUX_PASSWORD"
+
 # ✅ Copiar todo el proyecto primero
 COPY . .
 
