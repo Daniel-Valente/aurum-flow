@@ -129,7 +129,7 @@ class GastoService
             'despues'  => ['tipo' => $tipo, 'monto' => $comprobante->monto, 'uuid' => $comprobante->uuid],
         ]);
 
-        if($cfdiData['estado_sat'] === 'Vigente') {
+        if($tipo === 'factura' && $cfdiData && $cfdiData['estado_sat'] === 'Vigente') {
             $gasto->update(['fecha_gasto' => $data['fecha_gasto'],'estatus' => 'Comprobado']);
         }
 

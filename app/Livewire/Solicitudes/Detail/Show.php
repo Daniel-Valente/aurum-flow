@@ -276,12 +276,12 @@ class Show extends Component
                 $existe = GastoComprobante::where('uuid', $cfdi['uuid'])->exists();
                 $errorFecha = null;
 
-                if (!empty($this->fechaGastoReal) && !empty($cfdi['fecha'])) {
+                /*if (!empty($this->fechaGastoReal) && !empty($cfdi['fecha'])) {
                     $errorFecha = $this->validarRangoFechaCfdi(
                         $cfdi['fecha'],
                         $this->fechaGastoReal
                     );
-                }
+                }*/
 
                 $errorFinal = $existe ? 'Este CFDI ya fue registrado en el sistema.' : null;
 

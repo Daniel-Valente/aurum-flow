@@ -181,7 +181,7 @@
                     wire:target="save"
                 >
                     <span wire:loading.remove wire:target="save">
-                        {{ $editingId ? 'Guardar cambios' : 'Crear centro de costo' }}
+                        {{ $editingId ? 'Guardar cambios' : 'Crear' }}
                     </span>
                     <span wire:loading wire:target="save">Guardando...</span>
                 </flux:button>

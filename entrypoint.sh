@@ -1,50 +1,49 @@
 #!/bin/bash
 set -e
 
-echo "🔧 Generando auth.json para Flux UI..."
+cd /var/www/html
 
-# Validar que las variables estén presentes
-if [ -z "$FLUX_USERNAME" ] || [ -z "$FLUX_PASSWORD" ]; then
-  echo "⚠️  ADVERTENCIA: FLUX_USERNAME o FLUX_PASSWORD no están definidos en el .env"
-  echo "     El auth.json se generará vacío y composer puede fallar si Flux UI es requerido."
+echo "🔧 Ajustando configuración de DB para Docker..."
+sed -i 's/^DB_HOST=.*/DB_HOST=postgres/' .env
+sed -i 's/^DB_PORT=.*/DB_PORT=5432/' .env
+
+echo "🔑 Verificando APP_KEY..."
+if ! grep -q "^APP_KEY=base64:" .env 2>/dev/null; then
+    php artisan key:generate --no-interaction
 fi
 
-# Crear auth.json en la raíz del proyecto con las credenciales del .env
-cat > /var/www/html/auth.json <<EOF
-{
-    "http-basic": {
-        "composer.fluxui.dev": {
-            "username": "${FLUX_USERNAME}",
-            "password": "${FLUX_PASSWORD}"
-        }
-    }
-}
-EOF
+echo "📦 Regenerando manifest de paquetes..."
+php artisan package:discover --ansi   # ✅ regenera sin paquetes dev
 
-echo "✅ auth.json creado correctamente."
+echo "🔑 Activando Flux UI..."
+php artisan flux:activate "${FLUX_EMAIL}" "${FLUX_KEY}"
 
-echo "📦 Instalando dependencias con Composer..."
-composer install --no-interaction --prefer-dist --optimize-autoloader
+echo "⚡ Optimizando Laravel..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan event:cache
 
-echo "🔑 Generando APP_KEY si no existe..."
-php artisan key:generate --no-interaction 2>/dev/null || true
+echo "🗂️ Permisos de storage..."
+chmod -R 775 storage bootstrap/cache
 
-echo "🧹 Limpiando caché de configuración..."
-php artisan config:clear
-
-echo "🧹 Limpiando caché de aplicación..."
-php artisan cache:clear
-
-echo "🔐 Reseteando caché de permisos..."
-php artisan permission:cache-reset 2>/dev/null || echo "⚠️  permission:cache-reset omitido (¿está instalado spatie/laravel-permission?)"
+echo "⏳ Esperando PostgreSQL y migrando..."
+max_attempts=30
+attempt=0
+until php artisan migrate --no-interaction --force 2>/dev/null; do
+    attempt=$((attempt + 1))
+    if [ $attempt -eq $max_attempts ]; then
+        echo "❌ No se pudo conectar a PostgreSQL después de $max_attempts intentos"
+        exit 1
+    fi
+    echo "PostgreSQL no está listo, reintentando... ($attempt/$max_attempts)"
+    sleep 2
+done
 
 if [ "${FRESH_DB}" = "true" ]; then
-  echo "🗄️  Ejecutando migrate:fresh --seed (FRESH_DB=true)..."
-  php artisan migrate:fresh --seed --no-interaction
-else
-  echo "🗄️  Ejecutando migrate (sin borrar datos)..."
-  php artisan migrate --no-interaction --force
+    echo "🗑️ Recreando base de datos..."
+    php artisan migrate:fresh --seed --no-interaction
 fi
 
-echo "🚀 Iniciando servidor Laravel en puerto 8000..."
+echo "🚀 Iniciando servidor Laravel..."
 exec php artisan serve --host=0.0.0.0 --port=8000
