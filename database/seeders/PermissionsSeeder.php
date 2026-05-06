@@ -36,6 +36,9 @@ class PermissionsSeeder extends Seeder
             'gastos.subir.comprobante',
             'gastos.validar',
 
+            // Comprobantes
+            'comprobantes.validar',
+
             // Excepciones
             'excepciones.ver',
             'excepciones.aprobar.nivel1',

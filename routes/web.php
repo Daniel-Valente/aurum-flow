@@ -1,17 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\Area\AreaController;
-use App\Http\Controllers\Admin\CentroCosto\CentroCostoController;
-use App\Http\Controllers\Admin\Concepto\ConceptoController;
-use App\Http\Controllers\Admin\Empleado\EmpleadoController;
-use App\Http\Controllers\Admin\PoliticaGasto\PoliticaGastoController;
-use App\Http\Controllers\Admin\Proyecto\ProyectoController;
-use App\Http\Controllers\GastoComprobanteController;
-use App\Http\Controllers\GastoController;
-use App\Http\Controllers\GastoExcepcionController;
-use App\Http\Controllers\SolicitudController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function (Request $request) {

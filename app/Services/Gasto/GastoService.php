@@ -5,29 +5,23 @@ namespace App\Services\Gasto;
 use App\Jobs\ValidarCFDIJob;
 use App\Models\Gasto;
 use App\Models\GastoComprobante;
-use App\Models\GastoExcepcion;
-use App\Models\Solicitud;
 use App\Services\Auditoria\AuditoriaService;
 use App\Services\CFDI\CFDIService;
+use App\Services\Solicitudes\SolicitudService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class GastoService
 {
-    // -------------------------------------------------------------------------
-    // Registrar el monto real — step 3 (comprobación)
-    // El gasto ya existe en 'pendiente' desde generarGastos()
-    // Aquí el empleado confirma cuánto gastó realmente
-    // Después de esto → validarGasto() evalúa política y crea excepción si aplica
-    // -------------------------------------------------------------------------
-
     public function registrarMontoReal(Gasto $gasto, float $montoReal, $user): Gasto
     {
         if (!$user->can('gastos.editar')) {
             throw new AuthorizationException('No autorizado para registrar gastos');
         }
 
-        if ($gasto->estatus !== 'pendiente') {
+        if (!in_array($gasto->estatus, ['pendiente', 'aprobado'])) {
             throw new \Exception('Este gasto ya fue procesado y no puede modificarse');
         }
 
@@ -37,7 +31,6 @@ class GastoService
 
         return DB::transaction(function () use ($gasto, $montoReal) {
             $antes = $gasto->monto;
-
             $gasto->update(['monto' => $montoReal]);
 
             app(AuditoriaService::class)->registrar([
@@ -47,8 +40,6 @@ class GastoService
                 'despues'  => ['monto' => $montoReal],
             ]);
 
-            // Aquí nacen las excepciones si el monto real excede la política
-            // validarGasto() actualiza el estatus del gasto y crea GastoExcepcion si aplica
             app(ValidadorGastosService::class)->validarGasto(
                 $gasto->fresh()->load(['solicitud.empleado.user.roles', 'concepto'])
             );
@@ -56,13 +47,6 @@ class GastoService
             return $gasto->fresh();
         });
     }
-
-    // -------------------------------------------------------------------------
-    // Subir comprobante
-    // Requiere que el monto real ya esté registrado (estatus != 'pendiente')
-    // factura (XML) → CFDIParser → ValidarCFDIJob async (SAT)
-    // pdf / recibo  → validacion_manual = 'pendiente' (cola manual)
-    // -------------------------------------------------------------------------
 
     public function subirComprobante(Gasto $gasto, $user, $file, array $data): GastoComprobante
     {
@@ -76,80 +60,184 @@ class GastoService
             throw new \InvalidArgumentException('Tipo de comprobante no válido');
         }
 
-        // Debe registrar monto real antes de subir comprobante
-        if ($gasto->estatus === 'pendiente') {
-            throw new \Exception('Registra el monto real del gasto antes de subir el comprobante');
-        }
+        $empleado = $gasto->solicitud->empleado;
+        $concepto = $gasto->concepto;
+        $folio    = $gasto->solicitud->folio;
+        $fecha    = now()->format('Ymd');
+        $ts       = now()->format('His');
+        $slug     = fn(string $s) => str($s)->slug()->toString();
 
-        $path     = $file->store('comprobantes', 'private');
+        $nombre = implode('_', [
+            $slug($empleado->nombre_completo),
+            $folio,
+            $slug($concepto->nombre),
+            $fecha,
+            $ts
+        ]);
+
+        $ext  = $file->getClientOriginalExtension();
+        $path = $file->storeAs("comprobantes/{$fecha}", "{$nombre}.{$ext}", 'private');
+
         $cfdiData = null;
 
-        if ($tipo === 'factura') {
-            $cfdiData = app(CFDIService::class)->procesar($file, $gasto);
-
-            // UUID único global — previene reusar la misma factura en otra solicitud
-            if (GastoComprobante::where('uuid', $cfdiData['uuid'])->exists()) {
-                throw new \Exception('Este CFDI ya fue registrado en otra solicitud');
+        if($tipo === 'factura') {
+            try {
+                $cfdiData = app(CFDIService::class)->parse($file, $gasto);
+            } catch (\Exception  $e) {
+                Storage::disk('private')->delete($path);
+                throw $e;
             }
+
+            if (GastoComprobante::where('uuid', $cfdiData['uuid'])->exists()) {
+                Storage::disk('private')->delete($path);
+                throw new \Exception('Este CFDI ya fue registrado en otra solicitud.');
+            }
+        }
+
+        $montoComprobante = $tipo === 'factura'
+            ? $cfdiData['total']
+            : (float) $data['monto'];
+
+        $pathPdf = null;
+        if ($tipo === 'factura' && !empty($data['archivo_pdf_cfdi'])) {
+            $pdfFile = $data['archivo_pdf_cfdi'];
+            $pathPdf = $pdfFile->storeAs("comprobantes/{$fecha}", "{$nombre}_factura.pdf", 'private');
         }
 
         $comprobante = $gasto->comprobantes()->create([
             'archivo'           => $path,
+            'archivo_pdf'       => $pathPdf,                          // ← nuevo
             'tipo'              => $tipo,
-            'uuid'              => $cfdiData['uuid']  ?? null,
-            'monto'             => $cfdiData['total'] ?? $data['monto'],
+            'uuid'              => $cfdiData['uuid'] ?? null,
+            'monto'             => $montoComprobante,
+            'fecha_gasto'       => $data['fecha_gasto'],
             'subido_por'        => $user->id,
-            'sat_status'        => $tipo === 'factura'                        ? 'pendiente' : null,
-            'validacion_manual' => in_array($tipo, ['pdf', 'recibo'])         ? 'pendiente' : null,
+            'sat_status'        => $tipo === 'factura' ? ($cfdiData['estado_sat'] ?? 'pendiente') : null,
+            'validacion_manual' => in_array($tipo, ['pdf', 'recibo']) ? 'pendiente' : 'aprobado',
             'meta_cfdi'         => $cfdiData,
         ]);
 
-        if ($tipo === 'factura') {
+        if ($tipo === 'factura' && $comprobante->sat_status === 'pendiente') {
             dispatch(new ValidarCFDIJob($comprobante->id, $cfdiData));
         }
+
+        $this->actualizarMontoYValidar($gasto, $user);
 
         app(AuditoriaService::class)->registrar([
             'gasto_id' => $gasto->id,
             'evento'   => 'comprobante_subido',
-            'despues'  => [
-                'tipo'  => $tipo,
-                'monto' => $comprobante->monto,
-                'uuid'  => $comprobante->uuid,
-            ],
+            'despues'  => ['tipo' => $tipo, 'monto' => $comprobante->monto, 'uuid' => $comprobante->uuid],
         ]);
 
-        $this->evaluarComprobacion($gasto);
+        if($cfdiData['estado_sat'] === 'Vigente') {
+            $gasto->update(['fecha_gasto' => $data['fecha_gasto'],'estatus' => 'Comprobado']);
+        }
 
         return $comprobante;
     }
 
-    // -------------------------------------------------------------------------
-    // Evalúa si el total comprobado cubre el monto real del gasto
-    // Solo cuenta comprobantes válidos (no rechazados manualmente)
-    // -------------------------------------------------------------------------
+    public function descargarArchivo(GastoComprobante $comprobante): BinaryFileResponse
+    {
+        $user = auth()->user();
+
+        if (
+            $comprobante->gasto->solicitud->empleado->user_id !== $user->id &&
+            !$user->can('gastos.ver.todos')
+        ) {
+            throw new AuthorizationException('No tienes permiso para ver este archivo.');
+        }
+
+        $path = $comprobante->archivo; // Ruta relativa guardada en BD
+
+        if (!Storage::disk('private')->exists($path)) {
+            abort(404, 'El archivo no existe en el almacenamiento privado.');
+        }
+
+       return response()->file(Storage::disk('private')->path($path));
+    }
 
     public function evaluarComprobacion(Gasto $gasto): void
     {
-        // Solo gastos que pasaron validación de política
-        if (!in_array($gasto->estatus, ['aprobado', 'excepcion'], true)) {
+        // Solo evaluar gastos que ya pasaron validación de política
+        if (!in_array($gasto->estatus, ['aprobado', 'excepcion', 'comprobado'], true)) {
             return;
         }
 
+        // ✅ Total de comprobantes VÁLIDOS (aprobados o sin validación manual para CFDIs vigentes)
         $totalComprobado = $gasto->comprobantes()
-            ->where(fn($q) =>
-                $q->whereNull('validacion_manual')
-                  ->orWhere('validacion_manual', 'aprobado')
-            )
+            ->where(function ($q) {
+                $q->where('validacion_manual', 'aprobado')
+                ->orWhere(function ($q2) {
+                    // CFDIs sin validación manual que pasaron validación SAT
+                    $q2->whereNull('validacion_manual')
+                        ->whereIn('sat_status', ['vigente', null]);
+                });
+            })
             ->sum('monto');
 
+        // ✅ Si cubre el monto → COMPROBADO
         if ($totalComprobado >= $gasto->monto) {
-            $gasto->update(['estatus' => 'comprobado']);
+            if ($gasto->estatus !== 'comprobado') {
+                $gasto->update(['estatus' => 'comprobado']);
 
-            app(AuditoriaService::class)->registrar([
-                'gasto_id' => $gasto->id,
-                'evento'   => 'comprobado',
-                'despues'  => ['total_comprobado' => $totalComprobado],
-            ]);
+                app(AuditoriaService::class)->registrar([
+                    'gasto_id' => $gasto->id,
+                    'evento'   => 'comprobado',
+                    'despues'  => ['total_comprobado' => $totalComprobado],
+                ]);
+            }
+
+            // ✅ Evaluar cierre de la solicitud completa
+            app(SolicitudService::class)->evaluarCierre($gasto->solicitud);
+            return;
         }
+
+        // ✅ Si tiene comprobantes pero NO cubre → volver a APROBADO para permitir reintento
+        $tieneComprobantes = $gasto->comprobantes()->count() > 0;
+        $hayRechazados = $gasto->comprobantes()->where('validacion_manual', 'rechazado')->exists();
+
+        if ($tieneComprobantes && ($totalComprobado < $gasto->monto || $hayRechazados)) {
+            if ($gasto->estatus === 'comprobado') {
+                // Si estaba comprobado pero rechazaron uno → DESBLOQUEAR
+                $gasto->update(['estatus' => 'aprobado']);
+
+                app(AuditoriaService::class)->registrar([
+                    'gasto_id' => $gasto->id,
+                    'evento'   => 'gasto_desbloqueado_por_rechazo',
+                    'despues'  => [
+                        'mensaje' => 'Comprobante rechazado, gasto desbloqueado para reintento',
+                        'total_valido' => $totalComprobado,
+                        'requerido' => $gasto->monto,
+                    ],
+                ]);
+            }
+        }
+    }
+
+    private function actualizarMontoYValidar(Gasto $gasto, $user): Gasto
+    {
+        return DB::transaction(function () use ($gasto, $user) {
+            $gasto->refresh()->load('comprobantes');
+
+            $totalComprobantes = $gasto->comprobantes->sum('monto');
+
+            if ($totalComprobantes > 0) {
+                $antes = $gasto->monto;
+                $gasto->update(['monto' => $totalComprobantes]);
+
+                app(AuditoriaService::class)->registrar([
+                    'gasto_id' => $gasto->id,
+                    'evento'   => 'monto_acumulado',
+                    'antes'    => ['monto' => $antes],
+                    'despues'  => ['monto' => $totalComprobantes],
+                ]);
+            }
+
+            app(ValidadorGastosService::class)->validarGasto(
+                $gasto->fresh()->load(['solicitud.empleado.user.roles', 'concepto'])
+            );
+
+            return $gasto->fresh();
+        });
     }
 }

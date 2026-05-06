@@ -43,6 +43,8 @@ class SystemInitSeeder extends Seeder
             'gastos.ver.propios', 'gastos.ver.area',
             'gastos.crear', 'gastos.editar', 'gastos.subir.comprobante',
 
+            'comprobantes.validar',
+
             'excepciones.ver',
             'excepciones.aprobar.nivel1', 'excepciones.rechazar.nivel1',
 
@@ -66,6 +68,8 @@ class SystemInitSeeder extends Seeder
             'gastos.ver.propios',
             'gastos.ver.todos', 'gastos.validar',
             'gastos.crear', 'gastos.editar', 'gastos.subir.comprobante',
+
+            'comprobantes.validar',
 
             'excepciones.ver',
             'excepciones.aprobar.nivel2', 'excepciones.rechazar.nivel2',

@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Autorizaciones;
 
+use App\Models\GastoComprobante;
 use App\Models\GastoExcepcion;
 use App\Services\Area\AreaService;
-use App\Services\Gasto\GastoExcepcionService;
 use App\Services\Proyecto\ProyectoService;
 use App\Services\Solicitudes\SolicitudService;
 use Flux;
@@ -16,7 +16,7 @@ class Index extends Component
 {
     use WithPagination;
 
-    public string $tab       = 'solicitudes'; // 'solicitudes' | 'excepciones'
+    public string $tab       = 'solicitudes'; // 'solicitudes' | 'excepciones' | 'comprobantes'
     public string $search    = '';
     public ?int $proyecto_id = null;
     public ?int $area_id     = null;
@@ -45,6 +45,11 @@ class Index extends Component
         $this->dispatch('openExcepcionDetail', id: $id);
     }
 
+    public function openComprobante(int $id): void
+    {
+        $this->dispatch('openComprobanteDetail', id: $id);
+    }
+
     #[On('autorizacionResuelta')]
     public function onAutorizacionResuelta(string $message): void
     {
@@ -63,6 +68,12 @@ class Index extends Component
         Flux::toast(variant: 'success', text: $message);
     }
 
+    #[On('comprobanteValidado')]
+    public function onComprobanteValidado(string $message): void
+    {
+        Flux::toast(variant: 'success', text: $message);
+    }
+
     public function mount(ProyectoService $proyectoService, AreaService $areaService): void
     {
         $this->proyectos = $proyectoService->list();
@@ -71,10 +82,10 @@ class Index extends Component
 
     public function render(SolicitudService $service)
     {
-        $user  = auth()->user();
+        $user      = auth()->user();
         $rolNombre = $user->roles->first()?->name;
 
-        // Qué nivel de excepción puede resolver este rol
+        // ── Excepciones ───────────────────────────────────────────────────────
         $nivelFiltro = match($rolNombre) {
             'manager' => 1,
             'admin'   => 2,
@@ -90,7 +101,6 @@ class Index extends Component
             ])
             ->where('nivel', $nivelFiltro)
             ->where('estatus', 'pendiente')
-            // ✅ Scope por rol
             ->when(
                 $rolNombre === 'manager' && $user->empleado?->area_id,
                 fn($q) => $q->whereHas('gasto.solicitud.empleado', fn($q2) =>
@@ -98,21 +108,44 @@ class Index extends Component
                 )
             )
             ->latest()
-            ->paginate(15)
+            ->paginate(15, pageName: 'excepcionesPage')
             : collect();
 
+        // ── Comprobantes pendientes de validación manual (solo finanzas) ──────
+        $puedeValidarComprobantes = $user->can('comprobantes.validar');
+
+        $comprobantes = $puedeValidarComprobantes
+            ? GastoComprobante::with([
+                'gasto.solicitud.empleado',
+                'gasto.solicitud.proyecto',
+                'gasto.concepto',
+            ])
+            ->pendienteManual()
+            ->latest()
+            ->paginate(15, pageName: 'comprobantesPage')
+            : collect();
+
+        $totalExcepciones = $nivelFiltro
+            ? GastoExcepcion::where('nivel', $nivelFiltro)->where('estatus', 'pendiente')->count()
+            : 0;
+
+        $totalComprobantes = $puedeValidarComprobantes
+            ? GastoComprobante::pendienteManual()->count()
+            : 0;
+
         return view('livewire.autorizaciones.index', [
-            'autorizaciones'  => $service->paginateAutorizaciones(
+            'autorizaciones'        => $service->paginateAutorizaciones(
                 user: $user,
                 search: $this->search,
                 proyectoId: $this->proyecto_id,
                 areaId: $this->area_id,
             ),
-            'excepciones'     => $excepciones,
-            'nivelFiltro'     => $nivelFiltro,
-            'totalExcepciones'=> $nivelFiltro
-                ? GastoExcepcion::where('nivel', $nivelFiltro)->where('estatus', 'pendiente')->count()
-                : 0,
+            'excepciones'           => $excepciones,
+            'nivelFiltro'           => $nivelFiltro,
+            'totalExcepciones'      => $totalExcepciones,
+            'comprobantes'          => $comprobantes,
+            'puedeValidarComprobantes' => $puedeValidarComprobantes,
+            'totalComprobantes'     => $totalComprobantes,
         ]);
     }
 }

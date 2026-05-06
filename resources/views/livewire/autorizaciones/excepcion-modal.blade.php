@@ -57,6 +57,18 @@
                 </div>
             </div>
 
+            <div>
+                <flux:subheading class="mb-3 text-xs uppercase tracking-widest text-zinc-400">
+                    Justificación del exceso
+                </flux:subheading>
+
+                <div class="rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+                    <span class="text-sm">
+                        {{ $gasto->detalle->justificacion_exceso ?? 'Sin justificación' }}
+                    </span>
+                </div>
+            </div>
+
             {{-- Si es N2, muestra quién aprobó en N1 --}}
             @if ($nivel === 2)
                 @php

@@ -142,6 +142,33 @@ class Index extends Component
         Flux::toast(variant: 'danger', text: $message);
     }
 
+    public function reabrirYEditar(int $id, SolicitudService $service): void
+    {
+        try {
+            $solicitud = Solicitud::findOrFail($id);
+
+            // Solo el dueño puede reabrir
+            if ($solicitud->empleado->user_id !== auth()->id()) {
+                Flux::toast(variant: 'danger', text: 'No autorizado.');
+                return;
+            }
+
+            $service->reabrir($solicitud, auth()->user());
+
+            Flux::toast(
+                variant: 'success',
+                text: 'Solicitud reabierta. Corrige los puntos señalados y vuelve a enviar.',
+                duration: 5000
+            );
+
+            // Redirigir al show para editar conceptos
+            $this->redirectRoute('solicitudes.show', $id);
+
+        } catch (\Exception $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+        }
+    }
+
     // ── Render ──────────────────────────────────────────────────────────────
 
     public function render(SolicitudService $service)

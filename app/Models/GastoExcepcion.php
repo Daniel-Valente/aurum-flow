@@ -17,7 +17,8 @@ class GastoExcepcion extends Model
     ];
 
     protected $casts = [
-        'nivel' => 'integer'
+        'nivel' => 'integer',
+        'resuelto_en' => 'datetime',
     ];
 
     public function gasto()

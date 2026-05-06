@@ -14,6 +14,6 @@ Route::prefix('gastos')->group(function () {
     Route::post('/{gasto}/comprobante', [GastoController::class, 'subirComprobante'])
         ->middleware('permission:gastos.subir.comprobante');
 
-    Route::get('/comprobantes/{comprobante}/download', [GastoComprobanteController::class, 'download'])
-        ->middleware('permission:gastos.ver.propios|gastos.ver.todos');
+    /*Route::get('/comprobantes/{comprobante}/download', [GastoComprobanteController::class, 'download'])
+        ->middleware('permission:gastos.ver.propios|gastos.ver.todos');*/
 });

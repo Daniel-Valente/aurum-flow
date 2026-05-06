@@ -45,4 +45,19 @@ class Gasto extends Model
     {
         return $this->belongsTo(Concepto::class);
     }
+
+    public function comprobantes()
+    {
+        return $this->hasMany(GastoComprobante::class);
+    }
+
+    public function excepciones()
+    {
+        return $this->hasMany(GastoExcepcion::class);
+    }
+
+    public function detalle()
+    {
+        return $this->belongsTo(SolicitudDetalle::class, 'id');
+    }
 }

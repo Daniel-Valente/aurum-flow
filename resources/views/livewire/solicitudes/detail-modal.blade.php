@@ -72,7 +72,7 @@
                 <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
                     <span class="text-[10px] uppercase text-zinc-400">Fecha de solicitud</span>
                     <span class="text-sm font-mono">
-                        {{ $solicitud->fecha_solicitud->format('d/m/Y') }}
+                        {{ $solicitud->fecha_solicitud?->format('d/m/Y') ?? '-' }}
                     </span>
                 </div>
 
@@ -97,14 +97,14 @@
                 <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
                     <span class="text-[10px] uppercase text-zinc-400">Inicio</span>
                     <span class="text-sm font-mono">
-                        {{ $solicitud->fecha_inicio->format('d/m/Y') }}
+                        {{ $solicitud->fecha_inicio?->format('d/m/Y') ?? '-' }}
                     </span>
                 </div>
 
                 <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
                     <span class="text-[10px] uppercase text-zinc-400">Fin</span>
                     <span class="text-sm font-mono">
-                        {{ $solicitud->fecha_fin->format('d/m/Y') }}
+                        {{ $solicitud->fecha_fin?->format('d/m/Y') ?? '-' }}
                     </span>
                 </div>
             </div>

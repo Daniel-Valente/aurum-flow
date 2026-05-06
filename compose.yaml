@@ -13,6 +13,7 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./backup2.sql:/docker-entrypoint-initdb.d/backup.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U laravel_user -d laravel_db"]
       interval: 10s

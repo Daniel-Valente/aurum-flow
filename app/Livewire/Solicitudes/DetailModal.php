@@ -17,7 +17,7 @@ class DetailModal extends Component
             'empleado.user.roles',
             'proyecto',
         ])->findOrFail($id);
-;
+
         $this->modal('solicitud-detail')->show();
     }
 

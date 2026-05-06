@@ -10,6 +10,7 @@ Route::prefix('mis-solicitudes')->name('solicitudes.')->group(function () {
         ->middleware('permission:solicitudes.ver.propias|solicitudes.ver.todas');
 
     Route::get('/{solicitud}', Show::class)
+        ->whereNumber('solicitud')
         ->name('show')
         ->middleware('permission:solicitudes.ver.propias|solicitudes.ver.todas');
 });

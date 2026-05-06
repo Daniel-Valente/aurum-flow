@@ -18,8 +18,10 @@ class ExcepcionModal extends Component
     {
         $this->excepcion = GastoExcepcion::with([
             'gasto.concepto',
+            'gasto.detalle',
             'gasto.solicitud.empleado',
             'gasto.solicitud.proyecto',
+            'gasto.solicitud.detalles',
             'aprobador',
         ])->findOrFail($id);
 

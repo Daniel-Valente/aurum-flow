@@ -102,45 +102,66 @@
             Cualquier tramo puede quedar vacío (null).
         --}}
         <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden"
-                x-data="{
-                    get max()  { return parseFloat($wire.monto_max)         || 0 },
-                    get lib()  { return $wire.monto_libre       != null && $wire.monto_libre       !== '' ? parseFloat($wire.monto_libre)       : null },
-                    get comp() { return $wire.monto_comprobante != null && $wire.monto_comprobante !== '' ? parseFloat($wire.monto_comprobante) : null },
-                    get fac()  { return $wire.monto_factura     != null && $wire.monto_factura     !== '' ? parseFloat($wire.monto_factura)     : null },
+            x-data="{
+                get max()  { return parseFloat($wire.monto_max) || 0 },
+                get lib()  { return $wire.monto_libre       != null && $wire.monto_libre       !== '' ? parseFloat($wire.monto_libre)       : null },
+                get comp() { return $wire.monto_comprobante != null && $wire.monto_comprobante !== '' ? parseFloat($wire.monto_comprobante) : null },
+                get fac()  { return $wire.monto_factura     != null && $wire.monto_factura     !== '' ? parseFloat($wire.monto_factura)     : null },
 
-                    get sinTramos() { return this.lib === null && this.comp === null && this.fac === null },
+                get sinTramos() { return this.lib === null && this.comp === null && this.fac === null },
 
-                    pct(v) { return this.max > 0 ? Math.min(100, (v / this.max) * 100) : 0 },
+                pct(v) { return this.max > 0 ? Math.min(100, (v / this.max) * 100) : 0 },
 
-                    fmt(n) {
-                        if (n === null || n === undefined) return null
-                        return n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2 })
-                    },
+                fmt(n) {
+                    if (n === null || n === undefined || isNaN(n)) return null
+                    return n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2 })
+                },
 
-                    // Anchos de barra
-                    get wNone()   { return this.sinTramos ? 100 : (this.lib  !== null ? this.pct(this.lib)  : 0) },
-                    get wTicket() { return this.sinTramos ? 0   : (this.comp !== null ? this.pct(this.comp) - this.wNone : 0) },
-                    get wCfdi()   { return this.sinTramos ? 0   : 100 - this.wNone - this.wTicket },
+                // ── Anchos de segmentos (comp y fac son límites INFERIORES de su tramo) ──
+                // Verde:  0 → comp (inicio de ticket), o hasta max si no hay ticket
+                get segNone() {
+                    if (this.sinTramos) return 100
+                    if (this.comp !== null) return this.pct(this.comp)
+                    if (this.fac  !== null) return this.pct(this.fac)
+                    return 100
+                },
+                // Ámbar: comp → fac (inicio de CFDI), o hasta max si no hay CFDI
+                get segTicket() {
+                    if (this.sinTramos || this.comp === null) return 0
+                    return this.fac !== null
+                        ? this.pct(this.fac) - this.pct(this.comp)
+                        : 100 - this.pct(this.comp)
+                },
+                // Rosa: fac → 100%
+                get segCfdi() {
+                    if (this.sinTramos || this.fac === null) return 0
+                    return 100 - this.pct(this.fac)
+                },
 
-                    // Inicio del segmento CFDI en la barra
-                    get lCfdi()   { return this.wNone + this.wTicket },
+                // Posición izquierda de cada segmento
+                get leftTicket() { return this.comp !== null ? this.pct(this.comp) : 0 },
+                get leftCfdi()   { return this.fac  !== null ? this.pct(this.fac)  : 0 },
 
-                    // Rangos legibles por tarjeta
-                    get rangoNone() {
-                        if (this.sinTramos) return (this.fmt(0) ?? '$0.00') + ' – ' + (this.fmt(this.max) ?? '—')
-                        return this.lib !== null ? '$0.00 – ' + this.fmt(this.lib) : 'No aplica'
-                    },
-                    get rangoTicket() {
-                        if (this.sinTramos || this.comp === null) return 'No aplica'
-                        const desde = this.lib !== null ? this.fmt(this.lib) : '$0.01'
-                        return desde + ' – ' + this.fmt(this.comp)
-                    },
-                    get rangoCfdi() {
-                        if (this.sinTramos || this.fac === null) return 'No aplica'
-                        return this.fmt(this.fac) + ' – ' + this.fmt(this.max)
-                    },
-                }"
-            >
+                // ── Rangos legibles (cada tramo va hasta 1 centavo antes del siguiente) ──
+                get rangoNone() {
+                    if (this.sinTramos) return '$0.00 – ' + (this.fmt(this.max) ?? '—')
+                    const desde = this.lib !== null ? this.fmt(this.lib) : '$0.00'
+                    const hasta = this.comp !== null
+                        ? this.fmt(this.comp - 0.01)
+                        : (this.fac !== null ? this.fmt(this.fac - 0.01) : this.fmt(this.max))
+                    return desde + ' – ' + hasta
+                },
+                get rangoTicket() {
+                    if (this.comp === null) return 'No aplica'
+                    const hasta = this.fac !== null ? this.fmt(this.fac - 0.01) : this.fmt(this.max)
+                    return this.fmt(this.comp) + ' – ' + hasta
+                },
+                get rangoCfdi() {
+                    if (this.fac === null) return 'No aplica'
+                    return this.fmt(this.fac) + ' – ' + this.fmt(this.max)
+                },
+            }"
+        >
             <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700">
                 <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100">
                     Tramos documentales por monto
@@ -157,15 +178,15 @@
                     <div class="relative h-2 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700">
                         <div
                             class="absolute top-0 left-0 h-full bg-emerald-400 dark:bg-emerald-500"
-                            :style="`width: ${wNone}%`"
+                            :style="`width: ${segNone}%`"
                         ></div>
                         <div
                             class="absolute top-0 h-full bg-amber-400 dark:bg-amber-500"
-                            :style="`left: ${wNone}%; width: ${wTicket}%`"
+                            :style="`left: ${leftTicket}%; width: ${segTicket}%`"
                         ></div>
                         <div
                             class="absolute top-0 h-full bg-rose-400 dark:bg-rose-500"
-                            :style="`left: ${lCfdi}%; width: ${wCfdi}%`"
+                            :style="`left: ${leftCfdi}%; width: ${segCfdi}%`"
                         ></div>
                     </div>
 
