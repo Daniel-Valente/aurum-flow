@@ -29,12 +29,14 @@ WORKDIR /var/www/html
 ARG FLUX_USERNAME
 ARG FLUX_PASSWORD
 RUN composer config --global http-basic.composer.fluxui.dev "$FLUX_USERNAME" "$FLUX_PASSWORD"
+# Copiar archivos de dependencias primero (Mejora el caché de Docker)
+COPY composer.json composer.lock ./
 
-# ✅ Copiar todo el proyecto primero
+# Instalar dependencias
+RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader
+
+# Ahora copiar el resto del código
 COPY . .
-
-# ✅ Luego instalar dependencias
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
 RUN npm ci
 
