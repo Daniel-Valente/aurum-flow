@@ -54,6 +54,7 @@ done
 
 if [ "${FRESH_DB}" = "true" ]; then
     echo "🗑️ Recreando base de datos..."
+    php artisan permission:cache-reset
     php artisan migrate:fresh --seed --no-interaction
 fi
 
