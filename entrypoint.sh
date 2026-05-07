@@ -20,6 +20,8 @@ else
     echo "⚠️ Sin .env, APP_KEY debe venir del entorno"
 fi
 
+php artisan flux:activate "valente.gar.daniel@gmail.com" "a550edb3-99c9-430d-8af2-5abcd3820adb" --no-interaction
+
 echo "📦 Regenerando manifest de paquetes..."
 php artisan package:discover --ansi
 

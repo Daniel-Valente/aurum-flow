@@ -26,31 +26,22 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-ARG FLUX_EMAIL
-ARG FLUX_KEY
+ARG FLUX_USERNAME
+ARG FLUX_PASSWORD
 
-ENV COMPOSER_MEMORY_LIMIT=-1
-ENV COMPOSER_ALLOW_SUPERUSER=1
-ENV FLUX_EMAIL=${FLUX_EMAIL}
-ENV FLUX_KEY=${FLUX_KEY}
-
-# Copiar archivos de configuración primero
+RUN composer config --global http-basic.composer.fluxui.dev "$FLUX_USERNAME" "$FLUX_PASSWORD"
+# Copiar archivos de dependencias primero (Mejora el caché de Docker)
 COPY composer.json composer.lock ./
 
-# ✅ Instalar TODAS las dependencias (incluyendo dev) temporalmente
-RUN composer install --no-interaction --prefer-dist
+# Instalar dependencias
+RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader
 
-# Copiar el resto del proyecto
+# Ahora copiar el resto del código
 COPY . .
 
-# ✅ Activar Flux ANTES de optimizar
-RUN php artisan flux:activate "${FLUX_EMAIL}" "${FLUX_KEY}"
+RUN npm ci
 
-# ✅ Ahora sí optimizar autoloader sin dev
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-
-# Build frontend
-RUN npm ci && npm run build && rm -rf node_modules
+RUN npm run build && rm -rf node_modules
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
