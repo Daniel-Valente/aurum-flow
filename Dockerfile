@@ -26,10 +26,15 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# ✅ Copiar todo el proyecto primero
+ARG FLUX_EMAIL
+ARG FLUX_LICENSE_KEY
+
 COPY . .
 
-# ✅ Luego instalar dependencias
+RUN composer config repositories.flux-pro composer https://composer.fluxui.dev
+
+RUN composer config http-basic.composer.fluxui.dev "$FLUX_EMAIL" "$FLUX_LICENSE_KEY"
+
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
 RUN npm ci

@@ -18,7 +18,11 @@ services:
       retries: 5
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        - FLUX_EMAIL=${FLUX_EMAIL}
+        - FLUX_LICENSE_KEY=${FLUX_KEY}
     container_name: laravel_app
     restart: unless-stopped
     working_dir: /var/www/html

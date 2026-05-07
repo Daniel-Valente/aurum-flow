@@ -25,9 +25,6 @@ php artisan flux:activate "valente.gar.daniel@gmail.com" "a550edb3-99c9-430d-8af
 echo "📦 Regenerando manifest de paquetes..."
 php artisan package:discover --ansi   # ✅ regenera sin paquetes dev
 
-echo "🔑 Activando Flux UI..."
-php artisan flux:activate "${FLUX_EMAIL}" "${FLUX_KEY}"
-
 echo "⚡ Optimizando Laravel..."
 php artisan config:cache
 php artisan route:cache
