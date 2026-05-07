@@ -113,7 +113,34 @@
                     @foreach ($detalles as $detalle)
                         <flux:table.row :key="$detalle['id']">
                             <flux:table.cell>{{ $detalle['concepto_nombre'] }}</flux:table.cell>
-                            <flux:table.cell>{{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}</flux:table.cell>
+                            <flux:table.cell>
+                                @if ($editandoDetalle === $detalle['id'])
+                                    <div class="flex items-center gap-2">
+                                        <flux:input
+                                            wire:model="editandoMonto"
+                                            type="number"
+                                            step="0.01"
+                                            min="0.01"
+                                            class="w-28"
+                                        />
+                                        <flux:button
+                                            size="sm"
+                                            variant="primary"
+                                            icon="check"
+                                            wire:click="guardarDetalle({{ $detalle['id'] }})"
+                                            wire:keydown.enter="guardarDetalle({{ $detalle['id'] }})"
+                                        />
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon="x-mark"
+                                            wire:click="$set('editandoDetalle', null)"
+                                        />
+                                    </div>
+                                @else
+                                    {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}
+                                @endif
+                            </flux:table.cell>
                             <flux:table.cell>{{ $detalle['tipo_aplicacion'] }}</flux:table.cell>
                             <flux:table.cell>
                                 <span class="font-mono text-sm text-zinc-500">
@@ -138,6 +165,10 @@
                             </flux:table.cell>
                             <flux:table.cell>
                                 @if ($solicitud->estatus === 'Borrador')
+                                <flux:button
+                                    size="sm" variant="ghost" icon="pencil"
+                                    wire:click="editarDetalle({{ $detalle['id'] }})"
+                                />
                                 <flux:button
                                     size="sm" variant="ghost" icon="trash"
                                     wire:click="eliminarDetalle({{ $detalle['id'] }})"

@@ -31,7 +31,16 @@ php artisan route:cache
 php artisan view:cache
 php artisan event:cache
 
+echo "📁 Creando directorios de storage..."
+
+mkdir -p storage/app/private
+mkdir -p storage/app/private/livewire-tmp
+mkdir -p storage/framework/{cache,sessions,views}
+mkdir -p storage/logs
+
 echo "🗂️ Permisos de storage..."
+chmod -R 775 storage/app
+chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
 echo "⏳ Esperando PostgreSQL y migrando..."

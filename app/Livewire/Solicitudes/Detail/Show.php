@@ -55,6 +55,9 @@ class Show extends Component
     public array $montosComprobantes   = [];
     public array $archivosCfdi         = [];
 
+    public ?int $editandoDetalle = null;
+    public string $editandoMonto = '';
+
     public string $justificacionExcepcion = '';
 
     public function mount(Solicitud $solicitud, ConceptoService $conceptoService): void
@@ -146,6 +149,50 @@ class Show extends Component
         $this->solicitud = $this->solicitud->fresh(['detalles.concepto']);
         $this->sincronizarDetalles();
         $this->calcularKpis();
+    }
+
+    public function editarDetalle(int $detalleId): void
+    {
+        $detalle = SolicitudDetalle::findOrFail($detalleId);
+
+        $this->editandoDetalle = $detalle->id;
+        $this->editandoMonto = (string) $detalle->monto_estimado;
+    }
+
+    public function guardarDetalle(int $detalleId): void
+    {
+        $this->validate([
+            'editandoMonto' => 'required|numeric|min:0.01',
+        ]);
+
+        $detalle = SolicitudDetalle::where('id', $detalleId)
+            ->where('solicitud_id', $this->solicitud->id)
+            ->firstOrFail();
+
+        $detalle->update([
+            'monto_estimado' => $this->editandoMonto,
+        ]);
+
+        // recalcular total solicitud
+        $total = SolicitudDetalle::where('solicitud_id', $this->solicitud->id)
+            ->sum('monto_estimado');
+
+        $this->solicitud->update([
+            'monto_total' => $total,
+        ]);
+
+        $this->solicitud = $this->solicitud->fresh(['detalles.concepto']);
+
+        $this->sincronizarDetalles();
+        $this->calcularKpis();
+
+        $this->editandoDetalle = null;
+        $this->editandoMonto = '';
+
+        Flux::toast(
+            variant: 'success',
+            text: 'Monto actualizado.'
+        );
     }
 
     public function enviar(SolicitudService $service): void
@@ -258,6 +305,7 @@ class Show extends Component
 
             try {
                 $cfdi = app(CFDIService::class)->parseTemporary($archivo);
+
                 $uuidsActuales = collect($procesados)->pluck('uuid')->filter()->all();
 
                 if (in_array($cfdi['uuid'], $uuidsActuales)) {
@@ -472,7 +520,7 @@ class Show extends Component
                 $politica = $politicas->get($d->concepto_id);
                 $monto    = (float) $d->monto_estimado;
 
-                $semaforo = $this->calcularSemaforo($politica, $monto);
+                $semaforo = $this->calcularSemaforo($politica, $this->solicitud, $monto);
                 $comprobanteRequerido = $politica
                     ? $politica->evaluarComprobacion($monto)
                     : 'ninguno';
@@ -536,13 +584,24 @@ class Show extends Component
         })->toArray();
     }
 
-    private function calcularSemaforo(?object $politica, float $monto): string
+    private function calcularSemaforo(?object $politica, ?object $solicitud, float $monto): string
     {
         if (!$politica) {
             return 'sin_politica';
         }
 
         $max = (float) $politica->monto_max;
+
+        if (
+            $politica->tipo_limite === 'Diario' &&
+            $solicitud?->fecha_inicio &&
+            $solicitud?->fecha_fin
+        ) {
+            $duracion = $solicitud->fecha_inicio
+                ->diffInDays($solicitud->fecha_fin) + 1;
+
+            $max *= $duracion;
+        }
 
         if ($monto > $max) {
             return 'excedido';

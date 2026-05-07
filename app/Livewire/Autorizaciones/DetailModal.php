@@ -108,7 +108,7 @@ class DetailModal extends Component
                 $politica = $politicas->get($d->concepto_id);
                 $monto    = (float) $d->monto_estimado;
 
-                $semaforo = $this->calcularSemaforo($politica, $monto);
+                $semaforo = $this->calcularSemaforo($politica, $this->solicitud, $monto);
                 $comprobanteRequerido = $politica
                     ? $politica->evaluarComprobacion($monto)
                     : 'ninguno';
@@ -126,13 +126,24 @@ class DetailModal extends Component
             })->toArray();
     }
 
-    private function calcularSemaforo(?object $politica, float $monto): string
+    private function calcularSemaforo(?object $politica, ?object $solicitud, float $monto): string
     {
         if (!$politica) {
             return 'sin_politica';
         }
 
         $max = (float) $politica->monto_max;
+
+        if (
+            $politica->tipo_limite === 'Diario' &&
+            $solicitud?->fecha_inicio &&
+            $solicitud?->fecha_fin
+        ) {
+            $duracion = $solicitud->fecha_inicio
+                ->diffInDays($solicitud->fecha_fin) + 1;
+
+            $max *= $duracion;
+        }
 
         if ($monto > $max) {
             return 'excedido';
