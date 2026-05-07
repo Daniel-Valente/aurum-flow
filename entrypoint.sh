@@ -27,7 +27,8 @@ echo "📦 Regenerando manifest de paquetes..."
 php artisan package:discover --ansi   # ✅ regenera sin paquetes dev
 
 echo "🔑 Activando Flux UI..."
-php artisan flux:activate "${FLUX_EMAIL}" "${FLUX_KEY}"
+echo "🔑 Activando Flux UI..."
+php artisan flux:activate --email="${FLUX_EMAIL}" --key="${FLUX_KEY}" --no-interaction
 
 echo "⚡ Optimizando Laravel..."
 php artisan config:cache
