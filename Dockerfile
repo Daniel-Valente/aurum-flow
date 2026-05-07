@@ -34,14 +34,21 @@ ARG FLUX_KEY
 ENV COMPOSER_MEMORY_LIMIT=-1
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# ✅ Copiar todo el proyecto primero
-COPY . .
+# Configurar Composer para que pueda bajar Flux Pro
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN composer config --global http-basic.composer.fluxui.dev "$FLUX_EMAIL" "$FLUX_KEY"
 
-# ✅ Luego instalar dependencias
+# Copiar archivos de dependencias
+COPY composer.json composer.lock ./
+
+# Instalar dependencias (Aquí es donde se descarga Flux Pro realmente)
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-RUN npm ci
-RUN npm run build && rm -rf node_modules
+# Copiar el resto del código (incluyendo las vistas que usan <flux:separator />)
+COPY . .
+
+# Compilar assets de JS/CSS
+RUN npm ci && npm run build && rm -rf node_modules
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
