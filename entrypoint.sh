@@ -47,11 +47,9 @@ until php artisan migrate --no-interaction --force 2>/dev/null; do
     sleep 2
 done
 
-if [ "${FRESH_DB}" = "true" ]; then
-    echo "🗑️ Recreando base de datos..."
-    php artisan permission:cache-reset
-    php artisan migrate:fresh --seed --force --no-interaction
-fi
+echo "🗑️ Recreando base de datos..."
+php artisan permission:cache-reset
+php artisan migrate:fresh --seed --force --no-interaction
 
 echo "🚀 Iniciando servidor Laravel..."
 chmod -R 755 public/build
