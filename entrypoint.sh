@@ -48,10 +48,7 @@ until php artisan migrate --no-interaction --force 2>/dev/null; do
 done
 
 echo "🗑️ Recreando base de datos..."
-#php artisan permission:cache-reset
-#php artisan migrate:fresh --seed --force --no-interaction
 
-php artisan migrate --no-interaction
 
 echo "🚀 Iniciando servidor Laravel..."
 chmod -R 755 public/build
