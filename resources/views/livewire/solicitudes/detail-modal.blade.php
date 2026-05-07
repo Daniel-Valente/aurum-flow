@@ -111,7 +111,7 @@
         </div>
 
         @if ($solicitud->motivo_rechazo)
-        <flux:Separator />
+        <flux:separator />
         <div>
             <flux:subheading class="mb-3 text-xs uppercase tracking-widest text-zinc-400">
                 Motivo de rechazo
@@ -124,7 +124,7 @@
         @endif
 
         @if ($solicitud->motivo_cancelacion)
-        <flux:Separator />
+        <flux:separator />
         <div>
             <flux:subheading class="mb-3 text-xs uppercase tracking-widest text-zinc-400">
                 Motivo de cancelación
