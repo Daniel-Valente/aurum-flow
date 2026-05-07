@@ -26,28 +26,30 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# ✅ Nombres de argumentos que coinciden exactamente con tu compose.yaml
 ARG FLUX_EMAIL
 ARG FLUX_KEY
 
-# ✅ Prevenir errores de memoria de Composer y dar permisos de root en Docker
 ENV COMPOSER_MEMORY_LIMIT=-1
 ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV FLUX_EMAIL=${FLUX_EMAIL}
+ENV FLUX_KEY=${FLUX_KEY}
 
-# Configurar Composer para que pueda bajar Flux Pro
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN composer config --global http-basic.composer.fluxui.dev "$FLUX_EMAIL" "$FLUX_KEY"
-
-# Copiar archivos de dependencias
+# Copiar archivos de configuración primero
 COPY composer.json composer.lock ./
 
-# Instalar dependencias (Aquí es donde se descarga Flux Pro realmente)
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# ✅ Instalar TODAS las dependencias (incluyendo dev) temporalmente
+RUN composer install --no-interaction --prefer-dist
 
-# Copiar el resto del código (incluyendo las vistas que usan <flux:separator />)
+# Copiar el resto del proyecto
 COPY . .
 
-# Compilar assets de JS/CSS
+# ✅ Activar Flux ANTES de optimizar
+RUN php artisan flux:activate "${FLUX_EMAIL}" "${FLUX_KEY}"
+
+# ✅ Ahora sí optimizar autoloader sin dev
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Build frontend
 RUN npm ci && npm run build && rm -rf node_modules
 
 COPY entrypoint.sh /entrypoint.sh
