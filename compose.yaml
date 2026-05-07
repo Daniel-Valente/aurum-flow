@@ -37,7 +37,7 @@ services:
       DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-      FRESH_DB: ${FRESH_DB:-false}
+      FRESH_DB: ${FRESH_DB:-true}
       FLUX_EMAIL: ${FLUX_EMAIL}
       FLUX_KEY: ${FLUX_KEY}
 
