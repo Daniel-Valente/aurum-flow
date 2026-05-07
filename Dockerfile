@@ -34,14 +34,11 @@ ARG FLUX_KEY
 ENV COMPOSER_MEMORY_LIMIT=-1
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# ✅ Copiar archivos de dependencias primero (¡Excelente para el caché!)
-COPY composer.json composer.lock ./
-
-# ✅ Instalar dependencias sin fallos
-RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader
-
-# Ahora copiar el resto del código
+# ✅ Copiar todo el proyecto primero
 COPY . .
+
+# ✅ Luego instalar dependencias
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
 RUN npm ci
 RUN npm run build && rm -rf node_modules

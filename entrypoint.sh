@@ -28,7 +28,7 @@ php artisan package:discover --ansi   # ✅ regenera sin paquetes dev
 
 echo "🔑 Activando Flux UI..."
 echo "🔑 Activando Flux UI..."
-php artisan flux:activate "${FLUX_EMAIL}" "${FLUX_KEY}" --no-interaction
+php artisan flux:activate "${FLUX_EMAIL}" "${FLUX_KEY}"
 
 echo "⚡ Optimizando Laravel..."
 php artisan config:cache
