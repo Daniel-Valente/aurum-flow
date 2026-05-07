@@ -177,7 +177,7 @@
                         <div class="flex items-center gap-1 shrink-0">
                             <span class="text-xs text-zinc-400">$</span>
                             <flux:input
-                                wire:model.live="montosComprobantes.{{ $idx }}"
+                                wire:model.blur="montosComprobantes.{{ $idx }}"
                                 type="number"
                                 step="0.01"
                                 min="0.01"
