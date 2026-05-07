@@ -41,13 +41,13 @@ RUN npm ci
 
 RUN npm run build && rm -rf node_modules
 
-RUN chown -R www-data:www-data /var/www/html
-
-USER www-data
-
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+RUN chown -R www-data:www-data /var/www/html
+
 EXPOSE 8000
+
+USER www-data
 
 ENTRYPOINT ["/entrypoint.sh"]
