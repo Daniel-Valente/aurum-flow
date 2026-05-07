@@ -34,9 +34,6 @@ ARG FLUX_KEY
 ENV COMPOSER_MEMORY_LIMIT=-1
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# ✅ Configurar autenticación para Flux
-RUN composer config --global http-basic.composer.fluxui.dev "$FLUX_EMAIL" "$FLUX_KEY"
-
 # ✅ Copiar archivos de dependencias primero (¡Excelente para el caché!)
 COPY composer.json composer.lock ./
 
