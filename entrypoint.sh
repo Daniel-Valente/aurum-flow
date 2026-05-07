@@ -25,10 +25,6 @@ php artisan flux:activate "valente.gar.daniel@gmail.com" "a550edb3-99c9-430d-8af
 echo "📦 Regenerando manifest de paquetes..."
 php artisan package:discover --ansi   # ✅ regenera sin paquetes dev
 
-npm run install
-
-npm run build
-
 echo "⚡ Optimizando Laravel..."
 php artisan config:cache
 php artisan route:cache
@@ -58,4 +54,6 @@ if [ "${FRESH_DB}" = "true" ]; then
 fi
 
 echo "🚀 Iniciando servidor Laravel..."
+chmod -R 755 public/build
+
 exec php artisan serve --host=0.0.0.0 --port=8000
