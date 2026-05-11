@@ -18,15 +18,13 @@ return new class extends Migration
 
             $table->foreignId('excepcion_id')->nullable()->constrained('gastos_excepciones')->nullOnDelete();
 
-            $table->string('evento');
-            // creado | validado | excepcion_creada | aprobado | rechazado
+            $table->string('evento'); // creado | validado | excepcion_creada | aprobado | rechazado
 
             $table->foreignId('actor_id')->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
 
-            $table->string('origen')->default('sistema');
-            // sistema | api | manual
+            $table->string('origen')->default('sistema'); // sistema | api | manual
 
             $table->json('datos_antes')->nullable();
             $table->json('datos_despues')->nullable();

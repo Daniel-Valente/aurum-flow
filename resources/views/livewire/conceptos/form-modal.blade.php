@@ -41,29 +41,22 @@
             </div>
         </div>
 
-        <div class="grid auto-rows-min gap-5 md:grid-cols-2">
-            <div class="flex flex-col">
-                <flux:field>
-                    <flux:label badge="Opcional">Categoría</flux:label>
-                    <flux:input
-                        wire:model="categoria"
-                        placeholder="Ej. Alimentación"
-                    />
-                    <flux:error name="categoria" />
-                </flux:field>
-            </div>
-            <div class="flex flex-col">
-                <flux:field>
-                    <flux:label badge="Requerido">Tipo de aplicación</flux:label>
-                    <flux:select variant="listbox" wire:model="tipo_aplicacion">
-                        <flux:select.option value=""></flux:select.option>
-                        <flux:select.option value="Diario">Diario</flux:select.option>
-                        <flux:select.option value="Evento">Evento</flux:select.option>
-                        <flux:select.option value="Viaje">Viaje</flux:select.option>
-                    </flux:select>
-                    <flux:error name="tipo_aplicacion" />
-                </flux:field>
-            </div>
+        <div class="w-full">
+            <flux:field>
+                <flux:label badge="Opcional">Categoría</flux:label>
+                <flux:select wire:model="categoria" variant="combobox">
+                    <x-slot name="input">
+                        <flux:select.input wire:model="searchCategory" placeholder="Selecciona o escribe una nueva categoría" />
+                    </x-slot>
+                    @foreach ($categorias as $categoria)
+                        <flux:select.option :wire:key="$categoria">{{ $categoria }}</flux:select.option>
+                    @endforeach
+                    <flux:select.option.create wire:click="createCategory" min-length="2">
+                        Crear "<span wire:text="searchCategory"></span>"
+                    </flux:select.option.create>
+                </flux:select>
+                <flux:error name="categoria" />
+            </flux:field>
         </div>
 
         <div class="w-full">
@@ -77,40 +70,8 @@
         <div class="grid auto-rows-min gap-5 md:grid-cols-2">
             <div class="flex flex-col">
                 <flux:field>
-                    <flux:label badge="Opcional">Orden</flux:label>
-                    <flux:input
-                        wire:model="orden"
-                        placeholder="Ej. 1"
-                        type="number"
-                        step="1"
-                        min="0"
-                    />
-                    <flux:description class="text-[11px]">Posición en listas y reportes.</flux:description>
-                    <flux:error name="orden" />
-                </flux:field>
-            </div>
-
-            <div class="flex flex-col">
-                <flux:field>
-                    <flux:label badge="Opcional">Tope de referencia ($)</flux:label>
-                    <flux:input
-                        wire:model="tope_referencia"
-                        placeholder="Ej. 350.00"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                    />
-                    <flux:description class="text-[11px]">Precio promedio de mercado (informativo).</flux:description>
-                    <flux:error name="tope_referencia" />
-                </flux:field>
-            </div>
-        </div>
-
-        <div class="grid auto-rows-min gap-5 md:grid-cols-2">
-            <div class="flex flex-col">
-                <flux:field>
                     <flux:label badge="Opcional">Vigencia desde</flux:label>
-                    <flux:date-picker wire:model="vigencia_desde" />
+                    <flux:date-picker selectable-header wire:model="vigencia_desde" fixed-weeks />
                     <flux:error name="vigencia_desde" />
                 </flux:field>
             </div>
@@ -118,29 +79,10 @@
             <div class="flex flex-col">
                 <flux:field>
                     <flux:label badge="Opcional">Vigencia hasta</flux:label>
-                    <flux:date-picker wire:model="vigencia_hasta" />
+                    <flux:date-picker selectable-header wire:model="vigencia_hasta" fixed-weeks />
                     <flux:error name="vigencia_hasta" />
                 </flux:field>
             </div>
-        </div>
-
-        <div class="w-full">
-            <flux:field>
-                <flux:label badge="Opcional">Roles con acceso</flux:label>
-                <flux:description class="text-xs mb-2">
-                    Sin selección = No disponible hacía todos los roles.
-                </flux:description>
-                <div class="flex flex-wrap gap-4">
-                    @foreach ($roles as $role)
-                        <flux:checkbox
-                            value="{{ $role['name'] }}"
-                            label="{{ $role['name'] }}"
-                            wire:model.live="rolesSeleccionados"
-                        />
-                    @endforeach
-                </div>
-                <flux:error name="rolesSeleccionados" />
-            </flux:field>
         </div>
 
         <div class="rounded-xl border border-zinc-200 dark:border-zinc-700">
@@ -151,7 +93,7 @@
                     Las reglas de documentos y montos se configuran en la política.
                 </p>
             </div>
-            <div class="px-4 py-3">
+            <div class="px-4 py-3 flex flex-col gap-4">
                 <flux:field variant="inline">
                     <flux:checkbox wire:model="aplica_iva" />
                     <div>
@@ -161,6 +103,26 @@
                         </flux:description>
                     </div>
                     <flux:error name="aplica_iva" />
+                </flux:field>
+                <flux:field variant="inline">
+                    <flux:checkbox wire:model="aplica_ish" />
+                    <div>
+                        <flux:label class="text-sm font-medium">Aplica ISH</flux:label>
+                        <flux:description class="text-xs">
+                            El gasto incluye Impuesto Sobre Hospedaje (ISH), comúnmente aplicado en hoteles y servicios de alojamiento.
+                        </flux:description>
+                    </div>
+                    <flux:error name="aplica_ish" />
+                </flux:field>
+                <flux:field variant="inline">
+                    <flux:checkbox wire:model="aplica_ieps" />
+                    <div>
+                        <flux:label class="text-sm font-medium">Aplica IEPS</flux:label>
+                        <flux:description class="text-xs">
+                            El gasto genera IEPS acreditable, aplicable en conceptos como combustibles, bebidas alcohólicas, tabaco o productos gravados.
+                        </flux:description>
+                    </div>
+                    <flux:error name="aplica_ieps" />
                 </flux:field>
             </div>
         </div>

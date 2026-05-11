@@ -16,12 +16,9 @@ class Index extends Component
 
     public string $search = '';
     public string $estatus = '';
-    public ?int $rolId = null;
-    public string $tipo = '';
     public string $categoria = '';
     public string $vigencia = '';
 
-    public array $roles = [];
     public array $categorias = [];
 
     public ?int $deletingId = null;
@@ -43,9 +40,8 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function mount(EmpleadoService $empleadoService, ConceptoService $conceptoService): void
+    public function mount(ConceptoService $conceptoService): void
     {
-        $this->roles = $empleadoService->roles();
         $this->categorias = $conceptoService->categorias();
     }
 
@@ -97,11 +93,9 @@ class Index extends Component
         return view('livewire.conceptos.index', [
             'conceptos' => $service->paginate(
                 search: $this->search,
-                tipoAplicacion: $this->tipo,
                 estatus: $this->estatus,
                 categoria: $this->categoria,
                 vigencia: $this->vigencia,
-                rolId: $this->rolId
             ),
         ]);
     }

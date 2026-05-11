@@ -58,7 +58,7 @@
                         <flux:select.option value="">Todos</flux:select.option>
                         @foreach ($centrosCostos as $centroCosto)
                             <flux:select.option value="{{ $centroCosto['id'] }}">
-                                {{ $centroCosto['nombre'] }}
+                                {{ $centroCosto['nombre'] ?? $centroCosto['cuenta_contable'] }}
                             </flux:select.option>
                         @endforeach
                     </flux:select>
@@ -157,7 +157,7 @@
 
                         <flux:table.cell>
                             <div class="flex flex-col gap-3">
-                                <span>{{ $proyecto->centroCosto?->nombre ?? '' }}</span>
+                                <span>{{ $proyecto->centroCosto?->nombre ?? $empleado->centroCosto?->cuenta_contable ?? '' }}</span>
                                 <span class="font-mono text-zinc-500 dark:text-zinc-400">
                                     {{ $proyecto->responsable?->nombre ?? 'Sin responsable' }}
                                 </span>

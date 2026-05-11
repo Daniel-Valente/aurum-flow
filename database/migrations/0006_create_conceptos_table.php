@@ -19,17 +19,10 @@ return new class extends Migration
             $table->string('categoria')->nullable();
             $table->string('descripcion')->nullable();
 
-            // Diario | Evento | Viaje — ritmo de aplicación del concepto
-            $table->string('tipo_aplicacion', 20)->default('Diario')->index();
-
-            $table->integer('orden')->default(0);
-
             // Naturaleza fiscal — propiedad del tipo de gasto, no del rol
-            // El hospedaje genera IVA acreditable; viáticos de alimentación pueden ser exentos
             $table->boolean('aplica_iva')->default(true);
-
-            // Precio promedio de mercado (informativo para el validador y reportes)
-            $table->decimal('tope_referencia', 10, 2)->nullable();
+            $table->boolean('aplica_ish')->default(false);
+            $table->boolean('aplica_ieps')->default(false);
 
             $table->date('vigencia_desde')->nullable();
             $table->date('vigencia_hasta')->nullable();

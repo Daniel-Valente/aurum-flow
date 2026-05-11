@@ -1,24 +1,9 @@
-{{--
-    step3.blade.php — Comprobación de gastos
-    Se incluye desde show.blade.php cuando $stepActual === 3
-
-    Variables disponibles del componente Show:
-    - $solicitud
-    - $gastos        → colección de gastos con su estado de comprobación
-    - $kpi_ok, $kpi_limite, $kpi_excedido, $kpi_sin_politica
-    - $gastoActivo   → id del gasto en edición (null si ninguno)
-    - $montoReal     → string del monto real ingresado
-    - $tipoComprobante → 'factura' | 'pdf' | 'recibo'
---}}
 <div class="space-y-6">
-
-    {{-- ── Header ────────────────────────────────────────────────────────── --}}
     @include('livewire.solicitudes.detail.partials._header', [
         'badge'      => 'Comprobación de gastos',
         'badgeColor' => 'green',
     ])
 
-    {{-- ── KPIs de gastos reales (no estimados) ───────────────────────────── --}}
     <div class="grid gap-3 grid-cols-2 sm:grid-cols-4">
 
         @php
@@ -72,8 +57,6 @@
 
     </div>
 
-    {{-- DESPUÉS de los KPIs, ANTES de la tabla de gastos --}}
-
     <flux:card>
         <div class="flex items-center justify-between">
             <div>
@@ -106,7 +89,6 @@
             </div>
         </div>
 
-        {{-- Barra de progreso visual --}}
         <div class="mt-4 h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
             <div
                 class="h-full transition-all duration-500 ease-out {{ $pctCompletado === 100 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600' }}"
@@ -114,7 +96,6 @@
             ></div>
         </div>
 
-        {{-- Desglose de estados --}}
         <div class="mt-3 flex items-center gap-4 text-xs text-zinc-500">
             <span class="flex items-center gap-1">
                 <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
@@ -139,7 +120,6 @@
         </div>
     </flux:card>
 
-    {{-- ── Tabla de gastos con acciones inline ────────────────────────────── --}}
     <flux:card class="p-0">
         <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
             <flux:text size="sm" class="text-zinc-500">
@@ -188,14 +168,12 @@
 
                 <div class="px-4 py-4 space-y-4" wire:key="gasto-{{ $gasto['id'] }}">
 
-                    {{-- Fila resumen del gasto --}}
                     <div class="flex items-center justify-between gap-3 flex-wrap">
                         <div class="flex flex-col gap-0.5 min-w-0">
                             <span class="font-medium text-sm text-zinc-800 dark:text-zinc-100">
                                 {{ $gasto['concepto_nombre'] }}
                             </span>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-xs text-zinc-400">{{ $gasto['tipo_aplicacion'] }}</span>
                                 @if ($gasto['monto_estimado'])
                                     <span class="text-xs text-zinc-300">·</span>
                                     <span class="text-xs text-zinc-400 font-mono">
@@ -208,11 +186,17 @@
                                         Límite: {{ Number::currency($gasto['limite_politica'], in: 'MXN') }}
                                     </span>
                                 @endif
+
+                                @if ($gasto['tipo_limite_politica'])
+                                    <span class="text-xs text-zinc-300">·</span>
+                                    <span class="text-xs text-zinc-400 font-mono">
+                                        Tipo: {{ $gasto['tipo_limite_politica'] }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
 
                         <div class="flex items-center gap-2 shrink-0">
-                            {{-- Monto real si ya fue registrado --}}
                             @if ($gasto['monto_real'])
                                 <span class="font-mono text-sm font-semibold text-zinc-800 dark:text-zinc-100">
                                     {{ Number::currency($gasto['monto_real'], in: 'MXN') }}
@@ -222,7 +206,6 @@
                             <flux:badge :color="$comprobanteColor" size="sm">{{ $comprobanteLabel }}</flux:badge>
                             <flux:badge :color="$estatusColor" size="sm">{{ $estatusLabel }}</flux:badge>
 
-                            {{-- Botón comprobar — AHORA INCLUYE RECHAZADOS --}}
                             @if (in_array($estatusGasto, ['pendiente', 'aprobado']) && !$estaEnEdicion)
                                 <flux:button
                                     size="sm"
@@ -247,7 +230,6 @@
                         </div>
                     </div>
 
-                    {{-- Panel de comprobación inline --}}
                     @if ($estaEnEdicion)
                         <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-4 space-y-4">
 
@@ -325,26 +307,48 @@
                                     @if ($gasto['estatus'] === 'pendiente')
                                         <flux:field>
                                             <flux:label badge="Requerido">Fecha del gasto</flux:label>
-                                            <flux:date-picker wire:model="fechaGastoReal" />
+                                            <flux:date-picker selectable-header wire:model="fechaGastoReal" fixed-weeks />
                                             <flux:error name="fechaGastoReal" />
                                         </flux:field>
                                     @endif
 
-                                    {{-- Tipo de comprobante --}}
                                     <flux:field>
                                         <flux:label badge="Requerido">Tipo de comprobante</flux:label>
                                         <flux:select variant="listbox" wire:model.live="tipoComprobante">
                                             <flux:select.option value="">Selecciona...</flux:select.option>
-                                            @if (in_array($gasto['comprobante_requerido'], ['cfdi', 'excede', 'ninguno']))
-                                                <flux:select.option value="factura">Factura electrónica (XML + UUID)</flux:select.option>
+
+                                            @if (in_array('factura', $gasto['tipos_permitidos']))
+                                                <flux:select.option value="factura">
+                                                    Factura electrónica (XML + UUID)
+                                                </flux:select.option>
                                             @endif
-                                            @if (in_array($gasto['comprobante_requerido'], ['ticket', 'excede', 'ninguno']))
-                                                <flux:select.option value="pdf">Ticket / Recibo (PDF o imagen)</flux:select.option>
+
+                                            @if (in_array('pdf', $gasto['tipos_permitidos']))
+                                                <flux:select.option value="pdf">
+                                                    Ticket / Recibo (PDF o imagen)
+                                                </flux:select.option>
                                             @endif
-                                            @if ($gasto['comprobante_requerido'] === 'ninguno')
-                                                <flux:select.option value="sin_comprobante">Sin comprobante</flux:select.option>
+
+                                            @if (in_array('sin_comprobante', $gasto['tipos_permitidos']))
+                                                <flux:select.option value="sin_comprobante">
+                                                    Sin comprobante
+                                                </flux:select.option>
                                             @endif
                                         </flux:select>
+
+                                        @if (!empty($gasto['limite_politica']))
+                                            <flux:description>
+                                                @php
+                                                    $tp = $gasto['tipos_permitidos'];
+                                                    $partes = [];
+                                                    if (in_array('sin_comprobante', $tp)) $partes[] = 'Sin doc hasta el umbral libre';
+                                                    if (in_array('pdf', $tp)) $partes[] = 'Ticket en zona intermedia';
+                                                    if (in_array('factura', $tp)) $partes[] = 'CFDI en zona alta';
+                                                @endphp
+                                                Política: {{ implode(' · ', $partes) }}
+                                            </flux:description>
+                                        @endif
+
                                         <flux:error name="tipoComprobante" />
                                     </flux:field>
 
@@ -353,7 +357,7 @@
                                 @include('livewire.solicitudes.detail.partials._archivo')
                             @endif
 
-                            <div class="flex items-center justify-between pt-2">
+                            <div class="flex items-center flex-col sm:flex-row justify-end gap-3 sm:justify-between pt-2">
                                 <span class="text-xs text-zinc-400">
                                     {{ count($gasto['comprobantes']) }} comprobante(s)
                                     @if ($falta > 0)
@@ -373,7 +377,6 @@
                         </div>
                     @endif
 
-                    {{-- Comprobantes ya subidos --}}
                     @if (!empty($gasto['comprobantes']))
                         <div class="space-y-1">
                             @foreach ($gasto['comprobantes'] as $comp)

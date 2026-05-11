@@ -59,24 +59,14 @@ class SolicitudService
         $perPage = min($perPage, 100);
 
         return Solicitud::query()
-
-            // =========================
-            // 🔗 relaciones solo lectura
-            // =========================
             ->leftJoin('proyectos', 'proyectos.id', '=', 'solicitudes.proyecto_id')
             ->leftJoin('areas', 'areas.id', '=', 'solicitudes.area_id')
-
             ->select([
                 'solicitudes.*',
                 'proyectos.nombre as proyecto_nombre',
                 'proyectos.codigo as proyecto_codigo',
                 'areas.nombre as area_nombre',
             ])
-
-            // =========================
-            // 💰 métricas financieras
-            // =========================
-
             ->selectSub(function ($q) {
                 $q->from('gastos as g')
                     ->selectRaw('COALESCE(SUM(g.monto),0)')
@@ -84,7 +74,6 @@ class SolicitudService
                     ->whereNull('g.deleted_at')
                     ->whereIn('g.estatus', ['aprobado', 'pendiente', 'excepcion']);
             }, 'monto_aprobable')
-
             ->selectSub(function ($q) {
                 $q->from('gastos as g')
                     ->selectRaw('COALESCE(SUM(g.monto),0)')
@@ -92,11 +81,6 @@ class SolicitudService
                     ->whereNull('g.deleted_at')
                     ->where('g.estatus', 'comprobado');
             }, 'monto_comprobado')
-
-            // =========================
-            // ⚠️ excepciones
-            // =========================
-
             ->selectSub(function ($q) {
                 $q->selectRaw("
                     CASE WHEN EXISTS (
@@ -110,7 +94,6 @@ class SolicitudService
                     THEN 1 ELSE 0 END
                 ");
             }, 'excepciones_n1')
-
             ->selectSub(function ($q) {
                 $q->selectRaw("
                     CASE WHEN EXISTS (
@@ -124,21 +107,8 @@ class SolicitudService
                     THEN 1 ELSE 0 END
                 ");
             }, 'excepciones_n2')
-
-            // =========================
-            // 🧠 cumplimiento centralizado
-            // =========================
             ->withCumplimiento()
-
-            // =========================
-            // 🔒 scope base del usuario
-            // =========================
             ->where('solicitudes.empleado_id', $user->empleado->id)
-
-            // =========================
-            // 🔎 filtros
-            // =========================
-
             ->when($search, fn ($q) =>
                 $q->where(function ($q2) use ($search) {
                     $q2->where('solicitudes.folio', 'ilike', "%{$search}%")
@@ -146,32 +116,20 @@ class SolicitudService
                     ->orWhere('proyectos.nombre', 'ilike', "%{$search}%");
                 })
             )
-
             ->when(
                 $estatus && in_array($estatus, self::ESTATUS_VALIDOS, true),
                 fn ($q) => $q->where('solicitudes.estatus', $estatus)
             )
-
             ->when($proyectoId, fn ($q) =>
                 $q->where('solicitudes.proyecto_id', $proyectoId)
             )
-
             ->when($fechaInicio, fn ($q) =>
                 $q->whereDate('solicitudes.fecha_inicio', '>=', $fechaInicio)
             )
-
             ->when($fechaFin, fn ($q) =>
                 $q->whereDate('solicitudes.fecha_fin', '<=', $fechaFin)
             )
-
-            // =========================
-            // 🎯 filtro cumplimiento reutilizable
-            // =========================
             ->filterCumplimiento($cumplimiento)
-
-            // =========================
-            // 📊 orden
-            // =========================
             ->orderBy("solicitudes.{$sortBy}", $sortDir)
 
             ->paginate($perPage);
@@ -206,50 +164,40 @@ class SolicitudService
             ->leftJoin('empleados', 'empleados.id', '=', 'solicitudes.empleado_id')
             ->leftJoin('proyectos', 'proyectos.id', '=', 'solicitudes.proyecto_id')
             ->leftJoin('areas', 'areas.id', '=', 'solicitudes.area_id')
-
             ->select([
                 'solicitudes.*',
                 'empleados.nombre_completo as empleado_nombre',
                 'proyectos.nombre as proyecto_nombre',
                 'areas.nombre as area_nombre',
             ])
-
             ->where('solicitudes.estatus', 'Pendiente')
-
             ->when(
                 $user->hasRole('manager') && $user->empleado?->area_id,
                 fn ($q) => $q->where('solicitudes.area_id', $user->empleado->area_id)
             )
-
             ->when(
                 $user->empleado?->id,
                 fn ($q) => $q->where('solicitudes.empleado_id', '!=', $user->empleado->id)
             )
-
             ->whereNotExists(function ($q) use ($roleId) {
                 $q->select(DB::raw(1))
                     ->from('solicitud_aprobaciones')
                     ->whereColumn('solicitud_id', 'solicitudes.id')
                     ->where('role_id', $roleId);
             })
-
             ->when($search, fn ($q) =>
                 $q->where(function ($q2) use ($search) {
                     $q2->where('solicitudes.folio', 'ilike', "%{$search}%")
                     ->orWhere('empleados.nombre_completo', 'ilike', "%{$search}%");
                 })
             )
-
             ->when($proyectoId, fn ($q) =>
                 $q->where('solicitudes.proyecto_id', $proyectoId)
             )
-
             ->when($areaId && $user->hasRole('admin'), fn ($q) =>
                 $q->where('solicitudes.area_id', $areaId)
             )
-
             ->orderBy("solicitudes.{$sortBy}", $sortDir)
-
             ->paginate($perPage);
     }
 
@@ -272,15 +220,12 @@ class SolicitudService
         return Solicitud::query()
             ->leftJoin('proyectos', 'proyectos.id', '=', 'solicitudes.proyecto_id')
             ->leftJoin('areas', 'areas.id', '=', 'solicitudes.area_id')
-
             ->select([
                 'solicitudes.*',
                 'proyectos.nombre as proyecto_nombre',
                 'proyectos.codigo as proyecto_codigo',
                 'areas.nombre as area_nombre',
             ])
-
-            // 💰 métricas
             ->selectSub(function ($q) {
                 $q->from('gastos as g')
                     ->selectRaw('COALESCE(SUM(g.monto),0)')
@@ -288,7 +233,6 @@ class SolicitudService
                     ->whereNull('g.deleted_at')
                     ->whereIn('g.estatus', ['aprobado', 'pendiente', 'excepcion']);
             }, 'monto_aprobable')
-
             ->selectSub(function ($q) {
                 $q->from('gastos as g')
                     ->selectRaw('COALESCE(SUM(g.monto),0)')
@@ -296,8 +240,6 @@ class SolicitudService
                     ->whereNull('g.deleted_at')
                     ->where('g.estatus', 'comprobado');
             }, 'monto_comprobado')
-
-            // ⚠️ excepciones
             ->selectSub(function ($q) {
                 $q->from('gastos_excepciones as ge')
                     ->join('gastos as g', 'g.id', '=', 'ge.gasto_id')
@@ -306,7 +248,6 @@ class SolicitudService
                     ->where('ge.nivel', 1)
                     ->where('ge.estatus', 'pendiente');
             }, 'excepciones_n1')
-
             ->selectSub(function ($q) {
                 $q->from('gastos_excepciones as ge')
                     ->join('gastos as g', 'g.id', '=', 'ge.gasto_id')
@@ -315,15 +256,9 @@ class SolicitudService
                     ->where('ge.nivel', 2)
                     ->where('ge.estatus', 'pendiente');
             }, 'excepciones_n2')
-
-            // 🧠 cumplimiento centralizado
             ->withCumplimiento()
-
-            // 🔒 scope base
             ->where('solicitudes.empleado_id', $user->empleado->id)
             ->where('solicitudes.estatus', 'Autorizado')
-
-            // 🔎 filtros
             ->when($search, fn ($q) =>
                 $q->where(function ($q2) use ($search) {
                     $q2->where('solicitudes.folio', 'ilike', "%{$search}%")

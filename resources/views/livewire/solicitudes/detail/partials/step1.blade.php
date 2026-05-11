@@ -103,7 +103,6 @@
                 <flux:table.columns>
                     <flux:table.column class="pl-4">Concepto</flux:table.column>
                     <flux:table.column>Monto</flux:table.column>
-                    <flux:table.column>Tipo</flux:table.column>
                     <flux:table.column>Límite</flux:table.column>
                     <flux:table.column>Estado</flux:table.column>
                     <flux:table.column>Acción</flux:table.column>
@@ -141,12 +140,14 @@
                                     {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}
                                 @endif
                             </flux:table.cell>
-                            <flux:table.cell>{{ $detalle['tipo_aplicacion'] }}</flux:table.cell>
                             <flux:table.cell>
                                 <span class="font-mono text-sm text-zinc-500">
                                     {{ $detalle['limite_politica'] ? Number::currency($detalle['limite_politica'], in: 'MXN') : '—' }}
+                                    - <span class="text-xs">
+                                        {{ $detalle['tipo_limite_politica'] ?? '-' }}
+                                    </span>
                                 </span>
-                            </flux:table.cell>{{-- límite de política (opcional) --}}
+                            </flux:table.cell>
                             <flux:table.cell>
                                 @php $color = match($detalle['semaforo']) {
                                     'ok'           => 'green',

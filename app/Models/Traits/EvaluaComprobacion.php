@@ -6,9 +6,9 @@ trait EvaluaComprobacion
 {
     public function evaluarComprobacion(float $monto): string
     {
-        $sinTramos = $this->monto_libre       === null
-                && $this->monto_comprobante === null
-                && $this->monto_factura     === null;
+        $sinTramos = $this->monto_libre === null
+            && $this->monto_comprobante === null
+            && $this->monto_factura     === null;
 
         if ($sinTramos) {
             return 'ninguno';
@@ -18,15 +18,18 @@ trait EvaluaComprobacion
             return 'ninguno';
         }
 
-        if ($this->monto_comprobante !== null && $monto <= (float) $this->monto_comprobante) {
-            return 'ticket';
-        }
-
-        // 👇 IMPORTANTE: aunque exceda, sigue requiriendo CFDI
-        if ($this->monto_factura !== null) {
+        if ($this->monto_factura !== null && $monto >= (float) $this->monto_factura) {
             return 'cfdi';
         }
 
-        return 'ticket';
+        if ($this->monto_comprobante !== null && $monto >= (float) $this->monto_comprobante) {
+            return 'ticket';
+        }
+
+        if ($this->monto_libre !== null) {
+            return 'ticket';
+        }
+
+        return 'ninguno';
     }
 }

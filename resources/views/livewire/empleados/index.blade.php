@@ -58,11 +58,11 @@
 
             <div class="sm:w-48">
                 <flux:field>
-                    <flux:label>Centro de Costos</flux:label>
+                    <flux:label>Referencia Contable</flux:label>
                     <flux:select variant="listbox" wire:model.live="centroCostoId">
                         <flux:select.option value="">Todos</flux:select.option>
                         @foreach ($centrosCostos as $centroCosto)
-                            <flux:select.option value="{{ $centroCosto['id'] }}">{{ $centroCosto['nombre'] }}</flux:select.option>
+                            <flux:select.option value="{{ $centroCosto['id'] }}">{{ $centroCosto['nombre'] ?? $centroCosto['cuenta_contable'] }}</flux:select.option>
                         @endforeach
                     </flux:select>
                 </flux:field>
@@ -124,7 +124,7 @@
                                     {{ $empleado->role?->name }}
                                 </span>
                                 <span size="xs" class="font-mono text-zinc-500 dark:text-zinc-400 px-4">
-                                    {{ $empleado->centroCosto?->nombre }}
+                                    {{ $empleado->centroCosto?->nombre ?? $empleado->centroCosto?->cuenta_contable ?? '-' }}
                                 </span>
                             </div>
                         </flux:table.cell>

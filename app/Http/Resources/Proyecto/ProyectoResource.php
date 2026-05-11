@@ -21,7 +21,6 @@ class ProyectoResource extends JsonResource
             'tipo' => $this->tipo,
             'cliente' => $this->cliente,
 
-            'prioridad' => $this->prioridad,
             'estado_operativo' => $this->estado_operativo,
 
             'presupuesto_total' => $this->presupuesto_total,

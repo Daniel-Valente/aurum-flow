@@ -5,7 +5,6 @@ namespace App\Services\Gasto;
 use App\Models\PoliticaGasto;
 use App\Models\PoliticaGastoAuditoria;
 use App\Models\PoliticaGastoVersion;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
@@ -94,8 +93,8 @@ class PoliticaGastoService
                 'id', 'role_id', 'concepto_id',
                 'monto_max', 'tipo_limite',
                 'monto_libre', 'monto_comprobante', 'monto_factura',
-                'valida_sat', 'acumulable_dia',
-                'permite_excepcion',
+                'valida_sat', 'acumulable_dia', 'propina_max_porcentaje',
+                'permite_excepcion', 'permite_propina',
                 'vigencia_desde', 'vigencia_hasta',
             ])
             ->toArray();
@@ -124,6 +123,8 @@ class PoliticaGastoService
                 'politicas_gastos_versiones.permite_excepcion',
                 'politicas_gastos_versiones.vigencia_desde',
                 'politicas_gastos_versiones.vigencia_hasta',
+                'politicas_gastos_versiones.permite_propina',
+                'politicas_gastos_versiones.propina_max_porcentaje',
                 'politicas_gastos_versiones.estatus',
                 'politicas_gastos_versiones.motivo',
                 'politicas_gastos_versiones.created_at',
@@ -344,23 +345,25 @@ class PoliticaGastoService
     private function camposDesdeData(array $data, ?PoliticaGasto $politica = null): array
     {
         return [
-            'role_id'           => $data['role_id'],
-            'concepto_id'       => $data['concepto_id'],
-            'tipo_limite'       => $data['tipo_limite'],
+            'role_id'                => $data['role_id'],
+            'concepto_id'            => $data['concepto_id'],
+            'tipo_limite'            => $data['tipo_limite'],
 
-            'monto_max'         => $data['monto_max'],
+            'monto_max'              => $data['monto_max'],
 
             // Tramos documentales — null = tramo no configurado para ese nivel
-            'monto_libre'       => $data['monto_libre']       ?? ($politica?->monto_libre       ?? null),
-            'monto_comprobante' => $data['monto_comprobante'] ?? ($politica?->monto_comprobante ?? null),
-            'monto_factura'     => $data['monto_factura']     ?? ($politica?->monto_factura     ?? null),
+            'monto_libre'            => $data['monto_libre']       ?? ($politica?->monto_libre       ?? null),
+            'monto_comprobante'      => $data['monto_comprobante'] ?? ($politica?->monto_comprobante ?? null),
+            'monto_factura'          => $data['monto_factura']     ?? ($politica?->monto_factura     ?? null),
+            'propina_max_porcentaje' => $data['propina_max_porcentaje']     ?? ($politica?->monto_factura     ?? null),
 
-            'valida_sat'        => $data['valida_sat']        ?? ($politica?->valida_sat        ?? false),
-            'acumulable_dia'    => $data['acumulable_dia']    ?? ($politica?->acumulable_dia    ?? true),
-            'permite_excepcion' => $data['permite_excepcion'] ?? ($politica?->permite_excepcion ?? false),
+            'valida_sat'             => $data['valida_sat']        ?? ($politica?->valida_sat        ?? false),
+            'acumulable_dia'         => $data['acumulable_dia']    ?? ($politica?->acumulable_dia    ?? true),
+            'permite_excepcion'      => $data['permite_excepcion'] ?? ($politica?->permite_excepcion ?? false),
+            'permite_propina'        => $data['permite_propina'] ?? ($politica?->propina_max_porcentaje ?? false),
 
-            'vigencia_desde'    => $data['vigencia_desde']    ?? null,
-            'vigencia_hasta'    => $data['vigencia_hasta']    ?? null,
+            'vigencia_desde'         => $data['vigencia_desde']    ?? null,
+            'vigencia_hasta'         => $data['vigencia_hasta']    ?? null,
         ];
     }
 

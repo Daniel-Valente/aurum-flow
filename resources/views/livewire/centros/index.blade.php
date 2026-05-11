@@ -1,12 +1,12 @@
 <div class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <flux:heading size="xl">Centro de Costos</flux:heading>
-            <flux:subheading>Gestiona los centros de costo de la organización.</flux:subheading>
+            <flux:heading size="xl">Referencia Contable</flux:heading>
+            <flux:subheading>Gestiona las referencias contables de la organización.</flux:subheading>
         </div>
         @can('centros_costos.crear')
             <flux:button variant="primary" icon="plus" wire:click="openCreate">
-                Nuevo Centro de Costo
+                Nueva Referencia Contable
             </flux:button>
         @endcan
     </div>
@@ -19,7 +19,7 @@
                     <flux:label>Búsqueda</flux:label>
                     <flux:input
                         wire:model.live.debounce.300ms="search"
-                        placeholder="Código o nombre..."
+                        placeholder="Código o cuenta contable, centro de costo..."
                         icon="magnifying-glass"
                         clearable
                     />
@@ -119,7 +119,7 @@
                         <flux:table.cell colspan="4" class="py-12 text-center">
                             <div class="flex flex-col items-center gap-3">
                                 <flux:icon name="inbox" class="size-8 text-zinc-300 dark:text-zinc-600" />
-                                <flux:text class="text-zinc-400">No se encontraron centros de costos</flux:text>
+                                <flux:text class="text-zinc-400">No se encontraron referencias contables</flux:text>
                                 @if ($search || $estatus !== '')
                                     <flux:button size="sm" variant="ghost" wire:click="clearFilters">
                                         Limpiar filtros
@@ -138,40 +138,49 @@
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">
-                    {{ $editingId ? 'Editar centro de costo' : 'Nuevo centro de costo' }}
+                    {{ $editingId ? 'Editar referencia contable' : 'Nueva referencia contable' }}
                 </flux:heading>
+
                 <flux:subheading>
-                    {{ $editingId ? 'Modifica los datos del centro de costo.' : 'Completa los datos para registrar una nuevo centro de costo.' }}
+                    {{ $editingId
+                        ? 'Modifica los datos de la referencia contable.'
+                        : 'Captura al menos un campo para registrar un nueva referencia contable.' }}
                 </flux:subheading>
             </div>
 
             <div class="space-y-4">
                 <flux:field>
-                    <flux:label badge="Requerido">
-                        Nombre
+                    <flux:label>
+                        Centro de costo
                     </flux:label>
+
                     <flux:input
-                        wire:model="nombre"
+                        wire:model.defer="nombre"
                         placeholder="Ej. Oficina Central"
                     />
+
                     <flux:error name="nombre" />
                 </flux:field>
 
                 <flux:field>
-                    <flux:label badge="Requerido">
+                    <flux:label>
                         Cuenta contable
                     </flux:label>
+
                     <flux:input
-                        wire:model="cuenta_contable"
+                        wire:model.defer="cuenta_contable"
                         placeholder="Ej. 102-01-001"
                     />
+
                     <flux:error name="cuenta_contable" />
                 </flux:field>
             </div>
 
             <div class="flex justify-end gap-3">
                 <flux:modal.close>
-                    <flux:button variant="ghost">Cancelar</flux:button>
+                    <flux:button variant="ghost">
+                        Cancelar
+                    </flux:button>
                 </flux:modal.close>
 
                 <flux:button
@@ -183,7 +192,10 @@
                     <span wire:loading.remove wire:target="save">
                         {{ $editingId ? 'Guardar cambios' : 'Crear' }}
                     </span>
-                    <span wire:loading wire:target="save">Guardando...</span>
+
+                    <span wire:loading wire:target="save">
+                        Guardando...
+                    </span>
                 </flux:button>
             </div>
         </div>
@@ -199,7 +211,7 @@
                     />
                 </div>
                 <div>
-                    <flux:heading size="lg">Deshabilitar centro de costo</flux:heading>
+                    <flux:heading size="lg">Deshabilitar referencia contable</flux:heading>
                     <flux:subheading class="mt-1">
                         ¿Estás seguro de deshabilitar <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $deletingNombre }}</span>? Esta acción no se puede deshacer.
                     </flux:subheading>

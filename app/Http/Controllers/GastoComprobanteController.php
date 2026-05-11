@@ -14,7 +14,7 @@ public function download(GastoComprobante $comprobante)
         $user = request()->user();
 
         if (
-            $comprobante->gasto->solicitud->empleado->user_id !== $user->id &&
+            $comprobante->solicitud->empleado->user_id !== $user->id &&
             !$user->can('gastos.ver.todos')
         ) {
             throw new AuthorizationException('No autorizado');

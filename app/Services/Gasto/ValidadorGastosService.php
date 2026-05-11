@@ -125,7 +125,7 @@ class ValidadorGastosService
             $gasto->load(['solicitud.empleado.user.roles', 'concepto']);
         }
 
-        $empleado  = $gasto->solicitud->empleado;
+        $empleado  = $gasto->empleado;
         $fecha     = Carbon::parse($gasto->fecha_gasto);
         // ✅ 'status' — clave consistente con evaluarConPolitica()
         $resultado = $this->validar($empleado, $gasto->concepto, $gasto->monto, $fecha);

@@ -2,7 +2,9 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
             <flux:heading size="xl">Autorizaciones</flux:heading>
-            <flux:subheading>Gestiona la revisión y aprobación de solicitudes de viáticos</flux:subheading>
+            <flux:subheading>
+                Gestiona autorizaciones, excepciones y comprobaciones de gastos
+            </flux:subheading>
         </div>
     </div>
 
@@ -21,33 +23,37 @@
 
         @if ($puedeValidarComprobantes)
             <flux:tab name="comprobantes" icon="document-magnifying-glass">
-                Comprobantes
+                Comprobaciones
                 @if ($totalComprobantes > 0)
                     <flux:badge color="yellow" size="sm" class="ml-1">{{ $totalComprobantes }}</flux:badge>
                 @endif
+            </flux:tab>
+        @endif
+
+        @if ($puedeConciliarComprobacion)
+            <flux:tab name="tarjeta" icon="credit-card">
+                Tarjetas corporativas
             </flux:tab>
         @endif
     </flux:tabs>
 
     {{-- ── TAB: SOLICITUDES ── --}}
     @if ($tab === 'solicitudes')
-
         @include('livewire.autorizaciones.partials.solicitudes')
-
     @endif
 
     {{-- ── TAB: EXCEPCIONES ── --}}
     @if ($tab === 'excepciones')
-
         @include('livewire.autorizaciones.partials.excepciones')
-
     @endif
 
     {{-- ── TAB: COMPROBANTES (solo finanzas) ── --}}
     @if ($tab === 'comprobantes' && $puedeValidarComprobantes)
-
         @include('livewire.autorizaciones.partials.comprobantes')
+    @endif
 
+    @if ($tab === 'tarjeta' && $puedeConciliarComprobacion)
+        @include('livewire.autorizaciones.partials.conciliar')
     @endif
 
     @livewire('autorizaciones.detail-modal')

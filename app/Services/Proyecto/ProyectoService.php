@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Cache;
 class ProyectoService
 {
     private const ALLOWED_SORT_COLUMNS = [
-        'nombre', 'codigo', 'tipo', 'region', 'prioridad',
+        'nombre', 'codigo', 'tipo', 'region', 'cuidad',
+        'estado', 'pais',
         'estado_operativo', 'fecha_inicio', 'fecha_fin',
         'presupuesto_total', 'created_at',
     ];
@@ -28,7 +29,6 @@ class ProyectoService
         string  $tipo             = '',
         string  $estadoOperativo  = '',
         string  $region           = '',
-        string  $prioridad        = '',
         ?int    $centroCostoId    = null,
         ?int    $responsableId    = null,
         string  $sortBy           = 'created_at',
@@ -66,9 +66,6 @@ class ProyectoService
             ->when($region, fn($q) =>
                 $q->where('proyectos.region', $region)
             )
-            ->when($prioridad, fn($q) =>
-                $q->where('proyectos.prioridad', $prioridad)
-            )
             ->when($centroCostoId, fn($q) =>
                 $q->where('proyectos.centro_costo_id', $centroCostoId)
             )
@@ -105,7 +102,6 @@ class ProyectoService
             'tipo'             => $data['tipo'],
             'descripcion'      => $data['descripcion']      ?? null,
             'region'           => $data['region']           ?? null,
-            'prioridad'        => $data['prioridad']        ?? 'Media',
             'estado_operativo' => $data['estado_operativo'] ?? 'Draft',
             'centro_costo_id'  => $data['centro_costo_id'] ?? null,
             'responsable_id'   => $data['responsable_id']  ?? null,
@@ -132,7 +128,6 @@ class ProyectoService
             'tipo'              => $data['tipo'],
             'descripcion'       => $data['descripcion']       ?? $proyecto->descripcion,
             'region'            => $data['region']            ?? $proyecto->region,
-            'prioridad'         => $data['prioridad']         ?? $proyecto->prioridad,
             'estado_operativo'  => $data['estado_operativo']  ?? $proyecto->estado_operativo,
             'centro_costo_id'   => $data['centro_costo_id']  ?? $proyecto->centro_costo_id,
             'responsable_id'    => $data['responsable_id']   ?? $proyecto->responsable_id,
@@ -184,11 +179,63 @@ class ProyectoService
     public function regiones(): array
     {
         return Cache::remember('proyectos.regiones', self::LIST_CACHE_TTL, fn() =>
-            Proyecto::whereNotNull('region')
-                ->where('region', '!=', '')
+            Proyecto::query()
+                ->select('region')
+                ->whereNotNull('region')
+                ->whereRaw("TRIM(region) != ''")
                 ->distinct()
                 ->orderBy('region')
                 ->pluck('region')
+                ->filter()
+                ->values()
+                ->toArray()
+        );
+    }
+
+    public function ciudades(): array
+    {
+        return Cache::remember('proyectos.ciudades', self::LIST_CACHE_TTL, fn() =>
+            Proyecto::query()
+                ->select('ciudad')
+                ->whereNotNull('ciudad')
+                ->whereRaw("TRIM(ciudad) != ''")
+                ->distinct()
+                ->orderBy('ciudad')
+                ->pluck('ciudad')
+                ->filter()
+                ->values()
+                ->toArray()
+        );
+    }
+
+    public function estados(): array
+    {
+        return Cache::remember('proyectos.estados', self::LIST_CACHE_TTL, fn() =>
+            Proyecto::query()
+                ->select('estado')
+                ->whereNotNull('estado')
+                ->whereRaw("TRIM(estado) != ''")
+                ->distinct()
+                ->orderBy('estado')
+                ->pluck('estado')
+                ->filter()
+                ->values()
+                ->toArray()
+        );
+    }
+
+    public function paises(): array
+    {
+        return Cache::remember('proyectos.paises', self::LIST_CACHE_TTL, fn() =>
+            Proyecto::query()
+                ->select('pais')
+                ->whereNotNull('pais')
+                ->whereRaw("TRIM(pais) != ''")
+                ->distinct()
+                ->orderBy('pais')
+                ->pluck('pais')
+                ->filter()
+                ->values()
                 ->toArray()
         );
     }
@@ -198,5 +245,8 @@ class ProyectoService
         Cache::forget(self::LIST_CACHE_KEY);
         Cache::forget('proyectos.tipos');
         Cache::forget('proyectos.regiones');
+        Cache::forget('proyectos.ciudades');
+        Cache::forget('proyectos.estados');
+        Cache::forget('proyectos.paises');
     }
 }

@@ -18,7 +18,7 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
             <flux:field class="w-full">
                 <flux:label badge="Requerido">Rol</flux:label>
-                <flux:select variant="listbox" wire:model.live="roleId" required>
+                <flux:select variant="listbox" wire:model="roleId" required>
                     <flux:select.option value=""></flux:select.option>
                     @foreach ($roles as $role)
                         <flux:select.option value="{{ $role['id'] }}">{{ $role['name'] }}</flux:select.option>
@@ -29,7 +29,7 @@
 
             <flux:field class="w-full">
                 <flux:label badge="Requerido">Concepto</flux:label>
-                <flux:select variant="listbox" wire:model="concepto_id" :key="$roleId" required>
+                <flux:select variant="listbox" wire:model="concepto_id" required>
                     <flux:select.option value=""></flux:select.option>
                     @foreach ($conceptos as $concepto)
                         <flux:select.option value="{{ $concepto['id'] }}">
@@ -80,6 +80,8 @@
                 >
                     <flux:select.option value=""></flux:select.option>
                     <flux:select.option value="Diario">Diario</flux:select.option>
+                    <flux:select.option value="Semanal">Semanal</flux:select.option>
+                    <flux:select.option value="Mensual">Mensual</flux:select.option>
                     <flux:select.option value="Viaje">Por viaje</flux:select.option>
                     <flux:select.option value="Evento">Por evento</flux:select.option>
                 </flux:select>
@@ -118,31 +120,26 @@
                 },
 
                 // ── Anchos de segmentos (comp y fac son límites INFERIORES de su tramo) ──
-                // Verde:  0 → comp (inicio de ticket), o hasta max si no hay ticket
                 get segNone() {
                     if (this.sinTramos) return 100
                     if (this.comp !== null) return this.pct(this.comp)
                     if (this.fac  !== null) return this.pct(this.fac)
                     return 100
                 },
-                // Ámbar: comp → fac (inicio de CFDI), o hasta max si no hay CFDI
                 get segTicket() {
                     if (this.sinTramos || this.comp === null) return 0
                     return this.fac !== null
                         ? this.pct(this.fac) - this.pct(this.comp)
                         : 100 - this.pct(this.comp)
                 },
-                // Rosa: fac → 100%
                 get segCfdi() {
                     if (this.sinTramos || this.fac === null) return 0
                     return 100 - this.pct(this.fac)
                 },
 
-                // Posición izquierda de cada segmento
                 get leftTicket() { return this.comp !== null ? this.pct(this.comp) : 0 },
                 get leftCfdi()   { return this.fac  !== null ? this.pct(this.fac)  : 0 },
 
-                // ── Rangos legibles (cada tramo va hasta 1 centavo antes del siguiente) ──
                 get rangoNone() {
                     if (this.sinTramos) return '$0.00 – ' + (this.fmt(this.max) ?? '—')
                     const desde = this.lib !== null ? this.fmt(this.lib) : '$0.00'
@@ -177,7 +174,7 @@
                 <div>
                     <div class="relative h-2 rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700">
                         <div
-                            class="absolute top-0 left-0 h-full bg-emerald-400 dark:bg-emerald-500"
+                            class="absolute top-0 left-0 h-full bg-teal-400 dark:bg-teal-500"
                             :style="`width: ${segNone}%`"
                         ></div>
                         <div
@@ -185,15 +182,15 @@
                             :style="`left: ${leftTicket}%; width: ${segTicket}%`"
                         ></div>
                         <div
-                            class="absolute top-0 h-full bg-rose-400 dark:bg-rose-500"
+                            class="absolute top-0 h-full bg-purple-400 dark:bg-purple-500"
                             :style="`left: ${leftCfdi}%; width: ${segCfdi}%`"
                         ></div>
                     </div>
 
                     <div class="flex justify-between mt-1.5 text-[10px] font-mono">
-                        <span class="text-emerald-600 dark:text-emerald-400">Sin doc</span>
+                        <span class="text-teal-600 dark:text-teal-400">Sin doc</span>
                         <span class="text-amber-600 dark:text-amber-500">Ticket</span>
-                        <span class="text-rose-500 dark:text-rose-400">CFDI</span>
+                        <span class="text-purple-500 dark:text-purple-400">CFDI</span>
                         <span class="text-zinc-400" x-text="fmt(max) ?? 'Máx'"></span>
                     </div>
                 </div>
@@ -202,7 +199,7 @@
 
                     <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 space-y-2">
                         <div class="flex items-center gap-1.5">
-                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                            <span class="inline-block w-2 h-2 rounded-full bg-teal-400 shrink-0"></span>
                             <span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Sin documento</span>
                         </div>
                         <flux:input
@@ -213,7 +210,7 @@
                             step="0.01"
                         />
                         <p class="text-[11px] text-zinc-400">Hasta aquí no se requiere comprobante</p>
-                        <p class="text-[11px] font-mono text-emerald-600 dark:text-emerald-400" x-text="rangoNone"></p>
+                        <p class="text-[11px] font-mono text-teal-600 dark:text-teal-400" x-text="rangoNone"></p>
                         <flux:error name="monto_libre" />
                     </div>
 
@@ -236,7 +233,7 @@
 
                     <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 space-y-2">
                         <div class="flex items-center gap-1.5">
-                            <span class="inline-block w-2 h-2 rounded-full bg-rose-400 shrink-0"></span>
+                            <span class="inline-block w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
                             <span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">CFDI obligatorio</span>
                         </div>
                         <flux:input
@@ -247,7 +244,7 @@
                             step="0.01"
                         />
                         <p class="text-[11px] text-zinc-400">Desde aquí, factura electrónica (XML + UUID)</p>
-                        <p class="text-[11px] font-mono text-rose-500 dark:text-rose-400" x-text="rangoCfdi"></p>
+                        <p class="text-[11px] font-mono text-purple-500 dark:text-purple-400" x-text="rangoCfdi"></p>
                         <flux:error name="monto_factura" />
                     </div>
 
@@ -259,13 +256,13 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
             <flux:field class="w-full">
                 <flux:label badge="Opcional">Vigencia desde</flux:label>
-                <flux:date-picker wire:model="vigencia_desde" />
+                <flux:date-picker selectable-header wire:model="vigencia_desde" fixed-weeks />
                 <flux:error name="vigencia_desde" />
             </flux:field>
 
             <flux:field class="w-full">
                 <flux:label badge="Opcional">Vigencia hasta</flux:label>
-                <flux:date-picker wire:model="vigencia_hasta" />
+                <flux:date-picker selectable-header wire:model="vigencia_hasta" fixed-weeks />
                 <flux:error name="vigencia_hasta" />
             </flux:field>
         </div>
@@ -319,6 +316,50 @@
                     </div>
                     <flux:error name="permite_excepcion" />
                 </flux:field>
+            </div>
+
+            <div class="px-4 py-3 space-y-4">
+                <flux:field variant="inline" class="items-start">
+                    <flux:checkbox wire:model.live="permite_propina" />
+
+                    <div class="space-y-1">
+                        <flux:label class="text-sm font-medium">
+                            Permitir propina
+                        </flux:label>
+
+                        <flux:description class="text-xs">
+                            Permite registrar propinas por encima del porcentaje máximo configurado.
+                            La operación quedará sujeta a autorización o justificación administrativa.
+                        </flux:description>
+                    </div>
+
+                    <flux:error name="permite_propina" />
+                </flux:field>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                    <div>
+                        <flux:label class="text-sm font-medium">
+                            Porcentaje máximo de propina
+                        </flux:label>
+                        <flux:description class="text-xs">
+                            Define el porcentaje máximo de propina permitido sobre el consumo total.
+                        </flux:description>
+                    </div>
+                    <div>
+                        <flux:input
+                            wire:model="propina_max_porcentaje"
+                            placeholder="Ej. 10"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            :disabled="!$permite_propina"
+                        />
+                        <p class="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                            Se interpreta como porcentaje (%).
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 

@@ -23,7 +23,6 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
             $table->string('region')->nullable();
 
-            $table->string('prioridad')->default('Media');
             $table->string('estado_operativo')->default('Draft');
 
             $table->foreignId('centro_costo_id')->nullable()->constrained('centros_costos');

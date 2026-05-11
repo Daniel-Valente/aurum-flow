@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Permission\Models\Role;
 
 class Concepto extends Model
 {
@@ -16,16 +15,10 @@ class Concepto extends Model
         'categoria',
         'descripcion',
 
-        // Diario | Evento | Viaje — define el "ritmo" del concepto
-        'tipo_aplicacion',
-
-        'orden',
-
         // Naturaleza fiscal — no varía por rol, es propia del concepto
         'aplica_iva',
-
-        // Precio promedio de mercado (referencia informativa para el validador)
-        'tope_referencia',
+        'aplica_ish',
+        'aplica_ieps',
 
         'vigencia_desde',
         'vigencia_hasta',
@@ -35,8 +28,9 @@ class Concepto extends Model
 
     protected $casts = [
         'aplica_iva'       => 'boolean',
+        'aplica_ish'       => 'boolean',
+        'aplica_ieps'      => 'boolean',
         'estatus'          => 'boolean',
-        'tope_referencia'  => 'decimal:2',
         'vigencia_desde'   => 'date',
         'vigencia_hasta'   => 'date',
     ];
@@ -65,20 +59,6 @@ class Concepto extends Model
     public function gastos()
     {
         return $this->hasMany(Gasto::class);
-    }
-
-    /**
-     * Roles que tienen este concepto habilitado.
-     * Tabla pivot: concepto_rol (concepto_id, rol_id)
-     */
-    public function roles()
-    {
-        return $this->belongsToMany(
-            Role::class,
-            'concepto_rol',
-            'concepto_id',
-            'rol_id'
-        );
     }
 
     /**

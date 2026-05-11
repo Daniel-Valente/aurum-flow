@@ -117,9 +117,9 @@ class DetailModal extends Component
                     'id'                   => $d->id,
                     'concepto_id'          => $d->concepto_id,
                     'concepto_nombre'      => $d->concepto->nombre ?? '—',
-                    'tipo_aplicacion'      => $d->concepto->tipo_aplicacion ?? '—',
                     'monto_estimado'       => $monto,
                     'limite_politica'      => $politica ? (float) $politica->monto_max : null,
+                    'tipo_limite_politica'  => $politica ? $politica->tipo_limite : '',
                     'comprobante_requerido'=> $comprobanteRequerido,
                     'semaforo'             => $semaforo,
                 ];

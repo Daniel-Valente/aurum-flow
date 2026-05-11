@@ -37,10 +37,10 @@
                         <flux:table.cell class="pl-4">
                             <div class="pl-4 flex flex-col text-sm">
                                 <span class="font-semibold">
-                                    {{ $exc->gasto->solicitud->empleado->nombre_completo }}
+                                    {{ $exc->gasto->empleado->nombre_completo }}
                                 </span>
                                 <span class="text-xs text-zinc-400">
-                                    {{ $exc->gasto->solicitud->empleado->numero_nomina ?? '—' }}
+                                    {{ $exc->gasto->empleado->numero_nomina ?? '—' }}
                                 </span>
                             </div>
                         </flux:table.cell>

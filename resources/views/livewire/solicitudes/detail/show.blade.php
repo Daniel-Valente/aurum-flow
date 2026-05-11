@@ -7,7 +7,6 @@
         ];
 
         function stepStatus($current, $step, $estatus) {
-            // Si ya está comprobado, todo es complete
             if ($estatus === 'Comprobado') {
                 return 'complete';
             }
@@ -44,7 +43,6 @@
         @endif
     </div>
 
-    {{-- Modal de justificaciones — solo en step 1 --}}
     @if ($stepActual === 1)
         @include('livewire.solicitudes.detail.partials.justificaciones-modal')
     @endif

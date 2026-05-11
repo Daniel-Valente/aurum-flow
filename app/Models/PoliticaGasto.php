@@ -20,7 +20,7 @@ class PoliticaGasto extends Model
         // Monto máximo autorizado en este período/tipo
         'monto_max',
 
-        // Diario | Viaje | Evento
+        // Diario | Semanal | Mensual | Viaje | Evento
         'tipo_limite',
 
         // --- Tramos documentales (todos nullable) ---
@@ -40,6 +40,10 @@ class PoliticaGasto extends Model
         // Se puede superar monto_max con justificación aprobada
         'permite_excepcion',
 
+        // Se puede permitir propina y establecer un monto máximo de porcentaje
+        'permite_propina',
+        'propina_max_porcentaje',
+
         'vigencia_desde',
         'vigencia_hasta',
 
@@ -47,16 +51,18 @@ class PoliticaGasto extends Model
     ];
 
     protected $casts = [
-        'monto_max'         => 'decimal:2',
-        'monto_libre'       => 'decimal:2',
-        'monto_comprobante' => 'decimal:2',
-        'monto_factura'     => 'decimal:2',
-        'valida_sat'        => 'boolean',
-        'acumulable_dia'    => 'boolean',
-        'permite_excepcion' => 'boolean',
-        'estatus'           => 'boolean',
-        'vigencia_desde'    => 'date',
-        'vigencia_hasta'    => 'date',
+        'monto_max'              => 'decimal:2',
+        'monto_libre'            => 'decimal:2',
+        'monto_comprobante'      => 'decimal:2',
+        'monto_factura'          => 'decimal:2',
+        'propina_max_porcentaje' => 'decimal:2',
+        'valida_sat'             => 'boolean',
+        'acumulable_dia'         => 'boolean',
+        'permite_excepcion'      => 'boolean',
+        'permite_propina'        => 'boolean',
+        'estatus'                => 'boolean',
+        'vigencia_desde'         => 'date',
+        'vigencia_hasta'         => 'date',
     ];
 
     // -------------------------------------------------------------------------

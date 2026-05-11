@@ -10,6 +10,7 @@ use App\Services\CFDI\CFDIService;
 use App\Services\Solicitudes\SolicitudService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Number;
 use Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -25,7 +26,7 @@ class GastoService
             throw new \Exception('Este gasto ya fue procesado y no puede modificarse');
         }
 
-        if ($gasto->solicitud->empleado->user_id !== $user->id) {
+        if ($gasto->empleado?->user_id !== $user->id) {
             throw new AuthorizationException('No es tu gasto');
         }
 
@@ -60,9 +61,9 @@ class GastoService
             throw new \InvalidArgumentException('Tipo de comprobante no válido');
         }
 
-        $empleado = $gasto->solicitud->empleado;
+        $empleado = $gasto->empleado;
         $concepto = $gasto->concepto;
-        $folio    = $gasto->solicitud->folio;
+        $folio    = $gasto->solicitud?->folio ?? $gasto->comprobacionTarjeta?->folio;
         $fecha    = now()->format('Ymd');
         $ts       = now()->format('His');
         $slug     = fn(string $s) => str($s)->slug()->toString();
@@ -90,13 +91,38 @@ class GastoService
 
             if (GastoComprobante::where('uuid', $cfdiData['uuid'])->exists()) {
                 Storage::disk('private')->delete($path);
-                throw new \Exception('Este CFDI ya fue registrado en otra solicitud.');
+                throw new \Exception('Este CFDI ya fue registrado en otra ');
             }
         }
 
         $montoComprobante = $tipo === 'factura'
             ? $cfdiData['total']
             : (float) $data['monto'];
+
+
+        if($tipo !== 'factura') {
+            $roleId = $gasto->empleado->user->roles->first()?->id;
+
+            if ($roleId) {
+                $politica = app(PoliticaGastoService::class)
+                    ->getPoliticaAplicable($roleId, $gasto->concepto_id, now());
+
+                if ($politica) {
+                    $nivelRequerido = $politica->evaluarComprobacion($montoComprobante);
+
+                    if ($nivelRequerido === 'cfdi' && $tipo === 'pdf') {
+                        throw new \Exception(
+                            sprintf(
+                                'El comprobante de %s requiere factura electrónica (CFDI) según la política. '
+                                . 'El ticket solo aplica hasta %s.',
+                                Number::currency($montoComprobante, 'MXN'),
+                                Number::currency((float) $politica->monto_factura, 'MXN')
+                            )
+                        );
+                    }
+                }
+            }
+        }
 
         $pathPdf = null;
         if ($tipo === 'factura' && !empty($data['archivo_pdf_cfdi'])) {
@@ -141,7 +167,7 @@ class GastoService
         $user = auth()->user();
 
         if (
-            $comprobante->gasto->solicitud->empleado->user_id !== $user->id &&
+            $comprobante->gasto->empleado->user_id !== $user->id &&
             !$user->can('gastos.ver.todos')
         ) {
             throw new AuthorizationException('No tienes permiso para ver este archivo.');

@@ -2,14 +2,12 @@
 
 namespace App\Livewire\Politicas;
 
-use App\Models\Concepto;
 use App\Models\PoliticaGasto;
 use App\Services\Concepto\ConceptoService;
 use App\Services\Empleado\EmpleadoService;
 use App\Services\Gasto\PoliticaGastoService;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use Spatie\Permission\Models\Role;
 
 class FormModal extends Component
 {
@@ -25,14 +23,16 @@ class FormModal extends Component
 
     // — Tramos documentales —
     // null = ese tramo no aplica para la política
-    public ?string $monto_libre       = null;
-    public ?string $monto_comprobante = null;
-    public ?string $monto_factura     = null;
+    public ?string $monto_libre            = null;
+    public ?string $monto_comprobante      = null;
+    public ?string $monto_factura          = null;
+    public ?string $propina_max_porcentaje = null;
 
     // — Flags de comportamiento —
     public bool $valida_sat        = false;
     public bool $acumulable_dia    = true;
     public bool $permite_excepcion = false;
+    public bool $permite_propina   = false;
 
     // — Vigencia —
     public ?string $vigencia_desde = null;
@@ -49,9 +49,10 @@ class FormModal extends Component
     // Ciclo de vida
     // -------------------------------------------------------------------------
 
-    public function mount(EmpleadoService $empleadoService): void
+    public function mount(EmpleadoService $empleadoService, ConceptoService $conceptoService): void
     {
-        $this->roles = $empleadoService->roles();
+        $this->roles     = $empleadoService->roles();
+        $this->conceptos = $conceptoService->list();
     }
 
     // -------------------------------------------------------------------------
@@ -72,21 +73,20 @@ class FormModal extends Component
             $this->tipo_limite = $politica->tipo_limite;
 
             // Tramos documentales
-            $this->monto_libre       = $politica->monto_libre       !== null ? (string) $politica->monto_libre       : null;
-            $this->monto_comprobante = $politica->monto_comprobante !== null ? (string) $politica->monto_comprobante : null;
-            $this->monto_factura     = $politica->monto_factura     !== null ? (string) $politica->monto_factura     : null;
+            $this->monto_libre            = $politica->monto_libre       !== null ? (string) $politica->monto_libre       : null;
+            $this->monto_comprobante      = $politica->monto_comprobante !== null ? (string) $politica->monto_comprobante : null;
+            $this->monto_factura          = $politica->monto_factura     !== null ? (string) $politica->monto_factura     : null;
+            $this->propina_max_porcentaje = $politica->propina_max_porcentaje !== null ? (string) $politica->propina_max_porcentaje : null;
 
             // Flags
             $this->valida_sat        = $politica->valida_sat;
             $this->acumulable_dia    = $politica->acumulable_dia;
             $this->permite_excepcion = $politica->permite_excepcion;
+            $this->permite_propina   = $politica->permite_propina;
 
             // Vigencia
             $this->vigencia_desde = $politica->vigencia_desde?->format('Y-m-d');
             $this->vigencia_hasta = $politica->vigencia_hasta?->format('Y-m-d');
-
-            // Cargar conceptos del rol seleccionado
-            $this->conceptos = app(ConceptoService::class)->list((int) $this->roleId);
         } else {
             $this->resetForm();
         }
@@ -95,18 +95,6 @@ class FormModal extends Component
         $this->modal('politica-form')->show();
     }
 
-    // -------------------------------------------------------------------------
-    // Watchers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Al cambiar el rol, recarga los conceptos disponibles y limpia la selección.
-     */
-    public function updatedRoleId($value): void
-    {
-        $this->conceptos   = empty($value) ? [] : app(ConceptoService::class)->list((int) $value);
-        $this->concepto_id = null;
-    }
 
     /**
      * Si se activa validación SAT, la factura es obligatoria desde $0.01.
@@ -138,13 +126,15 @@ class FormModal extends Component
             'tipo_limite' => 'required|string|in:Diario,Viaje,Evento',
 
             // Tramos: opcionales, pero deben ser coherentes si se ingresan
-            'monto_libre'       => 'nullable|numeric|min:0',
-            'monto_comprobante' => 'nullable|numeric|min:0',
-            'monto_factura'     => 'nullable|numeric|min:0.01',
+            'monto_libre'            => 'nullable|numeric|min:0',
+            'monto_comprobante'      => 'nullable|numeric|min:0',
+            'monto_factura'          => 'nullable|numeric|min:0.01',
+            'propina_max_porcentaje' => 'nullable|numeric|min:0.01',
 
             'valida_sat'        => 'boolean',
             'acumulable_dia'    => 'boolean',
             'permite_excepcion' => 'boolean',
+            'permite_propina'   => 'boolean',
 
             'vigencia_desde' => 'nullable|date',
             'vigencia_hasta' => 'nullable|date|after_or_equal:vigencia_desde',
@@ -158,29 +148,32 @@ class FormModal extends Component
     private function validationMessages(): array
     {
         return [
-            'roleId.required'              => 'El rol es obligatorio.',
-            'concepto_id.required'         => 'El concepto es obligatorio.',
+            'roleId.required'                => 'El rol es obligatorio.',
+            'concepto_id.required'           => 'El concepto es obligatorio.',
 
-            'monto_max.required'           => 'El monto máximo es obligatorio.',
-            'monto_max.numeric'            => 'El monto máximo debe ser un número.',
-            'monto_max.min'                => 'El monto máximo debe ser mayor a $0.',
+            'monto_max.required'             => 'El monto máximo es obligatorio.',
+            'monto_max.numeric'              => 'El monto máximo debe ser un número.',
+            'monto_max.min'                  => 'El monto máximo debe ser mayor a $0.',
 
-            'tipo_limite.required'         => 'El tipo de límite es obligatorio.',
-            'tipo_limite.in'               => 'El tipo debe ser Diario, Viaje o Evento.',
+            'tipo_limite.required'           => 'El tipo de límite es obligatorio.',
+            'tipo_limite.in'                 => 'El tipo debe ser Diario, Viaje o Evento.',
 
-            'monto_libre.numeric'          => 'El monto libre debe ser un número.',
-            'monto_libre.min'              => 'El monto libre no puede ser negativo.',
-            'monto_comprobante.numeric'    => 'El monto comprobante debe ser un número.',
-            'monto_comprobante.min'        => 'El monto comprobante no puede ser negativo.',
-            'monto_factura.numeric'        => 'El monto factura debe ser un número.',
-            'monto_factura.min'            => 'El monto factura debe ser mayor a $0.',
+            'monto_libre.numeric'            => 'El monto libre debe ser un número.',
+            'monto_libre.min'                => 'El monto libre no puede ser negativo.',
+            'monto_comprobante.numeric'      => 'El monto comprobante debe ser un número.',
+            'monto_comprobante.min'          => 'El monto comprobante no puede ser negativo.',
+            'monto_factura.numeric'          => 'El monto factura debe ser un número.',
+            'monto_factura.min'              => 'El monto factura debe ser mayor a $0.',
 
-            'vigencia_desde.date'          => 'La vigencia desde no es una fecha válida.',
-            'vigencia_hasta.date'          => 'La vigencia hasta no es una fecha válida.',
-            'vigencia_hasta.after_or_equal' => 'La vigencia hasta debe ser igual o posterior a la vigencia desde.',
+            'propina_max_porcentaje.numeric' => 'El porcentaje de propina debe ser un número.',
+            'propina_max_porcentaje.min'     => 'El porcentaje de propia debe ser mayor a 0.%',
 
-            'motivo.required'              => 'El motivo de cambio es obligatorio al editar.',
-            'motivo.min'                   => 'El motivo debe tener al menos 5 caracteres.',
+            'vigencia_desde.date'            => 'La vigencia desde no es una fecha válida.',
+            'vigencia_hasta.date'            => 'La vigencia hasta no es una fecha válida.',
+            'vigencia_hasta.after_or_equal'  => 'La vigencia hasta debe ser igual o posterior a la vigencia desde.',
+
+            'motivo.required'                => 'El motivo de cambio es obligatorio al editar.',
+            'motivo.min'                     => 'El motivo debe tener al menos 5 caracteres.',
         ];
     }
 
@@ -265,13 +258,15 @@ class FormModal extends Component
             'tipo_limite'       => $this->tipo_limite,
 
             // Tramos documentales — null si el campo está vacío
-            'monto_libre'       => filled($this->monto_libre)       ? $this->monto_libre       : null,
-            'monto_comprobante' => filled($this->monto_comprobante) ? $this->monto_comprobante : null,
-            'monto_factura'     => filled($this->monto_factura)     ? $this->monto_factura     : null,
+            'monto_libre'            => filled($this->monto_libre)       ? $this->monto_libre       : null,
+            'monto_comprobante'      => filled($this->monto_comprobante) ? $this->monto_comprobante : null,
+            'monto_factura'          => filled($this->monto_factura)     ? $this->monto_factura     : null,
+            'propina_max_porcentaje' => filled($this->propina_max_porcentaje)     ? $this->propina_max_porcentaje     : null,
 
             'valida_sat'        => $this->valida_sat,
             'acumulable_dia'    => $this->acumulable_dia,
             'permite_excepcion' => $this->permite_excepcion,
+            'permite_propina'   => $this->permite_propina,
 
             'vigencia_desde'    => $this->vigencia_desde ?: null,
             'vigencia_hasta'    => $this->vigencia_hasta ?: null,
@@ -315,11 +310,10 @@ class FormModal extends Component
             'monto_max', 'tipo_limite',
             'monto_libre', 'monto_comprobante', 'monto_factura',
             'valida_sat', 'acumulable_dia', 'permite_excepcion',
-            'vigencia_desde', 'vigencia_hasta',
-            'motivo',
+            'vigencia_desde', 'vigencia_hasta', 'permite_propina',
+            'propina_max_porcentaje', 'motivo',
         ]);
         $this->acumulable_dia = true; // default
-        $this->conceptos      = [];
         $this->resetValidation();
     }
 

@@ -70,7 +70,7 @@ class EmpleadosImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             'email'           => 'Email',
             'rol'             => 'Rol',
             'area'            => 'Área',
-            'centro_costo'    => 'Centro de costo',
+            'centro_costo'    => 'Referencia contable',
             'puesto'          => 'Puesto',
             'rfc'             => 'RFC',
             'curp'            => 'CURP',
@@ -104,7 +104,7 @@ class EmpleadosImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             $errores[] = "Área '{$row['area']}' no existe";
         }
         if (!empty($row['centro_costo']) && !$this->centrosCostos->has(strtolower($row['centro_costo']))) {
-            $errores[] = "Centro de costo '{$row['centro_costo']}' no existe";
+            $errores[] = "Referencia contable '{$row['centro_costo']}' no existe";
         }
 
         // Longitudes exactas

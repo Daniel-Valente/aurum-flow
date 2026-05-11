@@ -19,6 +19,8 @@ return new class extends Migration
 
             $table->decimal('monto_estimado', 12, 2);
 
+            $table->text('justificacion_exceso')->nullable();
+
             $table->timestamps();
 
             $table->index(['solicitud_id', 'concepto_id']);

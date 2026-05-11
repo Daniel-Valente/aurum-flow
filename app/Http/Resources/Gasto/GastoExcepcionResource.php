@@ -31,8 +31,8 @@ class GastoExcepcionResource extends JsonResource
             ],
 
             'empleado' => [
-                'id' => $this->gasto->solicitud->empleado->id,
-                'nombre' => $this->gasto->solicitud->empleado->nombre_completo,
+                'id' => $this->gasto->empleado->id,
+                'nombre' => $this->gasto->empleado->nombre_completo,
             ]
         ];
     }

@@ -6,7 +6,6 @@ use App\Models\Area;
 use App\Models\CentroCosto;
 use App\Models\Empleado;
 use App\Models\FlujoAprobacion;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
@@ -68,6 +67,7 @@ class SystemInitSeeder extends Seeder
             'gastos.ver.propios',
             'gastos.ver.todos', 'gastos.validar',
             'gastos.crear', 'gastos.editar', 'gastos.subir.comprobante',
+            'gastos.tarjeta.conciliar',
 
             'comprobantes.validar',
 

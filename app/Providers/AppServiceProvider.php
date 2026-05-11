@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Empleado;
+use App\Observers\EmpleadoObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -50,5 +52,7 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+
+        Empleado::observe(EmpleadoObserver::class);
     }
 }

@@ -7,7 +7,6 @@ use App\Models\Proyecto;
 use App\Services\CentroCosto\CentroCostoService;
 use App\Services\Empleado\EmpleadoService;
 use App\Services\Proyecto\ProyectoService;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -21,7 +20,6 @@ class FormModal extends Component
     public string $tipo = '';
     public string $descripcion = '';
 
-    public string $prioridad = '';
     public string $estado_operativo = '';
 
     public ?int $centro_costo_id = null;
@@ -36,8 +34,18 @@ class FormModal extends Component
     public ?string $region = null;
     public ?string $pais = null;
 
+    public string $searchCiudad = '';
+    public string $searchEstado = '';
+    public string $searchRegion = '';
+    public string $searchPais   = '';
+
     public array $empleados = [];
     public array $centrosCostos = [];
+
+    public array $ciudades = [];
+    public array $estados  = [];
+    public array $regiones = [];
+    public array $paises   = [];
 
     #[On('openProyectoForm')]
     public function open(?int $id = null): void
@@ -53,7 +61,6 @@ class FormModal extends Component
             $this->tipo = $proyecto->tipo;
             $this->descripcion = $proyecto->descripcion;
 
-            $this->prioridad = $proyecto->prioridad;
             $this->estado_operativo = $proyecto->estado_operativo;
 
             $this->centro_costo_id = $proyecto->centro_costo_id;
@@ -121,6 +128,11 @@ class FormModal extends Component
         }
     }
 
+    public function createCiudad() { $this->ciudad = $this->searchCiudad; }
+    public function createEstado() { $this->estado = $this->searchEstado; }
+    public function createRegion() { $this->region = $this->searchRegion; }
+    public function createPais()   { $this->pais   = $this->searchPais; }
+
     public function save(ProyectoService $service): void
     {
         $this->validate([
@@ -134,7 +146,6 @@ class FormModal extends Component
             'responsable_id' => 'nullable|exists:empleados,id',
             'centro_costo_id' => 'required|exists:centros_costos,id',
 
-            'prioridad' => 'required|in:Baja,Media,Alta',
             'estado_operativo' => 'required|in:Draft,Activo,Cerrado',
 
             'presupuesto_total' => 'nullable|numeric|min:0',
@@ -163,11 +174,8 @@ class FormModal extends Component
 
             'responsable_id.exists' => 'El responsable seleccionado no es válido.',
 
-            'centro_costo_id.required' => 'El centro de costos es obligatorio.',
-            'centro_costo_id.exists' => 'El centro de costos seleccionado no es válido.',
-
-            'prioridad.required' => 'La prioridad es obligatoria.',
-            'prioridad.in' => 'La prioridad seleccionada no es válida.',
+            'centro_costo_id.required' => 'La referencia contable es obligatoria.',
+            'centro_costo_id.exists' => 'La referencia contable seleccionada no es válida.',
 
             'estado_operativo.required' => 'El estado operativo es obligatorio.',
             'estado_operativo.in' => 'El estado operativo seleccionado no es válido.',
@@ -197,7 +205,6 @@ class FormModal extends Component
             'cliente' => $this->cliente,
             'tipo' => $this->tipo,
             'descripcion' => $this->descripcion,
-            'prioridad' => $this->prioridad,
             'estado_operativo' => $this->estado_operativo,
             'centro_costo_id' => $this->centro_costo_id,
             'responsable_id' => $this->responsable_id,
@@ -227,14 +234,19 @@ class FormModal extends Component
 
     public function resetForm(): void
     {
-        $this->reset(['codigo', 'nombre', 'cliente', 'tipo', 'descripcion', 'prioridad', 'estado_operativo', 'centro_costo_id', 'responsable_id', 'presupuesto_total', 'fecha_inicio', 'fecha_fin', 'ciudad', 'estado', 'region', 'pais']);
+        $this->reset(['codigo', 'nombre', 'cliente', 'tipo', 'descripcion', 'estado_operativo', 'centro_costo_id', 'responsable_id', 'presupuesto_total', 'fecha_inicio', 'fecha_fin', 'ciudad', 'estado', 'region', 'pais']);
         $this->resetValidation();
     }
 
-    public function mount(EmpleadoService $empleadoService, CentroCostoService $centroCostoService): void
+    public function mount(EmpleadoService $empleadoService, CentroCostoService $centroCostoService, ProyectoService $proyectoService): void
     {
         $this->empleados = $empleadoService->list();
         $this->centrosCostos = $centroCostoService->list();
+
+        $this->ciudades = $proyectoService->ciudades();
+        $this->regiones = $proyectoService->regiones();
+        $this->estados  = $proyectoService->estados();
+        $this->paises   = $proyectoService->paises();
     }
 
     public function render()

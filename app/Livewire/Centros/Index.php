@@ -60,14 +60,14 @@ class Index extends Component
     public function save(CentroCostoService $service): void
     {
         $this->validate([
-            'nombre' => 'required|string|max:100',
-            'cuenta_contable' => 'required|string|max:20',
+            'nombre' => 'nullable|string|max:100|required_without:cuenta_contable',
+            'cuenta_contable' => 'nullable|string|max:20|required_without:nombre',
         ], messages: [
-            'nombre.required'   => 'El nombre es obligatorio.',
-            'nombre.max'        => 'El nombre no puede tener más de :max caracteres.',
+            'nombre.required_without' => 'Debes capturar el nombre o la cuenta contable.',
+            'nombre.max' => 'El nombre no puede tener más de :max caracteres.',
 
-            'cuenta_contable.required'   => 'La cuenta contable es obligatoria.',
-            'cuenta_contable.max'   => 'La cuenta contable no puede tener más de :max caracteres.',
+            'cuenta_contable.required_without' => 'Debes capturar la cuenta contable o el nombre.',
+            'cuenta_contable.max' => 'La cuenta contable no puede tener más de :max caracteres.',
         ]);
 
         $data = [
@@ -78,10 +78,10 @@ class Index extends Component
 
         if ($this->editingId) {
             $service->update(CentroCosto::findOrFail($this->editingId), $data);
-            $msg = 'Centro de Costo actualizado correctamente.';
+            $msg = 'Referencia contable actualizada correctamente.';
         } else {
             $service->create($data);
-            $msg = 'Centro de Costo creado correctamente.';
+            $msg = 'Referencia contable creada correctamente.';
         }
 
         $this->modal('centro-costo-form')->close();
@@ -108,7 +108,7 @@ class Index extends Component
 
         $this->modal('centro-costo-delete')->close();
         $this->reset(['deletingId', 'deletingNombre']);
-        $this->dispatch('notify', type: 'success', message: 'Centro de Costo dado de baja correctamente.');
+        $this->dispatch('notify', type: 'success', message: 'Referencia contable dada de baja correctamente.');
     }
 
     private function resetForm(): void

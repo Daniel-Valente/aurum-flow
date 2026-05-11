@@ -57,19 +57,11 @@
 
             <div class="grid grid-cols-2 gap-3">
 
-                {{-- Prioridad --}}
-                <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
-                    <span class="text-[10px] uppercase text-zinc-400">Prioridad</span>
-                    <flux:badge size="sm" color="blue">
-                        {{ $proyecto->prioridad ?? '—' }}
-                    </flux:badge>
-                </div>
-
                 {{-- Centro de costo --}}
                 <div class="flex flex-col gap-1 rounded-lg bg-zinc-50  dark:bg-zinc-900 px-3 py-2.5">
-                    <span class="text-[10px] uppercase text-zinc-400">Centro de costo</span>
+                    <span class="text-[10px] uppercase text-zinc-400">Referencia contable</span>
                     <span class="text-sm text-zinc-700">
-                        {{ $proyecto->centroCosto?->nombre ?? '—' }}
+                        {{ $proyecto->centroCosto?->nombre ?? $empleado->centroCosto?->cuenta_contable ?? '—' }}
                     </span>
                 </div>
 

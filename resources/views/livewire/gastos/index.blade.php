@@ -3,23 +3,30 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
             <flux:heading size="xl">Comprobar Gastos</flux:heading>
-            <flux:subheading>Gestiona tus comprobaciones mediante solicitud</flux:subheading>
+            <flux:subheading>
+                Gestiona tus comprobaciones mediante solicitud
+                @can('gastos.tarjeta.ver.propios')
+                    o comprueba los gastos de tu tarjeta corporativa.
+                @endcan
+            </flux:subheading>
         </div>
 
-        @can('comprobacion.manual')
-            <flux:button variant="primary" icon="plus" wire:click="">
-                Comprobación Manual
-            </flux:button>
-        @endcan
+        @if ($tab === 'tarjeta')
+            @can('gastos.tarjeta.ver.propios')
+                <flux:button variant="primary" icon="plus" wire:click="openCreate">
+                    Comprobación por tarjeta
+                </flux:button>
+            @endcan
+        @endif
     </div>
 
-    @can('comprobacion.manual')
+    @can('gastos.tarjeta.ver.propios')
         <flux:tabs wire:model.live="tab">
             <flux:tab name="solicitudes" icon="document-check">
                 Solicitudes
             </flux:tab>
-            <flux:tab name="excepciones" icon="exclamation-triangle">
-                Manual
+            <flux:tab name="tarjeta" icon="credit-card">
+                Tarjeta corporativa
             </flux:tab>
         </flux:tabs>
     @endcan
@@ -109,7 +116,7 @@
                             };
 
                             $estatusColor = match($solicitud->estatus) {
-                                'Borrador'   => 'zinc',
+                                'Borrador'   => 'cyan',
                                 'Pendiente'  => 'yellow',
                                 'Autorizado' => 'green',
                                 'Rechazado'  => 'red',
@@ -190,7 +197,7 @@
 
                             {{-- Acciones — bloqueadas según estatus --}}
                             <flux:table.cell class="text-right ">
-                                <div class="flex items-center justify-end gap-1">
+                                <div class="flex items-center justify-end gap-1 pr-4">
                                     <flux:button
                                         size="sm" variant="ghost" icon="document-currency-dollar"
                                         wire:click="show({{ $solicitud->id }})"
@@ -220,6 +227,192 @@
             </flux:table>
 
         </flux:card>
+    @endif
+
+    @if ($tab === 'tarjeta')
+        <flux:card>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div class="flex-1">
+                    <flux:field>
+                        <flux:label>Búsqueda</flux:label>
+                        <flux:input
+                            wire:model.live.debounce.300ms="searchTarjeta"
+                            placeholder="Folio, proyecto, periodo..."
+                            icon="magnifying-glass"
+                            clearable
+                        />
+                    </flux:field>
+                </div>
+
+                <div class="sm:w-44">
+                    <flux:field>
+                        <flux:label>Estatus</flux:label>
+                        <flux:select variant="listbox" wire:model.live="estatus">
+                            <flux:select.option value="">Todos</flux:select.option>
+                            <flux:select.option value="abierta">Abierta</flux:select.option>
+                            <flux:select.option value="en_revision">En revisión</flux:select.option>
+                            <flux:select.option value="conciliada">Conciliada</flux:select.option>
+                            <flux:select.option value="rechazada">Rechazada</flux:select.option>
+                        </flux:select>
+                    </flux:field>
+                </div>
+            </div>
+        </flux:card>
+
+        <flux:card class="p-0">
+            <div class="flex flex-col gap-1 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
+                <flux:text size="sm" class="text-zinc-500">
+                    Total: <span class="font-semibold text-zinc-800 dark:text-zinc-100">{{ $tarjetas->total() }}</span>
+                </flux:text>
+                <flux:text size="sm" class="text-zinc-500">
+                    Página {{ $tarjetas->currentPage() }} de {{ $tarjetas->lastPage() }}
+                </flux:text>
+            </div>
+
+            <flux:table :paginate="$tarjetas">
+                <flux:table.columns>
+                    <flux:table.column>
+                        <span class="pl-4">
+                            Folio
+                        </span>
+                    </flux:table.column>
+                    <flux:table.column>Proyecto</flux:table.column>
+                    <flux:table.column>Periodo</flux:table.column>
+                    <flux:table.column>Monto Total</flux:table.column>
+                    <flux:table.column>Estatus</flux:table.column>
+                    <flux:table.column class="flex justify-end">
+                        <span class="pr-4">
+                            Acciones
+                        </span>
+                    </flux:table.column>
+                </flux:table.columns>
+
+                <flux:table.rows>
+                    @forelse ($tarjetas as $tarjeta)
+                        @php
+                            $editable = $tarjeta->estatus === 'abierta';
+
+                            $estatusColor = match($tarjeta->estatus) {
+                                'abierta'     => 'cyan',
+                                'en_revision' => 'yellow',
+                                'conciliada'  => 'green',
+                                'rechazada'   => 'red',
+                                default       => 'zinc'
+                            };
+
+                            $estatusLabel = match($tarjeta->estatus) {
+                                'abierta'     => 'Abierta',
+                                'en_revision' => 'En revisión',
+                                'conciliada'  => 'Conciliada',
+                                'rechazada'   => 'Rechazada',
+                                default       => $tarjeta->estatus
+                            };
+                        @endphp
+
+                        <flux:table.row :key="$tarjeta->id">
+                            <flux:table.cell>
+                                <span class="pl-4 font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                                    {{ $tarjeta->folio }}
+                                </span>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex flex-col">
+                                    <span class="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
+                                        {{ $tarjeta->proyecto_nombre ?? '-' }}
+                                    </span>
+                                </div>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex flex-col text-xs text-zinc-500">
+                                    <span>{{ \Carbon\Carbon::parse($tarjeta->fecha_inicio)->format('d/M/Y') }}</span> -
+                                    <span>{{ \Carbon\Carbon::parse($tarjeta->fecha_fin)->format('d/M/Y') }}</span>
+                                </div>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <span class="font-semibold text-zinc-800 dark:text-zinc-100">
+                                    {{ Number::currency($tarjeta->monto_total ?? 0, in: 'MXN') }}
+                                </span>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <flux:badge :color="$estatusColor" size="sm" inset="top bottom">
+                                    {{ $estatusLabel }}
+                                </flux:badge>
+                            </flux:table.cell>
+                            <flux:table.cell class="text-right">
+                                <div class="flex items-center justify-end gap-1 pr-4">
+                                    <flux:button
+                                        size="sm"
+                                        variant="ghost"
+                                        icon="eye"
+                                        wire:click="openDetailComprobacion({{ $tarjeta->id }})"
+                                        title="Ver detalle"
+                                    />
+
+                                    <flux:button
+                                        size="sm"
+                                        variant="ghost"
+                                        icon="pencil"
+                                        wire:click="{{ $editable ? 'openEdit('. $tarjeta->id .')' : '' }}"
+                                        title="{{ $editable ? 'Editar' : 'Solo editable en abierta' }}"
+                                        :disabled="!$editable"
+                                    />
+
+                                    <flux:button
+                                        size="sm"
+                                        variant="ghost"
+                                        icon="document-currency-dollar"
+                                        wire:click="showComprobacionTarjeta({{ $tarjeta->id }})"
+                                        title="Comprobar gastos"
+                                    />
+                                </div>
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @empty
+                        <flux:table.row>
+                            <flux:table.cell colspan="6" class="py-12 text-center">
+                                <div class="flex flex-col items-center gap-3">
+                                    <flux:icon name="inbox" class="size-8 text-zinc-300 dark:text-zinc-600" />
+                                    <flux:text class="text-zinc-400">No se encontraron comprobaciones por tarjeta corporativa</flux:text>
+                                    @if ($searchTarjeta || $estatus)
+                                        <flux:button size="sm" variant="ghost" wire:click="clearFilters">
+                                            Limpiar filtros
+                                        </flux:button>
+                                    @endif
+                                </div>
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforelse
+                </flux:table.rows>
+            </flux:table>
+        </flux:card>
+
+        @livewire('tarjeta.form-modal')
+
+        <flux:modal name="comprobacion-tarjeta-creada" class="w-full max-w-md">
+            <div class="space-y-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                        <flux:icon name="check-circle" class="size-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                        <flux:heading size="lg">Comprobación por tarjeta creada</flux:heading>
+                        <flux:subheading class="mt-1">
+                            La comprobación por tarjeta <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $createdFolio }}</span>
+                            fue registrada. ¿Deseas agregar los conceptos ahora?
+                        </flux:subheading>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <flux:button variant="ghost" wire:click="stayHere">
+                        Quedarme aquí
+                    </flux:button>
+                    <flux:button variant="primary" icon="arrow-right" wire:click="goToDetail">
+                        Agregar conceptos
+                    </flux:button>
+                </div>
+            </div>
+        </flux:modal>
     @endif
 
 </div>

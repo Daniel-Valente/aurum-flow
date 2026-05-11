@@ -35,7 +35,7 @@
                 <div class="flex flex-col">
                     <flux:field>
                         <flux:label badge="Requerido">Fecha inicio</flux:label>
-                        <flux:date-picker wire:model="fecha_inicio" />
+                        <flux:date-picker selectable-header wire:model="fecha_inicio" fixed-weeks />
 
                         <flux:error name="fecha_inicio" />
                     </flux:field>
@@ -44,7 +44,7 @@
                 <div class="flex flex-col">
                     <flux:field>
                         <flux:label badge="Requerido">Fecha fin</flux:label>
-                        <flux:date-picker wire:model="fecha_fin" />
+                        <flux:date-picker selectable-header wire:model="fecha_fin" fixed-weeks />
 
                         <flux:error name="fecha_fin" />
                     </flux:field>
@@ -67,7 +67,7 @@
                     {{ $editingId ? 'Guardar cambios' : 'Crear solicitud' }}
                 </span>
                 <span wire:loading wire:target="save">
-                    Guardando…
+                    Guardando...
                 </span>
             </flux:button>
         </div>

@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Autorizaciones;
 
+use App\Models\ComprobacionTarjeta;
 use App\Models\GastoComprobante;
 use App\Models\GastoExcepcion;
 use App\Services\Area\AreaService;
+use App\Services\Gasto\ComprobacionTarjetaService;
 use App\Services\Proyecto\ProyectoService;
 use App\Services\Solicitudes\SolicitudService;
 use Flux;
@@ -48,6 +50,11 @@ class Index extends Component
     public function openComprobante(int $id): void
     {
         $this->dispatch('openComprobanteDetail', id: $id);
+    }
+
+    public function showComprobacionTarjeta(int $id): void
+    {
+        $this->redirectRoute('tarjetas.show', $id);
     }
 
     #[On('autorizacionResuelta')]
@@ -111,18 +118,25 @@ class Index extends Component
             ->paginate(15, pageName: 'excepcionesPage')
             : collect();
 
-        // ── Comprobantes pendientes de validación manual (solo finanzas) ──────
-        $puedeValidarComprobantes = $user->can('comprobantes.validar');
+        $puedeValidarComprobantes   = $user->can('comprobantes.validar');
+        $puedeConciliarComprobacion = $user->can('gastos.tarjeta.conciliar');
 
         $comprobantes = $puedeValidarComprobantes
             ? GastoComprobante::with([
-                'gasto.solicitud.empleado',
+                'gasto.empleado',
                 'gasto.solicitud.proyecto',
                 'gasto.concepto',
             ])
             ->pendienteManual()
             ->latest()
             ->paginate(15, pageName: 'comprobantesPage')
+            : collect();
+
+        $conciliaciones = $puedeConciliarComprobacion
+            ? app(ComprobacionTarjetaService::class)->paginateConciliacion(
+                user: $user,
+                search: $this->search
+            )
             : collect();
 
         $totalExcepciones = $nivelFiltro
@@ -133,6 +147,10 @@ class Index extends Component
             ? GastoComprobante::pendienteManual()->count()
             : 0;
 
+        $totalConciliaciones = $puedeConciliarComprobacion
+            ? ComprobacionTarjeta::where('estatus', 'en_revision')->count()
+            : 0;
+
         return view('livewire.autorizaciones.index', [
             'autorizaciones'        => $service->paginateAutorizaciones(
                 user: $user,
@@ -140,12 +158,15 @@ class Index extends Component
                 proyectoId: $this->proyecto_id,
                 areaId: $this->area_id,
             ),
-            'excepciones'           => $excepciones,
-            'nivelFiltro'           => $nivelFiltro,
-            'totalExcepciones'      => $totalExcepciones,
-            'comprobantes'          => $comprobantes,
-            'puedeValidarComprobantes' => $puedeValidarComprobantes,
-            'totalComprobantes'     => $totalComprobantes,
+            'excepciones'                => $excepciones,
+            'nivelFiltro'                => $nivelFiltro,
+            'totalExcepciones'           => $totalExcepciones,
+            'comprobantes'               => $comprobantes,
+            'puedeValidarComprobantes'   => $puedeValidarComprobantes,
+            'puedeConciliarComprobacion' => $puedeConciliarComprobacion,
+            'totalComprobantes'          => $totalComprobantes,
+            'conciliaciones'             => $conciliaciones,
+            'totalConciliaciones'        => $totalConciliaciones
         ]);
     }
 }

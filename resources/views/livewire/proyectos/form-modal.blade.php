@@ -99,49 +99,31 @@
                 <div class="px-4 py-3 border-b border-zinc-100 dark:border-zinc-700">
                     <p class="text-sm font-medium">Configuración operativa</p>
                     <p class="text-xs text-zinc-500 mt-0.5">
-                        Define el estado, prioridad y control financiero del proyecto.
+                        Define el estado y control financiero del proyecto.
                     </p>
                 </div>
 
                 <div class="p-4 space-y-5">
+                    <flux:field>
+                        <flux:label badge="Requerido">Estado operativo</flux:label>
+                        <flux:select variant="listbox" wire:model="estado_operativo">
+                            <flux:select.option value=""></flux:select.option>
+                            <flux:select.option value="Draft">Draft</flux:select.option>
+                            <flux:select.option value="Activo">Activo</flux:select.option>
+                            <flux:select.option value="Cerrado">Cerrado</flux:select.option>
+                        </flux:select>
+                        <flux:error name="estado_operativo" />
+                    </flux:field>
 
                     <div class="grid auto-rows-min gap-5 md:grid-cols-2">
                         <div class="flex flex-col">
                             <flux:field>
-                                <flux:label badge="Requerido">Prioridad</flux:label>
-                                <flux:select variant="listbox" wire:model="prioridad">
-                                    <flux:select.option value=""></flux:select.option>
-                                    <flux:select.option value="Baja">Baja</flux:select.option>
-                                    <flux:select.option value="Media">Media</flux:select.option>
-                                    <flux:select.option value="Alta">Alta</flux:select.option>
-                                </flux:select>
-                                <flux:error name="prioridad" />
-                            </flux:field>
-                        </div>
-
-                        <div class="flex flex-col">
-                            <flux:field>
-                                <flux:label badge="Requerido">Estado operativo</flux:label>
-                                <flux:select variant="listbox" wire:model="estado_operativo">
-                                    <flux:select.option value=""></flux:select.option>
-                                    <flux:select.option value="Draft">Draft</flux:select.option>
-                                    <flux:select.option value="Activo">Activo</flux:select.option>
-                                    <flux:select.option value="Cerrado">Cerrado</flux:select.option>
-                                </flux:select>
-                                <flux:error name="estado_operativo" />
-                            </flux:field>
-                        </div>
-                    </div>
-
-                    <div class="grid auto-rows-min gap-5 md:grid-cols-2">
-                        <div class="flex flex-col">
-                            <flux:field>
-                                <flux:label badge="Requerido">Centro de costo</flux:label>
+                                <flux:label badge="Requerido">Referencia contable</flux:label>
                                 <flux:select variant="listbox" wire:model.live="centro_costo_id">
                                     <flux:select.option value=""></flux:select.option>
                                     @foreach ($centrosCostos as $centro)
                                         <flux:select.option value="{{ $centro['id'] }}">
-                                            {{ $centro['nombre'] }}
+                                            {{ $centro['nombre'] ?? $centro['cuenta_contable'] }}
                                         </flux:select.option>
                                     @endforeach
                                 </flux:select>
@@ -171,14 +153,14 @@
                         <div class="flex flex-col">
                             <flux:field>
                                 <flux:label badge="Opcional">Fecha inicio</flux:label>
-                                <flux:date-picker wire:model="fecha_inicio" />
+                                <flux:date-picker selectable-header wire:model="fecha_inicio" fixed-weeks />
                             </flux:field>
                         </div>
 
                         <div class="flex flex-col">
                             <flux:field>
                                 <flux:label badge="Opcional">Fecha fin</flux:label>
-                                <flux:date-picker wire:model="fecha_fin" />
+                                <flux:date-picker selectable-header wire:model="fecha_fin" fixed-weeks />
                             </flux:field>
                         </div>
                     </div>
@@ -200,15 +182,45 @@
                     <div class="grid auto-rows-min gap-5 md:grid-cols-2">
                         <div class="flex flex-col">
                             <flux:field>
-                                <flux:label badge="Opcional">Ciudad</flux:label>
-                                <flux:input wire:model="ciudad" placeholder="Ej. Monterrey" />
+                                <flux:label badge="Opcional">Cuidad</flux:label>
+                                <flux:select wire:model="ciudad" variant="combobox">
+                                    <x-slot name="input">
+                                        <flux:select.input
+                                            wire:model="searchCiudad"
+                                            placeholder="Selecciona o escribe una nueva ciudad"
+                                        />
+                                    </x-slot>
+                                    @foreach ($ciudades as $ciudad)
+                                        <flux:select.option :wire:key="$ciudad">{{ $ciudad }}</flux:select.option>
+                                    @endforeach
+                                    <flux:select.option.create wire:click="createCiudad" min-length="2">
+                                        Crear "<span wire:text="searchCiudad"></span>"
+                                    </flux:select.option.create>
+
+                                    <flux:error name="ciudad"/>
+                                </flux:select>
                             </flux:field>
                         </div>
 
                         <div class="flex flex-col">
                             <flux:field>
                                 <flux:label badge="Opcional">Estado</flux:label>
-                                <flux:input wire:model="estado" placeholder="Ej. Nuevo León" />
+                                <flux:select wire:model="estado" variant="combobox">
+                                    <x-slot name="input">
+                                        <flux:select.input
+                                            wire:model="searchEstado"
+                                            placeholder="Selecciona o escribe un nuevo estado"
+                                        />
+                                    </x-slot>
+                                    @foreach ($estados as $estado)
+                                        <flux:select.option :wire:key="$estado">{{ $estado }}</flux:select.option>
+                                    @endforeach
+                                    <flux:select.option.create wire:click="createEstado" min-length="2">
+                                        Crear "<span wire:text="searchEstado"></span>"
+                                    </flux:select.option.create>
+
+                                    <flux:error name="estado"/>
+                                </flux:select>
                             </flux:field>
                         </div>
                     </div>
@@ -217,14 +229,44 @@
                         <div class="flex flex-col">
                             <flux:field>
                                 <flux:label badge="Opcional">Región</flux:label>
-                                <flux:input wire:model="region" placeholder="Ej. Noreste" />
+                                <flux:select wire:model="region" variant="combobox">
+                                    <x-slot name="input">
+                                        <flux:select.input
+                                            wire:model="searchRegion"
+                                            placeholder="Selecciona o escribe una nueva region"
+                                        />
+                                    </x-slot>
+                                    @foreach ($regiones as $region)
+                                        <flux:select.option :wire:key="$region">{{ $region }}</flux:select.option>
+                                    @endforeach
+                                    <flux:select.option.create wire:click="createRegion" min-length="2">
+                                        Crear "<span wire:text="searchRegion"></span>"
+                                    </flux:select.option.create>
+
+                                    <flux:error name="region"/>
+                                </flux:select>
                             </flux:field>
                         </div>
 
                         <div class="flex flex-col">
                             <flux:field>
                                 <flux:label badge="Opcional">País</flux:label>
-                                <flux:input wire:model="pais" placeholder="México" />
+                                <flux:select wire:model="pais" variant="combobox">
+                                    <x-slot name="input">
+                                        <flux:select.input
+                                            wire:model="searchPais"
+                                            placeholder="Selecciona o escribe un nuevo país"
+                                        />
+                                    </x-slot>
+                                    @foreach ($paises as $pais)
+                                        <flux:select.option :wire:key="$pais">{{ $pais }}</flux:select.option>
+                                    @endforeach
+                                    <flux:select.option.create wire:click="createPais" min-length="2">
+                                        Crear "<span wire:text="searchPais"></span>"
+                                    </flux:select.option.create>
+
+                                    <flux:error name="pais"/>
+                                </flux:select>
                             </flux:field>
                         </div>
                     </div>

@@ -37,6 +37,9 @@ return new class extends Migration
             $table->boolean('acumulable_dia')->default(true);
             $table->boolean('permite_excepcion')->default(false);
 
+            $table->boolean('permite_propina')->default(false);
+            $table->decimal('propina_max_porcentaje', 5, 2)->nullable();
+
             $table->date('vigencia_desde')->nullable();
             $table->date('vigencia_hasta')->nullable();
 

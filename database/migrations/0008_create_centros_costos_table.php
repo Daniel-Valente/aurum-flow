@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('centros_costos', function (Blueprint $table) {
             $table->id();
             $table->string('codigo')->unique();
-            $table->string('nombre');
-            $table->string('cuenta_contable');
+            $table->string('nombre')->nullable();
+            $table->string('cuenta_contable')->nullable();
             $table->boolean('estatus')->default(true);
             $table->timestamps();
         });

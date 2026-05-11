@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('gastos', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('solicitud_id')->constrained('solicitudes')->cascadeOnDelete();
+            $table->foreignId('solicitud_id')->nullable()->constrained('solicitudes')->nullOnDelete();
+            $table->foreignId('comprobacion_tarjeta_id')->nullable()->constrained('comprobaciones_tarjeta')->nullOnDelete();
+
             $table->foreignId('concepto_id')->constrained();
 
             $table->date('fecha_gasto')->index();
@@ -32,8 +34,20 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['solicitud_id', 'concepto_id', 'fecha_gasto']);
+            $table->index(['solicitud_id', 'fecha_gasto']);
+            $table->index(['comprobacion_tarjeta_id', 'fecha_gasto']);
+            $table->index('concepto_id');
         });
+
+        DB::statement('
+            ALTER TABLE gastos
+            ADD CONSTRAINT chk_gastos_origen
+            CHECK (
+                (solicitud_id IS NOT NULL AND comprobacion_tarjeta_id IS NULL)
+                OR
+                (solicitud_id IS NULL AND comprobacion_tarjeta_id IS NOT NULL)
+            )
+        ');
     }
 
     /**

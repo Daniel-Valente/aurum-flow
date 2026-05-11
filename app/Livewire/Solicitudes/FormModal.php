@@ -5,7 +5,6 @@ namespace App\Livewire\Solicitudes;
 use App\Models\Solicitud;
 use App\Services\Proyecto\ProyectoService;
 use App\Services\Solicitudes\SolicitudService;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Component;
 

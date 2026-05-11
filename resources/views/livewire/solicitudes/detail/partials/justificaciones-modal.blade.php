@@ -17,6 +17,10 @@
                         <div class="flex items-center gap-2 text-xs font-mono">
                             <span class="text-zinc-400 line-through">
                                 {{ Number::currency($detalle['limite_politica'], in: 'MXN') }}
+                                -
+                                <span class="text-xs">
+                                    {{ $detalle['tipo_limite_politica'] ?? '-' }}
+                                </span>
                             </span>
                             <span class="text-rose-600 font-bold">
                                 {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}

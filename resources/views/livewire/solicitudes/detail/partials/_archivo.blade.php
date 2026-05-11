@@ -8,17 +8,15 @@
     </div>
 @endif
 
-{{-- ── CFDI (XML + PDF opcional, uno solo) ──────────────────────────────── --}}
 @if ($tipoComprobante === 'factura')
     <div class="space-y-3">
-
-        {{-- Upload múltiple de XMLs --}}
         <flux:field>
             <flux:label badge="Requerido">Archivos XML (CFDI)</flux:label>
             <flux:file-upload
                 wire:model="archivosCfdi"
                 multiple
-            >
+                wire:change="procesarXmls"
+                >
                 <flux:file-upload.dropzone
                     heading="Arrastra uno o varios XML aquí"
                     text="Puedes cargar múltiples facturas a la vez — solo .xml"
@@ -29,7 +27,6 @@
             <flux:error name="archivosCfdi" />
         </flux:field>
 
-        {{-- Listado de CFDIs parseados --}}
         @if (!empty($archivosCfdi))
             <div class="space-y-2">
                 <p class="text-xs font-medium text-zinc-500">
@@ -83,25 +80,24 @@
                             </div>
                         </div>
 
-                        {{-- PDF opcional por CFDI --}}
                         @if (!$tieneError)
                             <div class="pl-6">
-                                @if (isset($archivosCfdi[$idx]['pdf']) && $archivosCfdi[$idx]['pdf'])
+                                @if (isset($pdfsCfdi[$idx]) && $pdfsCfdi[$idx])
                                     <div class="flex items-center gap-2 text-xs text-zinc-500">
                                         <flux:icon.paper-clip class="size-3" />
                                         <span class="truncate">
-                                            {{ $archivosCfdi[$idx]['pdf']->getClientOriginalName() }}
+                                            {{ $pdfsCfdi[$idx]->getClientOriginalName() }}
                                         </span>
                                         <flux:button
                                             size="xs"
                                             variant="ghost"
                                             icon="x-mark"
-                                            wire:click="$set('archivosCfdi.{{ $idx }}.pdf', null)"
+                                            wire:click="$set('pdfsCfdi.{{ $idx }}', null)"
                                         />
                                     </div>
                                 @else
                                     <flux:field>
-                                        <flux:file-upload wire:model="archivosCfdi.{{ $idx }}.pdf">
+                                        <flux:file-upload wire:model="pdfsCfdi.{{ $idx }}">
                                             <flux:button size="xs" variant="ghost" icon="paper-clip">
                                                 Adjuntar PDF (opcional)
                                             </flux:button>
@@ -114,7 +110,6 @@
                     </div>
                 @endforeach
 
-                {{-- Subtotal CFDIs válidos --}}
                 @php
                     $totalCfdi = collect($archivosCfdi)
                         ->filter(fn($c) => empty($c['error']) && ($c['monto'] ?? 0) > 0)
@@ -135,7 +130,7 @@
         @endif
 
     </div>
-{{-- ── Tickets (múltiples archivos + monto por archivo) ─────────────────── --}}
+
 @elseif ($tipoComprobante === 'pdf')
     <div
         class="space-y-3"
@@ -143,8 +138,7 @@
             // Proxy reactivo sobre la propiedad Livewire
             get archivos() { return $wire.archivosComprobantes },
         }"
-    >
-        {{-- Upload múltiple --}}
+        >
         <flux:field>
             <flux:label badge="Requerido">Tickets / Recibos</flux:label>
             <flux:file-upload wire:model="archivosComprobantes" multiple>
@@ -159,7 +153,6 @@
             <flux:error name="archivosComprobantes.*" />
         </flux:field>
 
-        {{-- Monto por archivo — aparece conforme se cargan --}}
         @if (!empty($archivosComprobantes))
             <div class="space-y-2">
                 <p class="text-xs font-medium text-zinc-500">
@@ -198,7 +191,6 @@
                     <flux:error name="montosComprobantes.{{ $idx }}" />
                 @endforeach
 
-                {{-- Subtotal visual --}}
                 @php
                     $subtotal = collect($montosComprobantes)
                         ->filter(fn($m) => is_numeric($m) && $m > 0)

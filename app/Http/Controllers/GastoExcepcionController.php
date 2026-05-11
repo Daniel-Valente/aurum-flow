@@ -65,7 +65,7 @@ class GastoExcepcionController extends Controller
 
         $politica = app(ValidadorGastosService::class)
             ->obtenerPolitica(
-                $excepcion->gasto->solicitud->empleado,
+                $excepcion->gasto->empleado,
                 $excepcion->gasto->concepto,
                 $excepcion->gasto->fecha_gasto
             );

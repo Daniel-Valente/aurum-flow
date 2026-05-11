@@ -111,10 +111,10 @@
                         </flux:field>
 
                         <flux:field>
-                            <flux:label badge="Requerido">Centro de costo</flux:label>
+                            <flux:label badge="Requerido">Referencia contable</flux:label>
                             <flux:select variant="listbox" wire:model="centro_costo_id" :disabled="$esGerente" required>
                                 @foreach ($centrosCostos as $centro)
-                                    <flux:select.option value="{{ $centro['id'] }}">{{ $centro['nombre'] }}</flux:select.option>
+                                    <flux:select.option value="{{ $centro['id'] }}">{{ $centro['nombre'] ?? $centro['cuenta_contable'] }}</flux:select.option>
                                 @endforeach
                             </flux:select>
                             <flux:error name="centro_costo_id" />
@@ -123,7 +123,7 @@
 
                     <flux:field>
                         <flux:label badge="Opcional">Fecha de ingreso</flux:label>
-                        <flux:date-picker wire:model="fecha_ingreso" />
+                        <flux:date-picker selectable-header wire:model="fecha_ingreso" fixed-weeks />
                     </flux:field>
 
                 </div>

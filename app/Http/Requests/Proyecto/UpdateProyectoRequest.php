@@ -35,7 +35,6 @@ class UpdateProyectoRequest extends FormRequest
             'descripcion' => 'nullable|string',
             'region' => 'nullable|string|max:255',
 
-            'prioridad' => 'nullable|in:Baja,Media,Alta',
             'estado_operativo' => 'nullable|string|max:100',
 
             'centro_costo_id' => 'nullable|exists:centros_costos,id',

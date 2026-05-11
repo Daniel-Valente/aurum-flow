@@ -101,7 +101,7 @@
                         :href="route('centros-costos')"
                         :current="request()->routeIs('centros-costos')"
                         wire:navigate>
-                        Centro de costos
+                        Referencia contable
                     </flux:sidebar.item>
                     @endcan
 

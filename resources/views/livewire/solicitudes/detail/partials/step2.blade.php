@@ -86,7 +86,6 @@
         <flux:table>
             <flux:table.columns>
                 <flux:table.column class="pl-4"><span class="pl-4">Concepto</span></flux:table.column>
-                <flux:table.column>Tipo</flux:table.column>
                 <flux:table.column>Monto estimado</flux:table.column>
                 <flux:table.column>Límite política</flux:table.column>
                 <flux:table.column>Comprobante</flux:table.column>
@@ -128,9 +127,6 @@
                             </div>
                         </flux:table.cell>
                         <flux:table.cell>
-                            <span class="text-xs text-zinc-500">{{ $detalle['tipo_aplicacion'] }}</span>
-                        </flux:table.cell>
-                        <flux:table.cell>
                             <span class="font-mono text-sm">
                                 {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}
                             </span>
@@ -138,6 +134,10 @@
                         <flux:table.cell>
                             <span class="font-mono text-sm text-zinc-500">
                                 {{ $detalle['limite_politica'] ? Number::currency($detalle['limite_politica'], in: 'MXN') : '—' }}
+                                -
+                                <span class="text-xs">
+                                    {{ $detalle['tipo_limite_politica'] ?? '-' }}
+                                </span>
                             </span>
                         </flux:table.cell>
                         <flux:table.cell>

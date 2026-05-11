@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified', 'force.password', 'blocked'])->group(func
     require __DIR__.'/modules/ui/autorizaciones.php';
     require __DIR__.'/modules/ui/auditoria.php';
     require __DIR__.'/modules/ui/gastos.php';
+    require __DIR__.'/modules/ui/tarjeta.php';
     require __DIR__.'/modules/ui/reportes.php';
     require __DIR__.'/modules/ui/solicitudes.php';
 

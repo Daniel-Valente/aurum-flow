@@ -54,6 +54,7 @@ class Show extends Component
     public array $archivosComprobantes = [];
     public array $montosComprobantes   = [];
     public array $archivosCfdi         = [];
+    public array $pdfsCfdi             = [];
 
     public ?int $editandoDetalle = null;
     public string $editandoMonto = '';
@@ -279,6 +280,7 @@ class Show extends Component
         $this->archivosComprobantes  = [];
         $this->montosComprobantes    = [];
         $this->archivosCfdi          = [];
+        $this->pdfsCfdi              = [];
         $this->resetValidation();
     }
 
@@ -293,25 +295,30 @@ class Show extends Component
         $this->validate([
             'archivosCfdi'   => 'array',
             'archivosCfdi.*' => 'file|mimes:xml|max:2048',
+            'pdfsCfdi'       => 'array',
+            'pdfsCfdi.*'     => 'nullable|file|mimes:pdf|max:5120',
         ]);
 
         $procesados = [];
 
-        foreach($this->archivosCfdi as $id => $archivo) {
+        foreach($this->archivosCfdi as $idx => $archivo) {
             if (is_array($archivo)) {
-                $procesados[] = $archivo;
+                $procesados[] = [
+                    'xml' => $archivo,
+                    'pdf' => null,
+                ];
+
                 continue;
             }
 
             try {
                 $cfdi = app(CFDIService::class)->parseTemporary($archivo);
-
                 $uuidsActuales = collect($procesados)->pluck('uuid')->filter()->all();
 
                 if (in_array($cfdi['uuid'], $uuidsActuales)) {
                     $procesados[] = [
                         'xml'    => $archivo,
-                        'pdf'    => null,
+                        'pdf'    => $this->pdfsCfdi[$idx] ?? null,
                         'uuid'   => $cfdi['uuid'],
                         'monto'  => $cfdi['total'],
                         'emisor' => $cfdi['emisor_nombre'] ?? $cfdi['emisor_rfc'] ?? '-',
@@ -342,7 +349,7 @@ class Show extends Component
 
                 $procesados[] = [
                     'xml'    => $archivo,
-                    'pdf'    => null,
+                    'pdf'    => $this->pdfsCfdi[$idx] ?? null,
                     'uuid'   => $cfdi['uuid'],
                     'monto'  => $cfdi['total'],
                     'emisor' => $cfdi['emisor_nombre'] ?? $cfdi['emisor_rfc'] ?? '—',
@@ -353,7 +360,7 @@ class Show extends Component
             } catch (\Exception $e) {
                 $procesados[] = [
                     'xml'    => $archivo,
-                    'pdf'    => null,
+                    'pdf'    => $this->pdfsCfdi[$idx] ?? null,
                     'uuid'   => null,
                     'monto'  => 0,
                     'emisor' => '—',
@@ -412,12 +419,12 @@ class Show extends Component
                     return;
                 }
 
-                foreach ($validos as $cfdiEntry) {
+                foreach ($validos as $idx => $cfdiEntry) {
                     $data = [
                         'tipo'             => 'factura',
                         'monto'            => 0,             // lo sobreescribe el parse
                         'fecha_gasto'      => $this->fechaGastoReal,
-                        'archivo_pdf_cfdi' => $cfdiEntry['pdf'] ?? null,
+                        'archivo_pdf_cfdi' => $this->pdfsCfdi[$idx] ?? null,
                     ];
 
                     $service->subirComprobante($gasto, auth()->user(), $cfdiEntry['xml'], $data);
@@ -493,7 +500,6 @@ class Show extends Component
         unset($this->archivosComprobantes[$idx]);
         unset($this->montosComprobantes[$idx]);
 
-        // Re-indexar para que el foreach del blade no se pierda
         $this->archivosComprobantes = array_values($this->archivosComprobantes);
         $this->montosComprobantes   = array_values($this->montosComprobantes);
     }
@@ -501,7 +507,10 @@ class Show extends Component
     public function removeCfdi(int $idx): void
     {
         unset($this->archivosCfdi[$idx]);
+        unset($this->pdfsCfdi[$idx]);
+
         $this->archivosCfdi = array_values($this->archivosCfdi);
+        $this->pdfsCfdi     = array_values($this->pdfsCfdi);
     }
 
     private function sincronizarDetalles(): void
@@ -529,9 +538,9 @@ class Show extends Component
                     'id'                   => $d->id,
                     'concepto_id'          => $d->concepto_id,
                     'concepto_nombre'      => $d->concepto->nombre ?? '—',
-                    'tipo_aplicacion'      => $d->concepto->tipo_aplicacion ?? '—',
                     'monto_estimado'       => $monto,
                     'limite_politica'      => $politica ? (float) $politica->monto_max : null,
+                    'tipo_limite_politica'  => $politica ? $politica->tipo_limite : '',
                     'comprobante_requerido'=> $comprobanteRequerido,
                     'semaforo'             => $semaforo,
                 ];
@@ -562,10 +571,11 @@ class Show extends Component
                 'id'                    => $g->id,
                 'concepto_id'           => $g->concepto_id,
                 'concepto_nombre'       => $g->concepto->nombre ?? '—',
-                'tipo_aplicacion'       => $g->concepto->tipo_aplicacion ?? '—',
                 'monto_estimado'        => $monto,
                 'monto_real'            => $totalComp > 0 ? $totalComp : null,
                 'limite_politica'       => $politica ? (float) $politica->monto_max : null,
+                'tipo_limite_politica'  => $politica ? $politica->tipo_limite : '',
+                'tipos_permitidos'      => $this->tiposPermitidosByPolitica($politica),
                 'comprobante_requerido' => $politica
                     ? $politica->evaluarComprobacion($monto)
                     : 'ninguno',
@@ -579,6 +589,8 @@ class Show extends Component
                     'uuid'             => $c->uuid,
                     'sat_status'       => $c->sat_status,
                     'validacion_manual'=> $c->validacion_manual,
+                    'archivo'           => $c->archivo,
+                    'archivo_pdf'       => $c->archivo_pdf,
                 ])->toArray(),
             ];
         })->toArray();
@@ -664,6 +676,43 @@ class Show extends Component
                 duration: 8000
             );
         }
+    }
+
+    private function tiposPermitidosByPolitica(?object $politica): array
+    {
+        if (!$politica) {
+            return ['sin_comprobante', 'pdf', 'factura'];
+        }
+
+        $libre = $politica->monto_libre;
+        $comp  = $politica->monto_comprobante;
+        $fac   = $politica->monto_factura;
+
+        $sinTramos = $libre === null && $comp === null && $fac === null;
+
+        if ($sinTramos) {
+            return ['sin_comprobante'];
+        }
+
+        $tipos = [];
+
+        if ($libre !== null) {
+            $tipos[] = 'sin_comprobante';
+        }
+
+        if ($comp !== null) {
+            $tipos[] = 'pdf';
+        }
+
+        if ($fac !== null) {
+            $tipos[] = 'factura';
+        }
+
+        if ($libre !== null && $comp === null && $fac === null) {
+            $tipos[] = 'pdf';
+        }
+
+        return array_unique($tipos);
     }
 
     private function validarRangoFechaCfdi(string $fechaCfdi, string $fechaGastoReal): ?string

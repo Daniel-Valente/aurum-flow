@@ -16,7 +16,6 @@ class Proyecto extends Model
         'tipo',
         'descripcion',
         'region',
-        'prioridad',
         'estado_operativo',
         'centro_costo_id',
         'responsable_id',

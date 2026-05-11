@@ -39,37 +39,9 @@
                     </flux:select>
                 </flux:field>
             </div>
-
-            <div class="sm:w-48">
-                <flux:field>
-                    <flux:label>Tipo</flux:label>
-                    <flux:select wire.model.live="tipo">
-                        <flux:select.option value="">Todos</flux:select.option>
-                        <flux:select.option value="Diario">Diario</flux:select.option>
-                        <flux:select.option value="Evento">Evento</flux:select.option>
-                        <flux:select.option value="Viaje">Viaje</flux:select.option>
-                    </flux:select>
-                </flux:field>
-            </div>
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end mt-2">
-
-
-            <div class="flex-1">
-                <flux:field>
-                    <flux:label>Rol</flux:label>
-                    <flux:select wire.model.live="rol">
-                        <flux:select.option value="">Todos</flux:select.option>
-                        @foreach ($roles as $role)
-                            <flux:select.option value="{{ $role['id'] }}">
-                                {{ $role['name'] }}
-                            </flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </flux:field>
-            </div>
-
             <div class="flex-1">
                 <flux:field>
                     <flux:label>Estatus</flux:label>
@@ -112,8 +84,6 @@
                 <flux:table.column class="pl-4">Código</flux:table.column>
                 <flux:table.column>Nombre</flux:table.column>
                 <flux:table.column>Categoría</flux:table.column>
-                <flux:table.column>Tipo</flux:table.column>
-                <flux:table.column>Roles</flux:table.column>
                 <flux:table.column>Vigencia</flux:table.column>
                 <flux:table.column>Reglas</flux:table.column>
                 <flux:table.column>Estatus</flux:table.column>
@@ -136,24 +106,6 @@
                         </flux:table.cell>
 
                         <flux:table.cell>
-                            {{ $concepto->tipo_aplicacion }}
-                        </flux:table.cell>
-
-                        <flux:table.cell>
-                            @if ($concepto->roles->isEmpty())
-                                <flux:badge size="sm" color="zinc" inset="top bottom">-</flux:badge>
-                            @else
-                                <div class="flex flex-wrap gap-1">
-                                    @foreach ($concepto->roles as $role)
-                                        <flux:badge size="sm" color="blue" inset="top bottom">
-                                            {{ $role->name }}
-                                        </flux:badge>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </flux:table.cell>
-
-                        <flux:table.cell>
                             @if ($concepto->vigencia_desde && $concepto->vigencia_hasta)
                                 Desde: {{ $concepto->vigencia_desde?->format('Y-m-d') }} - Hasta: {{ $concepto->vigencia_hasta?->format('Y-m-d') }}
                             @elseif ($concepto->vigencia_desde && !$concepto->vigencia_hasta)
@@ -166,27 +118,15 @@
                         </flux:table.cell>
 
                         <flux:table.cell>
-                            @if ($concepto->requiere_factura)
-                                <flux:badge size="xs" color="blue" inset="top bottom">
-                                    Factura
-                                </flux:badge>
-                            @endif
-
-                            @if ($concepto->requiere_comprobante)
+                            @if ($concepto->aplica_ieps)
                                 <flux:badge class="ml-0.5" size="xs" color="orange" inset="top bottom">
-                                    Comp.
+                                    IEPS
                                 </flux:badge>
                             @endif
 
-                            @if ($concepto->requiere_uuid)
-                                <flux:badge class="ml-0.5" size="xs" color="green" inset="top bottom">
-                                    UUID
-                                </flux:badge>
-                            @endif
-
-                            @if ($concepto->permite_sin_factura)
-                                <flux:badge class="ml-0.5" size="xs" color="red" inset="top bottom">
-                                    Sin Fact.
+                            @if ($concepto->aplica_ish)
+                                <flux:badge class="ml-0.5" size="xs" color="yellow" inset="top bottom">
+                                    ISH
                                 </flux:badge>
                             @endif
 
@@ -246,7 +186,7 @@
                             <div class="flex flex-col items-center gap-3">
                                 <flux:icon name="inbox" class="size-8 text-zinc-300 dark:text-zinc-600" />
                                 <flux:text class="text-zinc-400">No se encontraron conceptos</flux:text>
-                                @if ($search || $estatus !== '' || $rolId || $tipo !== '' || $categoria !== '' || $vigencia !== '')
+                                @if ($search || $estatus !== '' || $categoria !== '' || $vigencia !== '')
                                     <flux:button size="sm" variant="ghost" wire:click="clearFilters">
                                         Limpiar filtros
                                     </flux:button>

@@ -36,6 +36,10 @@ class PermissionsSeeder extends Seeder
             'gastos.subir.comprobante',
             'gastos.validar',
 
+            'gastos.tarjeta.conciliar',
+            'gastos.tarjeta.crear',
+            'gastos.tarjeta.ver.propios',
+
             // Comprobantes
             'comprobantes.validar',
 

@@ -30,6 +30,7 @@ return new class extends Migration
             $table->decimal('monto_total', 12, 2)->default(0);
 
             $table->text('motivo_rechazo')->nullable();
+            $table->text('motivo_cancelacion')->nullable();
 
             $table->string('estatus')->default('Borrador')->index();
             // Borrador | Pendiente | Autorizado | Rechazado | Comprobado | Cancelado
