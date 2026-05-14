@@ -123,8 +123,10 @@ class Index extends Component
 
         $comprobantes = $puedeValidarComprobantes
             ? GastoComprobante::with([
-                'gasto.empleado',
+                'gasto.solicitud.empleado',
+                'gasto.comprobacionTarjeta.empleado',
                 'gasto.solicitud.proyecto',
+                'gasto.comprobacionTarjeta.proyecto',
                 'gasto.concepto',
             ])
             ->pendienteManual()

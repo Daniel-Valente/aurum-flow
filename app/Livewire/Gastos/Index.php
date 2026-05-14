@@ -83,7 +83,7 @@ class Index extends Component
 
         if ($isNew) {
             $comprobacion = ComprobacionTarjeta::select('id', 'folio')->findOrFail($id);
-            $this->createdId    = $comprobacion->id;
+            $this->createdId    = $id;
             $this->createdFolio = $comprobacion->folio;
 
             $this->modal('comprobacion-tarjeta-creada')->show();

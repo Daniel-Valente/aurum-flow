@@ -5,6 +5,7 @@ namespace App\Livewire\Tarjeta;
 use App\Models\ComprobacionTarjeta;
 use App\Services\Gasto\ComprobacionTarjetaService;
 use App\Services\Proyecto\ProyectoService;
+use App\Services\Solicitudes\SolicitudService;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -12,12 +13,13 @@ class FormModal extends Component
 {
     public ?int $editingId = null;
 
-    public ?int   $proyecto_id  = null;
-    public string $fecha_inicio = '';
-    public string $fecha_fin    = '';
+    public ?int    $proyecto_id  = null;
+    public ?int    $solicitud_id = null;
+    public string  $fecha_inicio = '';
+    public string  $fecha_fin    = '';
     public ?string $descripcion = null;
 
-    public array $proyectos = [];
+    public array $proyectos   = [];
 
     public function mount(ProyectoService $service): void
     {
@@ -57,7 +59,7 @@ class FormModal extends Component
             'proyecto_id'  => 'nullable|exists:proyectos,id',
             'fecha_inicio' => 'required|date',
             'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
-            'descripcion'  => 'nullable|string|max:300'
+            'descripcion'  => 'nullable|string|max:300',
         ], [
             'fecha_inicio.required'    => 'La fecha de inicio es obligatoria.',
             'fecha_fin.required'       => 'La fecha fin es obligatoria.',
@@ -69,11 +71,11 @@ class FormModal extends Component
                 'proyecto_id'  => $this->proyecto_id,
                 'fecha_inicio' => $this->fecha_inicio,
                 'fecha_fin'    => $this->fecha_fin,
-                'descripcion'  => $this->descripcion
+                'descripcion'  => $this->descripcion,
             ];
 
             if ($this->editingId) {
-                $comprobacion = $service->update($data, auth()->user());
+                $comprobacion = $service->update(ComprobacionTarjeta::findOrFail($this->editingId), $data);
                 $msg = "Periodo {$comprobacion->folio} actualizado.";
                 $isNew = false;
             }

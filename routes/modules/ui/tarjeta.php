@@ -9,6 +9,7 @@ Route::prefix('comprobacion-tarjeta')->name('tarjetas.')->group(function () {
         ->name('index');
 
     Route::get('/{comprobacion}', Show::class)
+        ->whereNumber('comprobacion')
         ->name('show');
 
     Route::get('/comprobantes/{comprobante}/descargar', [GastoComprobanteController::class, 'download'])

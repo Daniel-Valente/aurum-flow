@@ -20,6 +20,8 @@ return new class extends Migration
             $table->decimal('monto_estimado', 12, 2);
 
             $table->text('justificacion_exceso')->nullable();
+            $table->boolean('requiere_extension_tarjeta')->default(false);
+            $table->decimal('monto_extension_tarjeta', 12, 2)->nullable();
 
             $table->timestamps();
 

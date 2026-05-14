@@ -120,8 +120,13 @@ class DetailModal extends Component
                     'monto_estimado'       => $monto,
                     'limite_politica'      => $politica ? (float) $politica->monto_max : null,
                     'tipo_limite_politica'  => $politica ? $politica->tipo_limite : '',
+                    'permite_excepcion'           => $politica?->permite_excepcion ?? false,
                     'comprobante_requerido'=> $comprobanteRequerido,
                     'semaforo'             => $semaforo,
+                    'requiere_extension_tarjeta' => (bool) $d->requiere_extension_tarjeta,
+                    'monto_extension_tarjeta'    => $d->monto_extension_tarjeta
+                        ? (float) $d->monto_extension_tarjeta
+                        : null,
                 ];
             })->toArray();
     }

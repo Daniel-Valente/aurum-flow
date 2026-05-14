@@ -17,7 +17,7 @@ trait WithCumplimiento
             return $query;
         }
 
-        return $query->havingRaw(
+        return $query->whereRaw(
             "({$this->cumplimientoSql()}) = ?",
             [$cumplimiento]
         );

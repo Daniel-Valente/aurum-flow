@@ -74,7 +74,7 @@
     @include('livewire.solicitudes.detail.partials._kpi')
 
     <flux:card class="p-0">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
+        <div class="flex items-center justify-between px-4 py-3 sm:border-b border-zinc-200 dark:border-zinc-700">
             <flux:text size="sm" class="text-zinc-500">
                 Conceptos: <span class="font-semibold text-zinc-800 dark:text-zinc-100">{{ count($detalles) }}</span>
             </flux:text>
@@ -83,77 +83,211 @@
             </flux:text>
         </div>
 
-        <flux:table>
-            <flux:table.columns>
-                <flux:table.column class="pl-4"><span class="pl-4">Concepto</span></flux:table.column>
-                <flux:table.column>Monto estimado</flux:table.column>
-                <flux:table.column>Límite política</flux:table.column>
-                <flux:table.column>Comprobante</flux:table.column>
-                <flux:table.column>Estado</flux:table.column>
-            </flux:table.columns>
+        <div class="hidden md:block">
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column class="pl-4">
+                        <span class="pl-4">Concepto</span>
+                    </flux:table.column>
+                    <flux:table.column>Monto estimado</flux:table.column>
+                    <flux:table.column>Límite política</flux:table.column>
+                    <flux:table.column>Comprobante</flux:table.column>
+                    <flux:table.column>Estado</flux:table.column>
+                </flux:table.columns>
 
-            <flux:table.rows>
-                @foreach ($detalles as $detalle)
-                    @php
-                        $semaforoColor = match($detalle['semaforo']) {
-                            'ok'           => 'green',
-                            'limite'       => 'yellow',
-                            'excedido'     => 'red',
-                            'sin_politica' => 'zinc',
-                        };
-                        $semaforoLabel = match($detalle['semaforo']) {
-                            'ok'           => 'Ok',
-                            'limite'       => 'Al límite',
-                            'excedido'     => 'Excedido',
-                            'sin_politica' => 'Sin política',
-                        };
-                        $comprobanteLabel = match($detalle['comprobante_requerido'] ?? 'ninguno') {
-                            'cfdi'    => 'CFDI (factura)',
-                            'ticket'  => 'Ticket / recibo',
-                            'ninguno' => 'Sin requisito',
-                            default   => '—',
-                        };
-                        $comprobanteColor = match($detalle['comprobante_requerido'] ?? 'ninguno') {
-                            'cfdi'    => 'red',
-                            'ticket'  => 'yellow',
-                            'ninguno' => 'green',
-                            default   => 'zinc',
-                        };
-                    @endphp
-                    <flux:table.row :key="$detalle['id']">
-                        <flux:table.cell class="pl-4">
-                            <div class="pl-4 flex flex-col">
-                                <span class="font-medium text-sm">{{ $detalle['concepto_nombre'] }}</span>
-                            </div>
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            <span class="font-mono text-sm">
-                                {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}
-                            </span>
-                        </flux:table.cell>
-                        <flux:table.cell>
+                <flux:table.rows>
+                    @foreach ($detalles as $detalle)
+                        @php
+                            $semaforoColor = match($detalle['semaforo']) {
+                                'ok'           => 'green',
+                                'limite'       => 'yellow',
+                                'excedido'     => 'red',
+                                'sin_politica' => 'zinc',
+                            };
+
+                            $semaforoLabel = match($detalle['semaforo']) {
+                                'ok'           => 'Ok',
+                                'limite'       => 'Al límite',
+                                'excedido'     => 'Excedido',
+                                'sin_politica' => 'Sin política',
+                            };
+
+                            $comprobanteLabel = match($detalle['comprobante_requerido'] ?? 'ninguno') {
+                                'cfdi'    => 'CFDI (factura)',
+                                'ticket'  => 'Ticket / recibo',
+                                'ninguno' => 'Sin requisito',
+                                default   => '—',
+                            };
+
+                            $comprobanteColor = match($detalle['comprobante_requerido'] ?? 'ninguno') {
+                                'cfdi'    => 'red',
+                                'ticket'  => 'yellow',
+                                'ninguno' => 'green',
+                                default   => 'zinc',
+                            };
+                        @endphp
+
+                        <flux:table.row :key="$detalle['id']">
+                            <flux:table.cell class="pl-4">
+                                <div class="pl-4 flex flex-col">
+                                    <span class="font-medium text-sm">
+                                        {{ $detalle['concepto_nombre'] }}
+                                    </span>
+                                </div>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <span class="font-mono text-sm">
+                                    {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}
+                                </span>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex flex-col gap-2">
+                                    @if (
+                                        $detalle['tipo_limite_politica'] === 'Diario'
+                                        && $solicitud?->fecha_inicio
+                                        && $solicitud?->fecha_fin
+                                    )
+                                        @php
+                                            $duracion = $solicitud->fecha_inicio->diffInDays($solicitud->fecha_fin) + 1;
+                                            $monto = (float) $detalle['limite_politica'] * $duracion;
+                                        @endphp
+                                        <span class="font-semibold">
+                                            {{ Number::currency($monto, in: 'MXN') }}
+                                        </span>
+                                    @endif
+                                    <span class="font-mono text-sm text-zinc-500">
+                                        {{ $detalle['limite_politica']
+                                            ? Number::currency($detalle['limite_politica'], in: 'MXN')
+                                            : '—'
+                                        }}
+                                        -
+                                        <span class="text-xs">
+                                            {{ $detalle['tipo_limite_politica'] ?? '-' }}
+                                        </span>
+                                    </span>
+                                </div>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <flux:badge :color="$comprobanteColor" size="sm">
+                                    {{ $comprobanteLabel }}
+                                </flux:badge>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex gap-3">
+                                    <flux:badge :color="$semaforoColor" size="sm">
+                                        {{ $semaforoLabel }}
+                                    </flux:badge>
+                                    @if ($detalle['requiere_extension_tarjeta'])
+                                        <flux:badge color="purple">
+                                            Con Extensión
+                                        </flux:badge>
+                                    @endif
+                                </div>
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        </div>
+    </flux:card>
+
+    <div class="space-y-1 md:hidden">
+        @foreach ($detalles as $detalle)
+            @php
+                $semaforoColor = match($detalle['semaforo']) {
+                    'ok'           => 'green',
+                    'limite'       => 'yellow',
+                    'excedido'     => 'red',
+                    'sin_politica' => 'zinc',
+                };
+                $semaforoLabel = match($detalle['semaforo']) {
+                    'ok'           => 'Ok',
+                    'limite'       => 'Al límite',
+                    'excedido'     => 'Excedido',
+                    'sin_politica' => 'Sin política',
+                };
+                $comprobanteLabel = match($detalle['comprobante_requerido'] ?? 'ninguno') {
+                    'cfdi'    => 'CFDI (factura)',
+                    'ticket'  => 'Ticket / recibo',
+                    'ninguno' => 'Sin requisito',
+                    default   => '—',
+                };
+
+                $comprobanteColor = match($detalle['comprobante_requerido'] ?? 'ninguno') {
+                    'cfdi'    => 'red',
+                    'ticket'  => 'yellow',
+                    'ninguno' => 'green',
+                    default   => 'zinc',
+                };
+            @endphp
+
+            <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h3 class="font-semibold text-sm text-zinc-900 dark:text-zinc-100 break-words">
+                            {{ $detalle['concepto_nombre'] }}
+                        </h3>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <flux:badge :color="$semaforoColor" size="sm">
+                                {{ $semaforoLabel }}
+                            </flux:badge>
+                            @if ($detalle['requiere_extension_tarjeta'])
+                                <flux:badge color="purple">
+                                    Con Extensión
+                                </flux:badge>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 space-y-4">
+                    <div>
+                        <p class="text-[11px] uppercase tracking-wider text-zinc-500 mb-1">
+                            Monto estimado
+                        </p>
+                        <p class="font-mono text-base font-semibold">
+                            {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] uppercase tracking-wider text-zinc-500 mb-1">
+                            Límite política
+                        </p>
+                        <div class="flex flex-col gap-1">
+                            @if (
+                                $detalle['tipo_limite_politica'] === 'Diario'
+                                && $solicitud?->fecha_inicio
+                                && $solicitud?->fecha_fin
+                            )
+                                @php
+                                    $duracion = $solicitud->fecha_inicio->diffInDays($solicitud->fecha_fin) + 1;
+                                    $monto = (float) $detalle['limite_politica'] * $duracion;
+                                @endphp
+                                <span class="font-semibold">
+                                    {{ Number::currency($monto, in: 'MXN') }}
+                                </span>
+                            @endif
                             <span class="font-mono text-sm text-zinc-500">
-                                {{ $detalle['limite_politica'] ? Number::currency($detalle['limite_politica'], in: 'MXN') : '—' }}
-                                -
+                                {{ $detalle['limite_politica']
+                                    ? Number::currency($detalle['limite_politica'], in: 'MXN')
+                                    : '—'
+                                }}
+                                ·
                                 <span class="text-xs">
                                     {{ $detalle['tipo_limite_politica'] ?? '-' }}
                                 </span>
                             </span>
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            <flux:badge :color="$comprobanteColor" size="sm">
-                                {{ $comprobanteLabel }}
-                            </flux:badge>
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            <flux:badge :color="$semaforoColor" size="sm">
-                                {{ $semaforoLabel }}
-                            </flux:badge>
-                        </flux:table.cell>
-                    </flux:table.row>
-                @endforeach
-            </flux:table.rows>
-        </flux:table>
-    </flux:card>
-
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">
+                            Comprobante requerido
+                        </p>
+                        <flux:badge :color="$comprobanteColor" size="sm">
+                            {{ $comprobanteLabel }}
+                        </flux:badge>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
 </div>

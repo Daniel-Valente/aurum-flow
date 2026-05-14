@@ -148,31 +148,89 @@
                         @foreach ($detalles as $detalle)
                             <flux:table.row :key="$detalle['id']">
                                 <flux:table.cell>{{ $detalle['concepto_nombre'] }}</flux:table.cell>
-                                <flux:table.cell>{{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}</flux:table.cell>
                                 <flux:table.cell>
-                                    <span class="font-mono text-sm text-zinc-500">
-                                        {{ $detalle['limite_politica'] ? Number::currency($detalle['limite_politica'], in: 'MXN') : '—' }}
-                                        -
-                                        <span class="text-xs">
-                                            {{ $detalle['tipo_limite_politica'] ?? '-' }}
+                                    <div class="flex flex-col gap-3">
+                                        @if ($detalle['semaforo'] === 'excedido' && !$detalle['permite_excepcion'] && $detalle['requiere_extension_tarjeta'])
+                                            <div class="flex flex-col items-start gap-3 pt-1">
+                                                <div class="flex items-start flex-col gap-0.5 flex-1">
+                                                    <span class="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                                                        Monto que va a solicitud
+                                                    </span>
+                                                    <span class="text-sm font-mono font-semibold text-zinc-800 dark:text-zinc-100">
+                                                        @php
+                                                            $montoSolicitud = $detalle['monto_estimado']
+                                                                - ($detalle['monto_extension_tarjeta'] ?? 0);
+
+                                                            if ($detalle['tipo_limite_politica'] === 'Diario'
+                                                                    && $solicitud?->fecha_inicio
+                                                                    && $solicitud?->fecha_fin) {
+                                                                $duracion = $solicitud->fecha_inicio->diffInDays($solicitud->fecha_fin) + 1;
+                                                                $montoSolicitud = $detalle['limite_politica'] * $duracion;
+                                                            }
+                                                        @endphp
+                                                        {{ Number::currency(max(0, $montoSolicitud), in: 'MXN') }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-start flex-col gap-0.5 flex-1">
+                                                    <span class="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                                                        Monto a tarjeta
+                                                    </span>
+                                                    <span class="text-sm font-mono font-semibold text-zinc-800 dark:text-zinc-100">
+                                                        {{ Number::currency(max(0, $detalle['monto_extension_tarjeta']), in: 'MXN') }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        @else
+                                            {{ Number::currency($detalle['monto_estimado'], in: 'MXN') }}
+                                        @endif
+                                    </div>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="flex flex-col">
+                                        @if ($detalle['tipo_limite_politica'] === 'Diario' && $solicitud?->fecha_inicio && $solicitud?->fecha_fin)
+                                            @php
+                                                $duracion = $solicitud->fecha_inicio->diffInDays($solicitud->fecha_fin) + 1;
+                                                $monto = (float) $detalle['limite_politica'] * $duracion;
+                                            @endphp
+
+                                            <span class="font-semibold">
+                                                {{ Number::currency($monto, in: 'MXN') }}
+                                            </span>
+                                        @endif
+
+                                        <span class="text-xs text-zinc-500">
+                                            {{ $detalle['limite_politica']
+                                                ? Number::currency($detalle['limite_politica'], in: 'MXN')
+                                                : '—'
+                                            }}
+                                            · {{ $detalle['tipo_limite_politica'] ?? '-' }}
                                         </span>
-                                    </span>
-                                </flux:table.cell>{{-- límite de política (opcional) --}}
+                                    </div>
+                                </flux:table.cell>
                                 <flux:table.cell>
-                                    @php $color = match($detalle['semaforo']) {
-                                        'ok'           => 'green',
-                                        'limite'       => 'yellow',
-                                        'excedido'     => 'red',
-                                        'sin_politica' => 'zinc',
-                                    }; @endphp
-                                    <flux:badge :color="$color" size="sm">
-                                        {{ match($detalle['semaforo']) {
-                                            'ok'           => 'Ok',
-                                            'limite'       => 'Al límite',
-                                            'excedido'     => 'Excedido',
-                                            'sin_politica' => 'Sin política',
-                                        } }}
-                                    </flux:badge>
+                                    @php
+                                        $color = match($detalle['semaforo']) {
+                                            'ok'           => 'green',
+                                            'limite'       => 'yellow',
+                                            'excedido'     => 'red',
+                                            'sin_politica' => 'zinc',
+                                        };
+                                    @endphp
+                                    <div class="flex flex-col gap-3">
+                                        <flux:badge :color="$color" size="sm">
+                                            {{ match($detalle['semaforo']) {
+                                                'ok'           => 'Ok',
+                                                'limite'       => 'Al límite',
+                                                'excedido'     => 'Excedido',
+                                                'sin_politica' => 'Sin política',
+                                            } }}
+                                        </flux:badge>
+                                        @if ($detalle['requiere_extension_tarjeta'])
+                                            <flux:badge color="purple">
+                                                Con Extensión
+                                            </flux:badge>
+                                        @endif
+                                    </div>
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforeach

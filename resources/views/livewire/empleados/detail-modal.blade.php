@@ -48,7 +48,7 @@
             <div class="flex flex-col gap-1 rounded-lg bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
                 <span class="text-[10px] uppercase text-zinc-400">Referencia contable</span>
                 <span class="text-sm text-zinc-700 dark:text-zinc-200">
-                    {{ $empleado->centroCosto?->nombre ?? $empleado->centroCosto?->cuenta_contable ?? '—' }}
+                    {{ ($empleado->centroCosto?->nombre ?: $empleado->centroCosto?->cuenta_contable) ?? '—' }}
                 </span>
             </div>
 

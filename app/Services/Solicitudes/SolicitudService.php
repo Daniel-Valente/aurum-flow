@@ -2,13 +2,13 @@
 
 namespace App\Services\Solicitudes;
 
+use App\Exceptions\Solicitudes\SolicitudBloqueadaException;
 use App\Helpers\FolioHelper;
 use App\Models\Solicitud;
 use App\Models\SolicitudAprobacion;
 use App\Models\SolicitudAuditoria;
 use App\Models\SolicitudDetalle;
 use App\Services\Gasto\PoliticaGastoService;
-use App\Services\Solicitudes\SolicitudGastoService;
 use Cache;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -266,30 +266,19 @@ class SolicitudService
                     ->orWhere('proyectos.nombre', 'ilike', "%{$search}%");
                 })
             )
-
             ->when($proyectoId, fn ($q) =>
                 $q->where('solicitudes.proyecto_id', $proyectoId)
             )
-
             ->when($fechaInicio, fn ($q) =>
                 $q->whereDate('solicitudes.fecha_inicio', '>=', $fechaInicio)
             )
-
             ->when($fechaFin, fn ($q) =>
                 $q->whereDate('solicitudes.fecha_fin', '<=', $fechaFin)
             )
-
-            // 🎯 filtro reutilizable
             ->filterCumplimiento($cumplimiento)
-
             ->orderBy("solicitudes.{$sortBy}", $sortDir)
-
             ->paginate($perPage);
     }
-
-    // -------------------------------------------------------------------------
-    // Lista plana para selects / dropdowns
-    // -------------------------------------------------------------------------
 
     public function list($user): array
     {
@@ -298,7 +287,6 @@ class SolicitudService
             ->orderBy('folio')
             ->toRawSql();
 
-        // ✅ Sin JOIN — usar nombre de columna directo, no con prefijo de tabla
         if ($user->can('solicitudes.ver.todas')) {
             // sin restricción
         } elseif ($user->hasRole('gerente') && $user->empleado?->area_id) {
@@ -312,10 +300,25 @@ class SolicitudService
         return $query->get(['id', 'folio', 'estatus', 'monto_total'])->toArray();
     }
 
-    // -------------------------------------------------------------------------
-    // Toggle cancelación
-    // Cancelado → Borrador (reabrir) | Borrador/Pendiente → Cancelado
-    // -------------------------------------------------------------------------
+    public function solicitudesExtension($user): array
+    {
+        $query = Solicitud::query()
+            ->whereIn('estatus', ['Autorizado', 'Comprobado'])
+            ->orderBy('folio');
+
+        if ($user->can('solicitudes.ver.todas')) {
+        } elseif ($user->hasRole('gerente') && $user->empleado?->area_id) {
+            $query->where('area_id', $user->empleado->area_id);
+        } elseif ($user->can('solicitudes.ver.propias')) {
+            $query->where('empleado_id', $user->empleado->id);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->get(['id', 'folio', 'estatus', 'monto_total'])
+            ->toArray();
+    }
 
     public function toggleCancelacion(Solicitud $solicitud, $user, ?string $motivo = null): Solicitud
     {
@@ -325,10 +328,6 @@ class SolicitudService
 
         return $this->cancelar($solicitud, $user, $motivo);
     }
-
-    // -------------------------------------------------------------------------
-    // Crear solicitud
-    // -------------------------------------------------------------------------
 
     public function create(array $data, $user): Solicitud
     {
@@ -370,13 +369,8 @@ class SolicitudService
         ]);
 
         $this->flushCache();
-
         return $solicitud->load('empleado', 'area');
     }
-
-    // -------------------------------------------------------------------------
-    // Agregar detalles en batch
-    // -------------------------------------------------------------------------
 
     public function agregarDetalle(Solicitud $solicitud, array $detalles, $user): Solicitud
     {
@@ -411,10 +405,6 @@ class SolicitudService
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Enviar a revisión
-    // -------------------------------------------------------------------------
-
     public function enviar(Solicitud $solicitud, $user): Solicitud
     {
         if (!$user->can('solicitudes.enviar')) {
@@ -447,18 +437,29 @@ class SolicitudService
             }
 
             $monto = (float) $detalle->monto_estimado;
+            $montoEfectivo = $monto;
+            $monto_max = $politica->monto_max;
 
-            if ($monto > (float) $politica->monto_max && !$politica->permite_excepcion) {
+            if ($detalle->requiere_extension_tarjeta && $detalle->monto_extension_tarjeta > 0) {
+                $montoEfectivo = $monto - (float) $detalle->monto_extension_tarjeta;
+            }
+
+            if($politica->tipo_limite === 'Diario' && $solicitud?->fecha_inicio && $solicitud?->fecha_fin) {
+                $duracion = $solicitud->fecha_inicio->diffInDays($solicitud->fecha_fin) + 1;
+                $monto_max *= $duracion;
+            }
+
+            if ($montoEfectivo > (float) $monto_max && !$politica->permite_excepcion) {
                 $bloqueantes[] = sprintf(
-                    '%s excede el límite de %s y no permite excepciones.',
+                    '%s excede el límite de %s y no permite excepciones ni extensión de tarjeta.',
                     $detalle->concepto->nombre,
-                    number_format($politica->monto_max, 2)
+                    number_format($monto_max, 2)
                 );
             }
         }
 
         if (!empty($bloqueantes)) {
-            throw new \App\Exceptions\Solicitudes\SolicitudBloqueadaException(
+            throw new SolicitudBloqueadaException(
                 implode(' | ', $bloqueantes)
             );
         }

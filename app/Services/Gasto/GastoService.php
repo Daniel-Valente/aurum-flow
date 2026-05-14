@@ -3,6 +3,7 @@
 namespace App\Services\Gasto;
 
 use App\Jobs\ValidarCFDIJob;
+use App\Models\ComprobacionTarjeta;
 use App\Models\Gasto;
 use App\Models\GastoComprobante;
 use App\Services\Auditoria\AuditoriaService;
@@ -89,16 +90,28 @@ class GastoService
                 throw $e;
             }
 
-            if (GastoComprobante::where('uuid', $cfdiData['uuid'])->exists()) {
-                Storage::disk('private')->delete($path);
-                throw new \Exception('Este CFDI ya fue registrado en otra ');
+            $cfdiExistente = GastoComprobante::where('uuid', $cfdiData['uuid'])->first();
+
+            if ($cfdiExistente) {
+                $esCfdiCompartidoValido = false;
+
+                if (!empty($data['cfdi_compartido'])) {
+                    $esCfdiCompartidoValido = $cfdiExistente->gasto?->solicitud_id !== null
+                        && $gasto->comprobacion_tarjeta_id !== null;
+                }
+
+                if (!$esCfdiCompartidoValido) {
+                    Storage::disk('private')->delete($path);
+                    throw new \Exception('Este CFDI ya fue registrado en otra solicitud.');
+                }
             }
         }
 
         $montoComprobante = $tipo === 'factura'
-            ? $cfdiData['total']
+            ? (isset($data['monto_override']) && (float) $data['monto_override'] > 0
+                ? (float) $data['monto_override']
+                : $cfdiData['total'])
             : (float) $data['monto'];
-
 
         if($tipo !== 'factura') {
             $roleId = $gasto->empleado->user->roles->first()?->id;
@@ -136,10 +149,20 @@ class GastoService
             'tipo'              => $tipo,
             'uuid'              => $cfdiData['uuid'] ?? null,
             'monto'             => $montoComprobante,
+            'monto_total_cfdi'  => $cfdiData['total'] ?? null,
+            'cfdi_compartido'   => !empty($data['cfdi_compartido']),
+            'subtotal'          => $cfdiData['subtotal']   ?? null,
+            'descuento'         => $cfdiData['descuento']  ?? null,
+            'iva'               => $cfdiData['iva']        ?? null,
+            'ieps'              => $cfdiData['ieps']       ?? null,
+            'ish'               => $cfdiData['ish']        ?? null,
+            'tasa_iva'          => $cfdiData['tasa_iva']   ?? null,
+            'tasa_ieps'         => $cfdiData['tasa_ieps']  ?? null,
+            'tasa_ish'          => $cfdiData['tasa_ish']   ?? null,
             'fecha_gasto'       => $data['fecha_gasto'],
             'subido_por'        => $user->id,
             'sat_status'        => $tipo === 'factura' ? ($cfdiData['estado_sat'] ?? 'pendiente') : null,
-            'validacion_manual' => in_array($tipo, ['pdf', 'recibo']) ? 'pendiente' : 'aprobado',
+            'validacion_manual' => in_array($tipo, ['pdf', 'recibo']) ? 'pendiente' : 'pendiente',
             'meta_cfdi'         => $cfdiData,
         ]);
 
@@ -156,7 +179,14 @@ class GastoService
         ]);
 
         if($tipo === 'factura' && $cfdiData && $cfdiData['estado_sat'] === 'Vigente') {
-            $gasto->update(['fecha_gasto' => $data['fecha_gasto'],'estatus' => 'Comprobado']);
+            $gasto->update(['fecha_gasto' => $data['fecha_gasto'], 'estatus' => 'Comprobado']);
+        }
+
+        if ($tipo === 'factura' && $cfdiData) {
+            $gasto->update([
+                'uuid_factura'  => $cfdiData['uuid'],
+                'rfc_proveedor' => substr($cfdiData['emisor_rfc'] ?? $cfdiData['emisor'] ?? '', 0, 15),
+            ]);
         }
 
         return $comprobante;
@@ -173,35 +203,31 @@ class GastoService
             throw new AuthorizationException('No tienes permiso para ver este archivo.');
         }
 
-        $path = $comprobante->archivo; // Ruta relativa guardada en BD
+        $path = $comprobante->archivo;
 
         if (!Storage::disk('private')->exists($path)) {
             abort(404, 'El archivo no existe en el almacenamiento privado.');
         }
 
-       return response()->file(Storage::disk('private')->path($path));
+        return response()->file(Storage::disk('private')->path($path));
     }
 
     public function evaluarComprobacion(Gasto $gasto): void
     {
-        // Solo evaluar gastos que ya pasaron validación de política
         if (!in_array($gasto->estatus, ['aprobado', 'excepcion', 'comprobado'], true)) {
             return;
         }
 
-        // ✅ Total de comprobantes VÁLIDOS (aprobados o sin validación manual para CFDIs vigentes)
         $totalComprobado = $gasto->comprobantes()
             ->where(function ($q) {
                 $q->where('validacion_manual', 'aprobado')
                 ->orWhere(function ($q2) {
-                    // CFDIs sin validación manual que pasaron validación SAT
                     $q2->whereNull('validacion_manual')
                         ->whereIn('sat_status', ['vigente', null]);
                 });
             })
             ->sum('monto');
 
-        // ✅ Si cubre el monto → COMPROBADO
         if ($totalComprobado >= $gasto->monto) {
             if ($gasto->estatus !== 'comprobado') {
                 $gasto->update(['estatus' => 'comprobado']);
@@ -213,18 +239,15 @@ class GastoService
                 ]);
             }
 
-            // ✅ Evaluar cierre de la solicitud completa
             app(SolicitudService::class)->evaluarCierre($gasto->solicitud);
             return;
         }
 
-        // ✅ Si tiene comprobantes pero NO cubre → volver a APROBADO para permitir reintento
         $tieneComprobantes = $gasto->comprobantes()->count() > 0;
         $hayRechazados = $gasto->comprobantes()->where('validacion_manual', 'rechazado')->exists();
 
         if ($tieneComprobantes && ($totalComprobado < $gasto->monto || $hayRechazados)) {
             if ($gasto->estatus === 'comprobado') {
-                // Si estaba comprobado pero rechazaron uno → DESBLOQUEAR
                 $gasto->update(['estatus' => 'aprobado']);
 
                 app(AuditoriaService::class)->registrar([
@@ -246,8 +269,9 @@ class GastoService
             $gasto->refresh()->load('comprobantes');
 
             $totalComprobantes = $gasto->comprobantes->sum('monto');
+            $tieneExtensionCT = $this->gastoTieneExtensionCT($gasto);
 
-            if ($totalComprobantes > 0) {
+            if ($totalComprobantes > 0 && !$tieneExtensionCT) {
                 $antes = $gasto->monto;
                 $gasto->update(['monto' => $totalComprobantes]);
 
@@ -265,5 +289,20 @@ class GastoService
 
             return $gasto->fresh();
         });
+    }
+
+    private function gastoTieneExtensionCT(Gasto $gasto): bool
+    {
+        if (!$gasto->solicitud_id) {
+            return false;
+        }
+
+        return ComprobacionTarjeta::where('solicitud_id', $gasto->solicitud_id)
+            ->where('es_extension', true)
+            ->whereHas('gastos', fn($q) =>
+                $q->where('concepto_id', $gasto->concepto_id)
+                ->whereNull('deleted_at')
+            )
+            ->exists();
     }
 }

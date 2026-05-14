@@ -11,10 +11,13 @@ class SolicitudDetalle extends Model
         'concepto_id',
         'monto_estimado',
         'justificacion_exceso',
+        'requiere_extension_tarjeta',
+        'monto_extension_tarjeta'
     ];
 
     protected $casts = [
         'monto_estimado' => 'decimal:2',
+        'monto_extension_tarjeta' => 'decimal:2'
     ];
 
     public function solicitud()

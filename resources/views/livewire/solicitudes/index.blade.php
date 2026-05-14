@@ -134,7 +134,7 @@
 
         <flux:table :paginate="$solicitudes">
             <flux:table.columns>
-                <flux:table.column class="pl-4">
+                <flux:table.column class="pl-4 hidden sm:block">
                     <span class="pl-4">
                         Folio
                     </span>
@@ -191,7 +191,7 @@
                     @endphp
 
                     <flux:table.row :key="$solicitud->id">
-                        <flux:table.cell class="pl-4">
+                        <flux:table.cell class="pl-4 hidden sm:block">
                             <span class="pl-4 font-mono text-xs text-zinc-500 dark:text-zinc-400">
                                 {{ $solicitud->folio }}
                             </span>
@@ -201,6 +201,9 @@
                             <div class="flex flex-col">
                                 <span class="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
                                     {{ $solicitud->proyecto_nombre ?? '—' }}
+                                </span>
+                                <span class="block sm:hidden pl-4 font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                                    {{ $solicitud->folio }}
                                 </span>
                             </div>
                         </flux:table.cell>
@@ -287,44 +290,51 @@
                                         icon="clipboard-document-list"
                                         wire:click="show({{ $solicitud->id }})"
                                         title="Historial"
-
                                     />
                                 @else
                                     {{-- Gestionar conceptos — solo Borrador/Pendiente --}}
-                                    <flux:button
-                                        size="sm" variant="ghost" icon="list-bullet"
-                                        wire:click="show({{ $solicitud->id }})"
-                                        title="{{ $gestionable ? 'Gestionar conceptos' : 'No disponible en este estatus' }}"
-                                        :disabled="!$gestionable"
-                                    />
+                                    @if (in_array($solicitud->estatus, ['Borrador', 'Pendiente']))
+                                        <flux:button
+                                            size="sm" variant="ghost" icon="list-bullet"
+                                            wire:click="show({{ $solicitud->id }})"
+                                            title="{{ $gestionable ? 'Gestionar conceptos' : 'No disponible en este estatus' }}"
+                                            :disabled="!$gestionable"
+                                        />
+                                    @endif
 
                                     {{-- Comprobar — solo Autorizado --}}
-                                    <flux:button
-                                        size="sm" variant="ghost" icon="document-currency-dollar"
-                                        wire:click="show({{ $solicitud->id }})"
-                                        title="{{ $comprobable ? 'Comprobar gastos' : 'Disponible cuando esté autorizada' }}"
-                                        :disabled="!$comprobable"
-                                    />
+                                    @if ($solicitud->estatus === 'Autorizado')
+                                        <flux:button
+                                            size="sm" variant="ghost" icon="document-currency-dollar"
+                                            wire:click="show({{ $solicitud->id }})"
+                                            title="{{ $comprobable ? 'Comprobar gastos' : 'Disponible cuando esté autorizada' }}"
+                                            :disabled="!$comprobable"
+                                        />
+                                    @endif
 
                                     {{-- Editar — solo Borrador --}}
-                                    @can('solicitudes.editar')
-                                        <flux:button
-                                            size="sm" variant="ghost" icon="pencil"
-                                            wire:click="{{ $editable ? 'openEdit(' . $solicitud->id . ')' : '' }}"
-                                            title="{{ $editable ? 'Editar' : 'Solo editable en borrador' }}"
-                                            :disabled="!$editable"
-                                        />
-                                    @endcan
+                                    @if ($solicitud->estatus === 'Borrador')
+                                        @can('solicitudes.editar')
+                                            <flux:button
+                                                size="sm" variant="ghost" icon="pencil"
+                                                wire:click="{{ $editable ? 'openEdit(' . $solicitud->id . ')' : '' }}"
+                                                title="{{ $editable ? 'Editar' : 'Solo editable en borrador' }}"
+                                                :disabled="!$editable"
+                                            />
+                                        @endcan
+                                    @endif
 
                                     {{-- Cancelar — solo Borrador/Pendiente --}}
-                                    @can('solicitudes.eliminar')
-                                        <flux:button
-                                            size="sm" variant="ghost" icon="trash"
-                                            wire:click="{{ $cancelable ? 'openDelete(' . $solicitud->id . ')' : '' }}"
-                                            title="{{ $cancelable ? 'Cancelar solicitud' : 'No cancelable en este estatus' }}"
-                                            :disabled="!$cancelable"
-                                        />
-                                    @endcan
+                                    @if (in_array($solicitud->estatus, ['Borrador', 'Pendiente']))
+                                        @can('solicitudes.eliminar')
+                                            <flux:button
+                                                size="sm" variant="ghost" icon="trash"
+                                                wire:click="{{ $cancelable ? 'openDelete(' . $solicitud->id . ')' : '' }}"
+                                                title="{{ $cancelable ? 'Cancelar solicitud' : 'No cancelable en este estatus' }}"
+                                                :disabled="!$cancelable"
+                                            />
+                                        @endcan
+                                    @endif
 
                                 @endif
                             </div>

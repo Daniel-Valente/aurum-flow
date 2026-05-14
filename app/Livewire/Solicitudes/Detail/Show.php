@@ -2,13 +2,19 @@
 
 namespace App\Livewire\Solicitudes\Detail;
 
+use App\Models\ComprobacionTarjeta;
+use App\Models\ConfiguracionEmpresa;
+use App\Models\Empleado;
 use App\Models\Gasto;
+use App\Models\GastoCompartido;
 use App\Models\GastoComprobante;
 use App\Models\GastoExcepcion;
 use App\Models\Solicitud;
 use App\Models\SolicitudDetalle;
 use App\Services\CFDI\CFDIService;
 use App\Services\Concepto\ConceptoService;
+use App\Services\Empleado\EmpleadoService;
+use App\Services\Gasto\GastoCompartidoService;
 use App\Services\Gasto\GastoService;
 use App\Services\Gasto\PoliticaGastoService;
 use App\Services\Solicitudes\SolicitudAprobacionService;
@@ -61,6 +67,21 @@ class Show extends Component
 
     public string $justificacionExcepcion = '';
 
+    public bool    $marcandoCompartido       = false;
+    public ?int    $gastoCompartidoActivo    = null;
+    public string  $tipoCompartido           = 'empleado';
+    public ?int    $empleadoReceptorId       = null;
+    public string  $clienteDescripcion       = '';
+    public string  $montoCompartido          = '';
+
+    public array   $compartidosPendientes    = [];
+    public ?int    $compartidoParaVincular   = null;
+
+    public array   $extensionTarjeta         = [];
+    public bool    $tieneTarjetaCorporativa  = false;
+
+    public array $empleadosDisponibles = [];
+
     public function mount(Solicitud $solicitud, ConceptoService $conceptoService): void
     {
         $this->authorize('ver', $solicitud);
@@ -73,6 +94,7 @@ class Show extends Component
 
         $role_id = $this->solicitud->empleado->user->roles->first()?->id;
         $this->conceptos = $conceptoService->list($role_id);
+        $this->tieneTarjetaCorporativa = (bool) $this->solicitud->empleado->tarjeta_credito_corporativa_asignada;
 
         $this->sincronizarDetalles();
         $this->calcularKpis();
@@ -198,10 +220,14 @@ class Show extends Component
 
     public function enviar(SolicitudService $service): void
     {
-        $excedidosSinJustificar = collect($this->detalles)
-            ->filter(fn($d) => $d['semaforo'] === 'excedido' && empty($d['justificacion_exceso']));
+        $excedidosSinResolver = collect($this->detalles)
+            ->filter(fn($d) =>
+                $d['semaforo'] === 'excedido'
+                && empty($d['justificacion_exceso'])
+                && !$d['requiere_extension_tarjeta']
+            );
 
-        if ($excedidosSinJustificar->isNotEmpty()) {
+        if ($excedidosSinResolver->isNotEmpty()) {
             $this->dispatch('abrirJustificaciones');
             return;
         }
@@ -235,7 +261,11 @@ class Show extends Component
     public function abrirJustificaciones(): void
     {
         $this->justificaciones = collect($this->detalles)
-            ->filter(fn($d) => $d['semaforo'] === 'excedido')
+            ->filter(fn($d) =>
+                $d['semaforo'] === 'excedido'
+                && empty($d['justificacion_exceso'])
+                && !$d['requiere_extension_tarjeta']
+            )
             ->mapWithKeys(fn($d) => [$d['id'] => $d['justificacion_exceso'] ?? ''])
             ->toArray();
 
@@ -409,6 +439,8 @@ class Show extends Component
         ]);
 
         $gasto = Gasto::findOrFail($this->gastoActivo);
+        $gastoData = collect($this->gastos)->firstWhere('id', $gasto->id);
+        $tieneExtension = !empty($gastoData['extension_tarjeta']);
 
         try {
             if ($this->tipoComprobante === 'factura') {
@@ -422,9 +454,11 @@ class Show extends Component
                 foreach ($validos as $idx => $cfdiEntry) {
                     $data = [
                         'tipo'             => 'factura',
-                        'monto'            => 0,             // lo sobreescribe el parse
+                        'monto'            => 0,
                         'fecha_gasto'      => $this->fechaGastoReal,
                         'archivo_pdf_cfdi' => $this->pdfsCfdi[$idx] ?? null,
+                        'monto_override'   => $tieneExtension ? $gasto->monto : null,
+                        'cfdi_compartido'  => $tieneExtension,
                     ];
 
                     $service->subirComprobante($gasto, auth()->user(), $cfdiEntry['xml'], $data);
@@ -513,6 +547,154 @@ class Show extends Component
         $this->pdfsCfdi     = array_values($this->pdfsCfdi);
     }
 
+    public function abrirCompartido(int $gastoId): void
+    {
+        $this->gastoCompartidoActivo = $gastoId;
+        $this->marcandoCompartido    = true;
+        $this->tipoCompartido        = 'empleado';
+        $this->empleadoReceptorId    = null;
+        $this->clienteDescripcion    = '';
+        $this->montoCompartido       = '';
+
+        $this->empleadosDisponibles = Empleado::query()
+            ->where('estatus', true)
+            ->where('id', '!=', $this->solicitud->empleado_id)
+            ->orderBy('nombre_completo')
+            ->get(['id', 'nombre_completo'])
+            ->toArray();
+    }
+
+    public function guardarCompartido(GastoCompartidoService $service): void
+    {
+        $this->validate([
+            'montoCompartido'      => 'required|numeric|min:0.01',
+            'tipoCompartido'       => 'required|in:empleado,cliente',
+            'empleadoReceptorId'   => 'required_if:tipoCompartido,empleado|exists:empleados,id',
+            'clienteDescripcion'   => 'required_if:tipoCompartido,cliente|nullable|string|max:200',
+        ], [
+            'montoCompartido.required'    => 'Indica el monto que comparte.',
+            'empleadoReceptorId.required' => 'Selecciona el empleado receptor.',
+            'clienteDescripcion.required' => 'Describe el cliente o invitado.',
+        ]);
+
+        $gasto = Gasto::findOrFail($this->gastoCompartidoActivo);
+
+        try {
+            $service->marcarCompartido(
+                $gasto,
+                $this->tipoCompartido,
+                (float) $this->montoCompartido,
+                $this->tipoCompartido === 'empleado' ? $this->empleadoReceptorId : null,
+                $this->tipoCompartido === 'cliente'  ? $this->clienteDescripcion  : null,
+            );
+
+            $this->marcandoCompartido    = false;
+            $this->gastoCompartidoActivo = null;
+            $this->sincronizarGastos();
+            $this->cargarCompartidosPendientes();
+
+            Flux::toast(variant: 'success', text: 'Gasto marcado como compartido.');
+        } catch (\Exception $e) {
+            $this->dispatch('autorizacionError', message: $e->getMessage());
+        }
+    }
+
+    public function cargarCompartidosPendientes(): void
+    {
+        $empleadoId = $this->solicitud->empleado_id;
+
+        $this->compartidosPendientes = GastoCompartido::where('empleado_receptor_id', $empleadoId)
+            ->where('estatus', 'pendiente')
+            ->with(['gastoPagador.concepto', 'gastoPagador.solicitud.empleado'])
+            ->get()
+            ->map(fn ($c) => [
+                'id'              => $c->id,
+                'pagador'         => $c->gastoPagador->solicitud->empleado->nombre_completo ?? '—',
+                'concepto'        => $c->gastoPagador->concepto->nombre ?? '—',
+                'fecha'           => $c->gastoPagador->fecha_gasto?->format('d/m/Y'),
+                'monto_compartido'=> (float) $c->monto_compartido,
+                'folio_solicitud' => $c->gastoPagador->solicitud->folio ?? '—',
+            ])
+            ->toArray();
+    }
+
+    public function vincularCompartido(int $compartidoId, int $gastoReceptorId, GastoCompartidoService $service): void
+    {
+        $compartido    = GastoCompartido::findOrFail($compartidoId);
+        $gastoReceptor = Gasto::findOrFail($gastoReceptorId);
+
+        try {
+            $service->vincularReceptor($compartido, $gastoReceptor, auth()->user());
+
+            $this->compartidoParaVincular = null;
+            $this->sincronizarGastos();
+            $this->cargarCompartidosPendientes();
+
+            Flux::toast(variant: 'success', text: 'Gasto compartido vinculado. Tu concepto queda comprobado por referencia.');
+        } catch (\Exception $e) {
+            $this->dispatch('autorizacionError', message: $e->getMessage());
+        }
+    }
+
+    public function toggleExtensionTarjeta(int $detalleId): void
+    {
+        if (!$this->tieneTarjetaCorporativa) {
+            return;
+        }
+
+        $detalle  = SolicitudDetalle::where('id', $detalleId)
+            ->where('solicitud_id', $this->solicitud->id)
+            ->firstOrFail();
+
+        $datoDetalle = collect($this->detalles)->firstWhere('id', $detalleId);
+        $excedente   = max(0, $datoDetalle['monto_estimado'] - ($datoDetalle['limite_politica'] ?? 0));
+
+        if ($datoDetalle['tipo_limite_politica'] === 'Diario'
+                && $this->solicitud?->fecha_inicio
+                && $this->solicitud?->fecha_fin) {
+
+            $duracion = $this->solicitud->fecha_inicio->diffInDays($this->solicitud->fecha_fin) + 1;
+            $total = $datoDetalle['limite_politica'] * $duracion;
+            $excedente = $datoDetalle['monto_estimado'] - $total;
+        }
+
+        if ($detalle->requiere_extension_tarjeta) {
+            $detalle->update([
+                'requiere_extension_tarjeta' => false,
+                'monto_extension_tarjeta'    => null,
+            ]);
+        } else {
+            $detalle->update([
+                'requiere_extension_tarjeta' => true,
+                'monto_extension_tarjeta'    => $excedente,
+            ]);
+        }
+
+        $this->solicitud = $this->solicitud->fresh(['detalles.concepto']);
+        $this->sincronizarDetalles();
+        $this->calcularKpis();
+    }
+
+    public function guardarMontoExtension(int $detalleId, float $monto): void
+    {
+        $detalle = SolicitudDetalle::where('id', $detalleId)
+            ->where('solicitud_id', $this->solicitud->id)
+            ->firstOrFail();
+
+        $datoDetalle = collect($this->detalles)->firstWhere('id', $detalleId);
+        $montoSolicitud = $datoDetalle['monto_estimado'] - $monto;
+
+        if ($montoSolicitud < 0) {
+            $this->addError("extension_{$detalleId}", 'El monto de tarjeta no puede superar el total del concepto.');
+            return;
+        }
+
+        $detalle->update(['monto_extension_tarjeta' => $monto]);
+
+        $this->solicitud = $this->solicitud->fresh(['detalles.concepto']);
+        $this->sincronizarDetalles();
+    }
+
     private function sincronizarDetalles(): void
     {
         $role_id = $this->solicitud->empleado->user->roles->first()?->id;
@@ -535,17 +717,23 @@ class Show extends Component
                     : 'ninguno';
 
                 return [
-                    'id'                   => $d->id,
-                    'concepto_id'          => $d->concepto_id,
-                    'concepto_nombre'      => $d->concepto->nombre ?? '—',
-                    'monto_estimado'       => $monto,
-                    'limite_politica'      => $politica ? (float) $politica->monto_max : null,
-                    'tipo_limite_politica'  => $politica ? $politica->tipo_limite : '',
-                    'comprobante_requerido'=> $comprobanteRequerido,
-                    'semaforo'             => $semaforo,
+                    'id'                         => $d->id,
+                    'concepto_id'                => $d->concepto_id,
+                    'concepto_nombre'            => $d->concepto->nombre ?? '—',
+                    'monto_estimado'             => $monto,
+                    'limite_politica'            => $politica ? (float) $politica->monto_max : null,
+                    'tipo_limite_politica'       => $politica ? $politica->tipo_limite : '',
+                    'permite_excepcion'           => $politica?->permite_excepcion ?? false,
+                    'comprobante_requerido'      => $comprobanteRequerido,
+                    'semaforo'                   => $semaforo,
+                    'requiere_extension_tarjeta' => (bool) $d->requiere_extension_tarjeta,
+                    'monto_extension_tarjeta'    => $d->monto_extension_tarjeta
+                        ? (float) $d->monto_extension_tarjeta
+                        : null,
                 ];
             })->toArray();
     }
+
 
     private function sincronizarGastos(): void
     {
@@ -562,10 +750,20 @@ class Show extends Component
             ? app(PoliticaGastoService::class)->getPoliticasBulk($roleId, $conceptoIds, $fecha)
             : collect();
 
-        $this->gastos = $gastosDb->map(function ($g) use ($politicas) {
+        $ctExtension = ComprobacionTarjeta::where('solicitud_id', $this->solicitud->id)
+            ->where('es_extension', true)
+            ->with('gastos')
+            ->first();
+
+        $gastosCtPorConcepto = $ctExtension
+            ? $ctExtension->gastos->keyBy('concepto_id')
+            : collect();
+
+        $this->gastos = $gastosDb->map(function ($g) use ($politicas, $ctExtension, $gastosCtPorConcepto) {
             $politica     = $politicas->get($g->concepto_id);
             $monto        = (float) $g->monto;
             $totalComp    = $g->comprobantes->sum('monto');
+            $gastoExtensionCT = $gastosCtPorConcepto->get($g->concepto_id);
 
             return [
                 'id'                    => $g->id,
@@ -586,12 +784,30 @@ class Show extends Component
                     'id'               => $c->id,
                     'tipo'             => $c->tipo,
                     'monto'            => (float) $c->monto,
+                    'subtotal'         => $c->subtotal ? (float) $c->subtotal : null,
+                    'iva'              => $c->iva  ? (float) $c->iva  : null,
+                    'ieps'             => $c->ieps ? (float) $c->ieps : null,
+                    'ish'              => $c->ish  ? (float) $c->ish  : null,
                     'uuid'             => $c->uuid,
                     'sat_status'       => $c->sat_status,
                     'validacion_manual'=> $c->validacion_manual,
                     'archivo'           => $c->archivo,
                     'archivo_pdf'       => $c->archivo_pdf,
                 ])->toArray(),
+                'compartido' => $g->compartidoComo ? [
+                    'id'              => $g->compartidoComo->id,
+                    'tipo'            => $g->compartidoComo->tipo,
+                    'receptor'        => $g->compartidoComo->empleadoReceptor->nombre_completo ?? $g->compartidoComo->cliente_descripcion,
+                    'monto_compartido'=> (float) $g->compartidoComo->monto_compartido,
+                    'estatus'         => $g->compartidoComo->estatus,
+                ] : null,
+                'extension_tarjeta' => $gastoExtensionCT ? [
+                    'ct_folio'     => $ctExtension->folio,
+                    'ct_id'        => $ctExtension->id,
+                    'monto'        => (float) $gastoExtensionCT->monto,
+                    'estatus_ct'   => $ctExtension->estatus,
+                    'comprobado'   => $gastoExtensionCT->estatus === 'comprobado',
+                ] : null,
             ];
         })->toArray();
     }
@@ -657,6 +873,7 @@ class Show extends Component
 
         if ($this->stepActual === 3) {
             $this->sincronizarGastos();
+            $this->cargarCompartidosPendientes();
         }
     }
 
@@ -718,17 +935,17 @@ class Show extends Component
     private function validarRangoFechaCfdi(string $fechaCfdi, string $fechaGastoReal): ?string
     {
         try {
-            $cfdi = Carbon::parse($fechaCfdi)->startOfDay();
+            $config = ConfiguracionEmpresa::actual();
+
+            $cfdi  = Carbon::parse($fechaCfdi)->startOfDay();
             $gasto = Carbon::parse($fechaGastoReal)->startOfDay();
 
-            $diasAntes = config('cfdi.fecha_validacion.dias_antes', 3);
-            $diasDespues = config('cfdi.fecha_validacion.dias_despues', 10);
-
-            $min = $gasto->copy()->subDays($diasAntes);
-            $max = $gasto->copy()->addDays($diasDespues);
+            $min = $gasto->copy()->subDays($config->cfdi_dias_antes_permitidos);
+            $max = $gasto->copy()->addDays($config->cfdi_dias_despues_permitidos);
 
             if ($cfdi->lt($min) || $cfdi->gt($max)) {
-                return "La fecha del CFDI ({$cfdi->toDateString()}) está fuera del rango permitido ({$min->toDateString()} - {$max->toDateString()})";
+                return "La fecha del CFDI ({$cfdi->toDateString()}) está fuera del rango "
+                    . "({$min->toDateString()} – {$max->toDateString()})";
             }
 
             return null;

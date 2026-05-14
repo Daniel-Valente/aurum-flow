@@ -91,7 +91,7 @@
 
         <div class="mt-4 h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
             <div
-                class="h-full transition-all duration-500 ease-out {{ $pctCompletado === 100 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600' }}"
+                class="h-full transition-all duration-500 ease-out {{ $pctCompletado === 100 ? 'bg-linear-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600' }}"
                 style="width: {{ $pctCompletado }}%"
             ></div>
         </div>
@@ -119,6 +119,57 @@
             @endif
         </div>
     </flux:card>
+
+    @if (!empty($compartidosPendientes))
+        <div class="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 overflow-hidden">
+            <div class="px-4 py-3 border-b border-blue-200 dark:border-blue-800 flex items-center gap-2">
+                <flux:icon.user-group class="size-4 text-blue-500" />
+                <span class="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Gastos compartidos pendientes de vinculación
+                </span>
+            </div>
+            <div class="divide-y divide-blue-100 dark:divide-blue-900">
+                @foreach ($compartidosPendientes as $cp)
+                    <div class="px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                {{ $cp['pagador'] }} pagó {{ $cp['concepto'] }}
+                            </span>
+                            <span class="text-xs text-blue-500">
+                                {{ $cp['folio_solicitud'] }} · {{ $cp['fecha'] }}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-sm font-semibold text-blue-800 dark:text-blue-100">
+                                {{ Number::currency($cp['monto_compartido'], in: 'MXN') }}
+                            </span>
+                            @php
+                                $gastosVinculables = collect($gastos)
+                                    ->where('estatus', 'pendiente')
+                                    ->values();
+                            @endphp
+                            @if ($gastosVinculables->isNotEmpty())
+                                <flux:dropdown>
+                                    <flux:button size="sm" variant="primary" icon="link">
+                                        Vincular
+                                    </flux:button>
+                                    <flux:menu>
+                                        @foreach ($gastosVinculables as $gv)
+                                            <flux:menu.item
+                                                wire:click="vincularCompartido({{ $cp['id'] }}, {{ $gv['id'] }})">
+                                                {{ $gv['concepto_nombre'] }}
+                                                — {{ Number::currency($gv['monto_estimado'], in: 'MXN') }}
+                                            </flux:menu.item>
+                                        @endforeach
+                                    </flux:menu>
+                                </flux:dropdown>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     <flux:card class="p-0">
         <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
@@ -205,7 +256,23 @@
 
                             <flux:badge :color="$comprobanteColor" size="sm">{{ $comprobanteLabel }}</flux:badge>
                             <flux:badge :color="$estatusColor" size="sm">{{ $estatusLabel }}</flux:badge>
-
+                            @if ($estatusGasto === 'aprobado' && $gasto['tiene_excepcion'] === false && $gasto['monto_real'] > $gasto['limite_politica'])
+                                <flux:badge color="blue" size="sm" icon="sparkles">
+                                    Propina auto-aprobada
+                                </flux:badge>
+                            @endif
+                            @if (in_array($estatusGasto, ['pendiente', 'aprobado'])
+                                    && empty($gasto['compartido'])
+                                    && !$estaEnEdicion
+                                    )
+                                <flux:button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="user-plus"
+                                    wire:click="abrirCompartido({{ $gasto['id'] }})"
+                                    title="Este gasto lo compartí con alguien"
+                                />
+                            @endif
                             @if (in_array($estatusGasto, ['pendiente', 'aprobado']) && !$estaEnEdicion)
                                 <flux:button
                                     size="sm"
@@ -299,11 +366,8 @@
                                     <flux:description>
                                         Este gasto ya tiene monto aprobado. Solo necesitas subir el comprobante.
                                     </flux:description>
-
                                 @endif
-
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
                                     @if ($gasto['estatus'] === 'pendiente')
                                         <flux:field>
                                             <flux:label badge="Requerido">Fecha del gasto</flux:label>
@@ -311,31 +375,26 @@
                                             <flux:error name="fechaGastoReal" />
                                         </flux:field>
                                     @endif
-
                                     <flux:field>
                                         <flux:label badge="Requerido">Tipo de comprobante</flux:label>
                                         <flux:select variant="listbox" wire:model.live="tipoComprobante">
                                             <flux:select.option value="">Selecciona...</flux:select.option>
-
                                             @if (in_array('factura', $gasto['tipos_permitidos']))
                                                 <flux:select.option value="factura">
                                                     Factura electrónica (XML + UUID)
                                                 </flux:select.option>
                                             @endif
-
                                             @if (in_array('pdf', $gasto['tipos_permitidos']))
                                                 <flux:select.option value="pdf">
                                                     Ticket / Recibo (PDF o imagen)
                                                 </flux:select.option>
                                             @endif
-
                                             @if (in_array('sin_comprobante', $gasto['tipos_permitidos']))
                                                 <flux:select.option value="sin_comprobante">
                                                     Sin comprobante
                                                 </flux:select.option>
                                             @endif
                                         </flux:select>
-
                                         @if (!empty($gasto['limite_politica']))
                                             <flux:description>
                                                 @php
@@ -348,15 +407,11 @@
                                                 Política: {{ implode(' · ', $partes) }}
                                             </flux:description>
                                         @endif
-
                                         <flux:error name="tipoComprobante" />
                                     </flux:field>
-
                                 </div>
-
                                 @include('livewire.solicitudes.detail.partials._archivo')
                             @endif
-
                             <div class="flex items-center flex-col sm:flex-row justify-end gap-3 sm:justify-between pt-2">
                                 <span class="text-xs text-zinc-400">
                                     {{ count($gasto['comprobantes']) }} comprobante(s)
@@ -364,7 +419,6 @@
                                         · Falta: {{ Number::currency($falta, in: 'MXN') }}
                                     @endif
                                 </span>
-
                                 <div class="flex gap-3">
                                     <flux:button variant="ghost" wire:click="cerrarComprobacion">
                                         Cerrar
@@ -376,7 +430,6 @@
                             </div>
                         </div>
                     @endif
-
                     @if (!empty($gasto['comprobantes']))
                         <div class="space-y-1">
                             @foreach ($gasto['comprobantes'] as $comp)
@@ -419,12 +472,144 @@
                                                 Manual: {{ ucfirst($comp['validacion_manual']) }}
                                             </flux:badge>
                                         @endif
+                                        @if ($comp['tipo'] === 'factura' && ($comp['iva'] || $comp['ieps'] || $comp['ish']))
+                                            <div class="ml-6 mt-1 flex items-center gap-3 text-[10px] font-mono text-zinc-400">
+                                                @if ($comp['subtotal'])
+                                                    <span>Subtotal: {{ Number::currency($comp['subtotal'], in: 'MXN') }}</span>
+                                                @endif
+                                                @if ($comp['iva'])
+                                                    <span class="text-blue-500">IVA: {{ Number::currency($comp['iva'], in: 'MXN') }}</span>
+                                                @endif
+                                                @if ($comp['ieps'])
+                                                    <span class="text-purple-500">IEPS: {{ Number::currency($comp['ieps'], in: 'MXN') }}</span>
+                                                @endif
+                                                @if ($comp['ish'])
+                                                    <span class="text-orange-500">ISH: {{ Number::currency($comp['ish'], in: 'MXN') }}</span>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
                         </div>
                     @endif
-
+                    @if (!empty($gasto['extension_tarjeta']))
+                        <div class="space-y-1">
+                            @php
+                                $ext = $gasto['extension_tarjeta'];
+                            @endphp
+                            <a href="{{ route('tarjetas.show', $ext['ct_id']) }}"
+                                class="flex items-center gap-1 text-[1rem] font-mono text-blue-500 hover:text-blue-700"
+                                >
+                                <flux:icon.credit-card class="size-3" />
+                                {{ Number::currency($ext['monto'], in: 'MXN') }} → {{ $ext['ct_folio'] }}
+                                @if ($ext['comprobado'])
+                                    <flux:icon.check-circle class="size-4 text-emerald-500" />
+                                @else
+                                    <flux:badge color="{{ match($ext['estatus_ct']) {
+                                        'abierta'     => 'cyan',
+                                        'en_revision' => 'yellow',
+                                        'conciliada'  => 'green',
+                                        'rechazada'   => 'red',
+                                        default       => 'zinc',
+                                    } }}" size="sm">{{ $ext['estatus_ct'] }}</flux:badge>
+                                @endif
+                            </a>
+                        </div>
+                    @endif
+                    @if (!empty($gasto['compartido']))
+                        @php
+                            $compartido = $gasto['compartido'];
+                            $compartidoColor = match($compartido['estatus']) {
+                                'vinculado'        => 'green',
+                                'aprobado_cliente' => 'blue',
+                                'pendiente'        => 'yellow',
+                                default            => 'zinc',
+                            };
+                        @endphp
+                        <flux:badge :color="$compartidoColor" size="sm">
+                            Compartido: {{ Number::currency($compartido['monto_compartido'], in: 'MXN') }}
+                            con {{ $compartido['receptor'] }}
+                        </flux:badge>
+                    @endif
+                    @if ($marcandoCompartido && $gastoCompartidoActivo === $gasto['id'])
+                        <div class="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4 space-y-4">
+                            <flux:heading size="sm">¿Con quién compartiste este gasto?</flux:heading>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <flux:field>
+                                    <flux:label badge="Requerido">Tipo</flux:label>
+                                    <flux:select variant="listbox" wire:model.live="tipoCompartido">
+                                        <flux:select.option value="empleado">Compañero de trabajo</flux:select.option>
+                                        <flux:select.option value="cliente">Invitación a cliente</flux:select.option>
+                                    </flux:select>
+                                </flux:field>
+                                <flux:field>
+                                    <flux:label badge="Requerido">
+                                        Monto que cargó el otro ($)
+                                    </flux:label>
+                                    <flux:input
+                                        wire:model.live="montoCompartido"
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        placeholder="Ej. 300.00 - lo que pagó la otra persona"
+                                    />
+                                    <flux:description>
+                                        @php
+                                            $gastoActualData = collect($gastos)->firstWhere('id', $gasto['id']);
+                                            $miParte = $gastoActualData
+                                                ? ($gastoActualData['monto_estimado'] - (float) $montoCompartido)
+                                                : 0;
+                                        @endphp
+                                        Lo que queda para ti:
+                                        <span class="font-semibold {{ $miParte < 0 ? 'text-rose-500' : 'text-emerald-600' }}">
+                                            {{ Number::currency(max(0, $miParte), in: 'MXN') }}
+                                        </span>
+                                        @if ($miParte < 0)
+                                            <span class="text-rose-500">— excede el total del gasto</span>
+                                        @endif
+                                    </flux:description>
+                                    <flux:error name="montoCompartido" />
+                                </flux:field>
+                            </div>
+                            @if ($tipoCompartido === 'empleado')
+                                <flux:field>
+                                    <flux:label badge="Requerido">Empleado receptor</flux:label>
+                                    <flux:select variant="listbox" wire:model="empleadoReceptorId">
+                                        <flux:select.option value="">Selecciona...</flux:select.option>
+                                        @foreach ($empleadosDisponibles as $emp)
+                                            <flux:select.option value="{{ $emp['id'] }}">
+                                                {{ $emp['nombre_completo'] }}
+                                            </flux:select.option>
+                                        @endforeach
+                                    </flux:select>
+                                    <flux:description>
+                                        Al receptor le aparecerá una notificación para vincular su comprobación.
+                                    </flux:description>
+                                    <flux:error name="empleadoReceptorId" />
+                                </flux:field>
+                            @else
+                                <flux:field>
+                                    <flux:label badge="Requerido">Descripción del cliente / invitado</flux:label>
+                                    <flux:input
+                                        wire:model="clienteDescripcion"
+                                        placeholder="Ej. Juan Pérez — Empresa XYZ"
+                                    />
+                                    <flux:error name="clienteDescripcion" />
+                                </flux:field>
+                            @endif
+                            <div class="flex justify-end gap-3">
+                                <flux:button variant="ghost" wire:click="$set('marcandoCompartido', false)">
+                                    Cancelar
+                                </flux:button>
+                                <flux:button variant="primary" wire:click="guardarCompartido"
+                                    wire:loading.attr="disabled" wire:target="guardarCompartido">
+                                    <span wire:loading.remove wire:target="guardarCompartido">Registrar gasto compartido</span>
+                                    <span wire:loading wire:target="guardarCompartido">Guardando…</span>
+                                </flux:button>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @endforeach
         </div>

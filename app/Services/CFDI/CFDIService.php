@@ -2,6 +2,7 @@
 
 namespace App\Services\CFDI;
 
+use App\Models\ConfiguracionEmpresa;
 use App\Models\Gasto;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use PhpCfdi\CfdiCleaner\Cleaner;
@@ -13,20 +14,11 @@ class CFDIService
 {
     public function parse(TemporaryUploadedFile $file, Gasto $gasto): array
     {
-        // 1. Leer archivo
         $xmlContent = file_get_contents($file->getRealPath());
-
-        // 2. Limpiar XML usando phpcfdi/cfdi-cleaner (Namespace correcto)
         $xmlContent = Cleaner::staticClean($xmlContent);
-
-        // 3. Cargar y parsear CFDI a estructura de Array nativo
         try {
-            // Convertimos el XML a un string JSON válido
             $jsonString = JsonConverter::convertToJson($xmlContent);
-
-            // CONVERSIÓN CLAVE: Transformamos el string JSON en un Array asociativo de PHP
             $cfdiData = json_decode($jsonString, true);
-
             if (!is_array($cfdiData)) {
                 throw new \Exception('Error al decodificar la estructura JSON del CFDI.');
             }
@@ -34,10 +26,7 @@ class CFDIService
             throw new \Exception('XML inválido o no convertible: ' . $e->getMessage());
         }
 
-        // 4. Extraer datos base desde el Array de phpCfdi
         $version = (string) ($cfdiData['Version'] ?? '');
-
-        // Extracción del Timbre Fiscal Digital de forma unificada (independiente de la versión)
         $tfd = $cfdiData['Complemento']['TimbreFiscalDigital'] ?? null;
 
         if (!$tfd) {
@@ -49,13 +38,11 @@ class CFDIService
             throw new \Exception('UUID vacío en el CFDI');
         }
 
-        // Normalizaciones de datos
         $rfcEmisor   = strtoupper((string) ($cfdiData['Emisor']['Rfc'] ?? ''));
         $rfcReceptor = strtoupper((string) ($cfdiData['Receptor']['Rfc'] ?? ''));
         $totalCfdi   = (float) ($cfdiData['Total'] ?? 0.0);
+        $subTotalCfdi    = (float) ($cfdiData['SubTotal'] ?? 0.0);
         $fecha       = (string) ($cfdiData['Fecha'] ?? '');
-
-        // 5. Validación SAT (Se actualizaron los nombres de métodos a la API actual de phpCfdi)
         $estadoSat = 'pendiente';
 
         try {
@@ -65,8 +52,6 @@ class CFDIService
             $simpleExpression = "?re=$rfcEmisor&rr=$rfcReceptor&tt=$totalCfdi&id=$uuid";
 
             $response = $consumer->execute($simpleExpression);
-
-            // ✅ Forma correcta usando helpers
             if ($response->document->isActive()) {
                 $estadoSat = 'vigente';
             } elseif ($response->document->isCancelled()) {
@@ -83,13 +68,18 @@ class CFDIService
             \Log::error("Error consultando SAT para CFDI {$uuid}: " . $e->getMessage());
             $estadoSat = 'error_consulta';
         }
-        // 6. Validar RFC receptor
-        $rfcEmpresa = strtoupper(config('app.rfc_empresa'));
-        /*if ($rfcReceptor !== $rfcEmpresa) {
-            throw new \Exception("RFC receptor incorrecto. Esperado: {$rfcEmpresa}, Recibido: {$rfcReceptor}");
+
+        /*$config = ConfiguracionEmpresa::actual();
+
+        if ($config->validar_rfc_receptor && $config->rfc_empresa) {
+            $rfcEmpresa = strtoupper($config->rfc_empresa);
+            if ($rfcReceptor !== $rfcEmpresa) {
+                throw new \Exception(
+                    "RFC receptor incorrecto. Esperado: {$rfcEmpresa}, Recibido: {$rfcReceptor}"
+                );
+            }
         }*/
 
-        // 7. Validar monto vs gasto
         if (abs($totalCfdi - $gasto->monto) > 0.01) {
             \Log::warning('Monto CFDI difiere del gasto estimado', [
                 'cfdi' => $totalCfdi,
@@ -97,7 +87,8 @@ class CFDIService
             ]);
         }
 
-        // 8. RETURN COMPLETO (Idéntico al original para mantener compatibilidad)
+        $impuestos = $this->extraerImpuestos($cfdiData);
+
         return [
             'uuid'         => strtoupper($uuid),
             'version'      => $version,
@@ -107,8 +98,16 @@ class CFDIService
             'receptor'     => $rfcReceptor,
             'rfc_receptor' => $rfcReceptor,
             'total'        => $totalCfdi,
+            'subtotal'     => $subTotalCfdi,
             'fecha'        => $fecha,
             'estado_sat'   => $estadoSat,
+
+            'iva'          => $impuestos['iva'],
+            'ieps'         => $impuestos['ieps'],
+            'ish'          => $impuestos['ish'],
+            'tasa_iva'     => $impuestos['tasa_iva'],
+            'tasa_ieps'    => $impuestos['tasa_ieps'],
+            'tasa_ish'     => $impuestos['tasa_ish'],
         ];
     }
 
@@ -130,11 +129,68 @@ class CFDIService
             'uuid'          => (string) ($xml->children($ns['tfd'] ?? '')
                                 ->attributes()['UUID'] ?? ''),
             'total'         => (float) ($atributos['Total'] ?? 0),
+            'subtotal'      => (float) ($atributos['Subtotal'] ?? 0),
             'emisor_rfc'    => (string) ($cfdi->Emisor->attributes()['Rfc'] ?? ''),
             'emisor_nombre' => (string) ($cfdi->Emisor->attributes()['Nombre'] ?? ''),
             'receptor_rfc'  => (string) ($cfdi->Receptor->attributes()['Rfc'] ?? ''),
             'fecha'         => substr((string) ($atributos['Fecha'] ?? ''), 0, 10),
             'estado_sat'    => 'pendiente',
         ];
+    }
+
+    private function extraerImpuestos(array $cfdiData): array
+    {
+        $resultado = [
+            'iva'       => 0.0,
+            'ieps'      => 0.0,
+            'ish'       => 0.0,
+            'tasa_iva'  => null,
+            'tasa_ieps' => null,
+            'tasa_ish'  => null,
+        ];
+
+        $traslados = $cfdiData['Impuestos']['Traslados']['Traslado'] ?? [];
+        if (isset($traslados['Impuesto'])) {
+            $traslados = [$traslados];
+        }
+
+        foreach ($traslados as $traslado) {
+            $impuesto = (string) ($traslado['Impuesto'] ?? '');
+            $importe  = (float) ($traslado['Importe'] ?? 0);
+            $tasa     = isset($traslado['TasaOCuota'])
+                ? (float) $traslado['TasaOCuota']
+                : null;
+
+            match ($impuesto) {
+                '002' => $resultado['iva'] += $importe,   // IVA
+                '003' => $resultado['ieps'] += $importe,  // IEPS
+                default => null,
+            };
+            if ($impuesto === '002' && $resultado['tasa_iva'] === null) {
+                $resultado['tasa_iva'] = $tasa;
+            }
+            if ($impuesto === '003' && $resultado['tasa_ieps'] === null) {
+                $resultado['tasa_ieps'] = $tasa;
+            }
+        }
+
+        $trasladosLocales = $cfdiData['Complemento']['ImpuestosLocales']['TrasladosLocales'] ?? [];
+
+        if (isset($trasladosLocales['ImpLocTrasladado'])) {
+            $trasladosLocales = [$trasladosLocales];
+        }
+
+        foreach ($trasladosLocales as $local) {
+            $impuestoLocal = strtoupper((string) ($local['ImpLocTrasladado'] ?? ''));
+
+            if ($impuestoLocal === 'ISH') {
+                $resultado['ish'] = (float) ($local['Importe'] ?? 0);
+                $resultado['tasa_ish'] = isset($local['TasadeTraslado'])
+                    ? (float) $local['TasadeTraslado']
+                    : null;
+            }
+        }
+
+        return $resultado;
     }
 }

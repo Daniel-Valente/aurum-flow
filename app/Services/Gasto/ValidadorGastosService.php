@@ -4,26 +4,17 @@ namespace App\Services\Gasto;
 
 use App\Models\Empleado;
 use App\Models\Concepto;
+use App\Models\ConfiguracionEmpresa;
 use App\Models\Gasto;
 use App\Models\GastoAuditoria;
 use App\Models\GastoExcepcion;
 use App\Models\Solicitud;
 use App\Services\Auditoria\AuditoriaService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class ValidadorGastosService
 {
-    /**
-     * Valida un gasto individual contra la política aplicable.
-     * Retorna siempre la clave 'status' (no 'estatus') para consistencia interna.
-     *
-     * @param Empleado $empleado  Debe venir con user.roles cargado
-     * @param Concepto $concepto
-     * @param float    $monto
-     * @param Carbon   $fecha
-     */
-    public function validar(Empleado $empleado, Concepto $concepto, float $monto, Carbon $fecha): array
+    public function validar(Empleado $empleado, Gasto $gasto, Concepto $concepto, float $monto, Carbon $fecha): array
     {
         $roleId = $empleado->user->roles->first()?->id;
 
@@ -34,18 +25,9 @@ class ValidadorGastosService
         $politica = app(PoliticaGastoService::class)
             ->getPoliticaAplicable($roleId, $concepto->id, $fecha);
 
-        return $this->evaluarConPolitica($politica, $monto);
+        return $this->evaluarConPolitica($politica, $monto, $gasto);
     }
 
-    /**
-     * Valida todos los gastos de una solicitud en batch:
-     * - 1 query para todas las políticas (sin N+1)
-     * - 1 insert masivo de auditorías
-     * - 1 insert masivo de excepciones
-     *
-     * $solicitud debe llegar con relaciones cargadas:
-     *   gastos.concepto, empleado.user.roles
-     */
     public function validarSolicitud(Solicitud $solicitud): void
     {
         $gastos   = $solicitud->gastos;
@@ -57,21 +39,20 @@ class ValidadorGastosService
             return;
         }
 
-        // Una sola query para TODAS las políticas necesarias
         $conceptoIds = $gastos->pluck('concepto_id')->unique()->values()->all();
 
         $politicas = $roleId
             ? app(PoliticaGastoService::class)->getPoliticasBulk($roleId, $conceptoIds, $fecha)
             : collect();
 
-        $updatesPorEstatus = [];   // agrupa ids por estatus para updates masivos
-        $excepciones       = [];   // batch insert de GastoExcepcion
-        $auditorias        = [];   // batch insert de GastoAuditoria
+        $updatesPorEstatus = [];
+        $excepciones       = [];
+        $auditorias        = [];
         $now               = now();
 
         foreach ($gastos as $gasto) {
             $politica  = $politicas->get($gasto->concepto_id);
-            $resultado = $this->evaluarConPolitica($politica, $gasto->monto);
+            $resultado = $this->evaluarConPolitica($politica, $gasto->monto, $gasto);
             $estatus   = $resultado['status'];
 
             $updatesPorEstatus[$estatus][] = $gasto->id;
@@ -98,43 +79,81 @@ class ValidadorGastosService
             ];
         }
 
-        // Updates masivos agrupados por estatus — mínimas queries posibles
         foreach ($updatesPorEstatus as $estatus => $ids) {
             Gasto::whereIn('id', $ids)->update(['estatus' => $estatus]);
         }
 
-        // Insert masivo de excepciones (si las hay)
         if (!empty($excepciones)) {
             GastoExcepcion::insert($excepciones);
         }
 
-        // Insert masivo de auditorías
         if (!empty($auditorias)) {
             GastoAuditoria::insert($auditorias);
         }
     }
 
-    /**
-     * Valida y persiste un gasto individual (ej: al subir comprobante).
-     * Para validaciones en bulk usar validarSolicitud().
-     */
-    public function validarGasto(Gasto $gasto): void
+    public function validarGasto(Gasto $gasto, float $montoCompartidoDescontar = 0): void
     {
-        // Carga relaciones solo si no están en memoria
         if (!$gasto->relationLoaded('solicitud')) {
             $gasto->load(['solicitud.empleado.user.roles', 'concepto']);
         }
 
-        $empleado  = $gasto->empleado;
-        $fecha     = Carbon::parse($gasto->fecha_gasto);
-        // ✅ 'status' — clave consistente con evaluarConPolitica()
-        $resultado = $this->validar($empleado, $gasto->concepto, $gasto->monto, $fecha);
+        $config        = ConfiguracionEmpresa::actual();
+        $empleado      = $gasto->empleado;
+        $fecha_inicio  = $gasto->solicitud?->fecha_inicio ?? $gasto->comprobacionTarjeta?->fecha_inicio;
+        $fecha_fin     = $gasto->solicitud?->fecha_fin ?? $gasto->comprobacionTarjeta?->fecha_fin;
+        $fecha         = Carbon::parse($gasto->fecha_gasto);
+        $montoEfectivo = max(0, (float) $gasto->monto - $montoCompartidoDescontar);
+
+        $roleId   = $empleado->user->roles->first()?->id;
+        $politica = $roleId
+            ? app(PoliticaGastoService::class)->getPoliticaAplicable($roleId, $gasto->concepto_id, $fecha)
+            : null;
+        $monto_max = $politica->monto_max;
+
+        if($politica->tipo_limite === 'Diario' && $fecha_inicio && $fecha_fin) {
+            $duracion = $fecha_inicio->diffInDays($fecha_fin) + 1;
+            $monto_max *= $duracion;
+        }
+
+        if (
+            $politica
+            && $politica->permite_propina
+            && $politica->propina_max_porcentaje > 0
+            && $montoEfectivo > (float) $monto_max
+        ) {
+            $propinaMaxima = (float) $monto_max
+                * ((float) $politica->propina_max_porcentaje / 100);
+
+            $excedente = $montoEfectivo - (float) $monto_max;
+
+            if ($excedente <= $propinaMaxima) {
+                if ($config->propina_auto_aprueba) {
+                    $gasto->update(['estatus' => 'aprobado']);
+
+                    app(AuditoriaService::class)->registrar([
+                        'gasto_id' => $gasto->id,
+                        'evento'   => 'auto_aprobado_propina',
+                        'despues'  => [
+                            'monto_efectivo'  => $montoEfectivo,
+                            'monto_max'       => $monto_max,
+                            'excedente'       => $excedente,
+                            'propina_max'     => $propinaMaxima,
+                            'porcentaje_max'  => $politica->propina_max_porcentaje,
+                            'monto_compartido_descontado' => $montoCompartidoDescontar,
+                        ],
+                    ]);
+                    return;
+                }
+            }
+        }
+
+        $resultado = $this->validar($empleado, $gasto, $gasto->concepto, $montoEfectivo, $fecha);
         $estatus   = $resultado['status'];
 
         $gasto->update(['estatus' => $estatus]);
 
         if ($estatus === 'excepcion') {
-            // firstOrCreate evita duplicados si se llama más de una vez
             GastoExcepcion::firstOrCreate(
                 ['gasto_id' => $gasto->id, 'nivel' => 1],
                 ['estatus'  => 'pendiente']
@@ -144,22 +163,33 @@ class ValidadorGastosService
         app(AuditoriaService::class)->registrar([
             'gasto_id' => $gasto->id,
             'evento'   => 'validado',
-            'despues'  => ['estatus' => $estatus],
+            'despues'  => [
+                'estatus'                    => $estatus,
+                'monto_real'                 => $gasto->monto,
+                'monto_efectivo'             => $montoEfectivo,
+                'monto_compartido_descontado'=> $montoCompartidoDescontar,
+            ],
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Lógica de evaluación — sin tocar la base de datos
-    // -------------------------------------------------------------------------
-
-    private function evaluarConPolitica(?object $politica, float $monto): array
+    private function evaluarConPolitica(?object $politica, float $monto, ?object $gasto): array
     {
         if (!$politica) {
             return $this->rechazado('No existe política configurada');
         }
 
-        // ✅ <= incluye el monto exacto como aprobado (< lo rechazaba antes)
-        if ($monto <= $politica->monto_max) {
+        $fecha_inicio  = $gasto->solicitud?->fecha_inicio ?? $gasto->comprobacionTarjeta?->fecha_inicio;
+        $fecha_fin     = $gasto->solicitud?->fecha_fin ?? $gasto->comprobacionTarjeta?->fecha_fin;
+        $monto_max     = $politica->monto_max;
+
+        if ($politica->tipo_limite === 'Diario' && $fecha_inicio && $fecha_fin) {
+            $duracion = $fecha_inicio
+                ->diffInDays($fecha_fin) + 1;
+
+            $monto_max *= $duracion;
+        }
+
+        if ($monto <= $monto_max) {
             return $this->aprobado($politica);
         }
 

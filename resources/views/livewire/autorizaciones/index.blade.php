@@ -8,7 +8,6 @@
         </div>
     </div>
 
-    {{-- TABS --}}
     <flux:tabs wire:model.live="tab">
         <flux:tab name="solicitudes" icon="document-check">
             Solicitudes
@@ -37,17 +36,14 @@
         @endif
     </flux:tabs>
 
-    {{-- ── TAB: SOLICITUDES ── --}}
     @if ($tab === 'solicitudes')
         @include('livewire.autorizaciones.partials.solicitudes')
     @endif
 
-    {{-- ── TAB: EXCEPCIONES ── --}}
     @if ($tab === 'excepciones')
         @include('livewire.autorizaciones.partials.excepciones')
     @endif
 
-    {{-- ── TAB: COMPROBANTES (solo finanzas) ── --}}
     @if ($tab === 'comprobantes' && $puedeValidarComprobantes)
         @include('livewire.autorizaciones.partials.comprobantes')
     @endif

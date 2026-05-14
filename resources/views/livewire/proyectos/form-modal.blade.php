@@ -123,7 +123,7 @@
                                     <flux:select.option value=""></flux:select.option>
                                     @foreach ($centrosCostos as $centro)
                                         <flux:select.option value="{{ $centro['id'] }}">
-                                            {{ $centro['nombre'] ?? $centro['cuenta_contable'] }}
+                                            {{ !empty($centro['nombre']) ? $centro['nombre'] : $centro['cuenta_contable'] }}
                                         </flux:select.option>
                                     @endforeach
                                 </flux:select>

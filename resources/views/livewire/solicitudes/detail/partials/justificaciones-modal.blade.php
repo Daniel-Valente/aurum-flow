@@ -10,7 +10,7 @@
         </div>
 
         @foreach ($detalles as $detalle)
-            @if ($detalle['semaforo'] === 'excedido')
+            @if ($detalle['semaforo'] === 'excedido' && empty($detalle['justificacion_exceso']) && !$detalle['requiere_extension_tarjeta'])
                 <div class="rounded-lg border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/10 p-4 space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="font-medium text-sm">{{ $detalle['concepto_nombre'] }}</span>

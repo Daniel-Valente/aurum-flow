@@ -5,6 +5,7 @@ namespace App\Services\Gasto;
 use App\Helpers\FolioHelper;
 use App\Models\ComprobacionTarjeta;
 use App\Models\Gasto;
+use App\Models\Solicitud;
 use App\Services\Auditoria\AuditoriaService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -193,6 +194,8 @@ class ComprobacionTarjetaService
                 'monto'            => 0,
                 'fecha_gasto'      => $data['fecha_gasto'],
                 'archivo_pdf_cfdi' => $data['archivo_pdf'] ?? null,
+                'cfdi_compartido'  => $data['cfdi_compartido'] ?? false,
+                'monto_override'   => $data['monto_override'] ?? null,
             ]);
 
             $this->recalcularMonto($comprobacion);
@@ -284,6 +287,38 @@ class ComprobacionTarjetaService
         }
 
         return $comprobacion;
+    }
+
+    public function crearExtension(array $data, $user): ComprobacionTarjeta
+    {
+        if (!$user->can('gastos.tarjeta.crear')) {
+            throw new AuthorizationException('No autorizado');
+        }
+
+        $solicitud = Solicitud::findOrFail($data['solicitud_id']);
+
+        if ($solicitud->empleado_id !== $user->empleado->id) {
+            throw new AuthorizationException('No es tu solicitud');
+        }
+
+        if (!in_array($solicitud->estatus, ['Autorizado', 'Comprobado'], true)) {
+            throw new \Exception('Solo puedes extender solicitudes autorizadas');
+        }
+
+        return DB::transaction(function () use ($data, $user, $solicitud) {
+            return ComprobacionTarjeta::create([
+                'folio'        => FolioHelper::generar('CT'),
+                'empleado_id'  => $user->empleado->id,
+                'proyecto_id'  => $solicitud->proyecto_id,
+                'solicitud_id' => $solicitud->id,
+                'fecha_inicio' => $data['fecha_inicio'],
+                'fecha_fin'    => $data['fecha_fin'],
+                'descripcion'  => $data['descripcion'] ?? "Extensión de {$solicitud->folio}",
+                'monto_total'  => 0,
+                'es_extension' => true,
+                'estatus'      => 'abierta'
+            ]);
+        });
     }
 
     private function recalcularMonto(ComprobacionTarjeta $comprobacion): void

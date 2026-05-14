@@ -48,7 +48,7 @@
                     <flux:table.cell>{{ $con->proyecto_nombre ?? '-' }}</flux:table.cell>
                     <flux:table.cell>
                         <span class="font-semibold text-zinc-800 dark:text-zinc-100">
-                            {{ Number::currency($tarjeta->monto_total ?? 0, in: 'MXN') }}
+                            {{ Number::currency($con->monto_total ?? 0, in: 'MXN') }}
                         </span>
                     </flux:table.cell>
                     <flux:table.cell>

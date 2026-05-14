@@ -23,9 +23,9 @@ class ComprobanteValidacionService
             throw new \InvalidArgumentException("Acción inválida: {$accion}");
         }
 
-        if ($comprobante->tipo === 'factura') {
+        /*if ($comprobante->tipo === 'factura') {
             throw new \Exception('Las facturas se validan automáticamente con el SAT');
-        }
+        }*/
 
         if ($comprobante->validacion_manual !== 'pendiente') {
             throw new \Exception('Este comprobante ya fue validado');

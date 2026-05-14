@@ -55,25 +55,6 @@
                         <flux:error name="proyecto_id" />
                     </flux:field>
                 </div>
-
-                <div class="px-4 py-3">
-                    <flux:field variant="inline">
-                        <flux:checkbox wire:model="es_extension" />
-
-                        <div>
-                            <flux:label class="text-sm font-medium">
-                                Compartir gastos con solicitud de viático
-                            </flux:label>
-
-                            <flux:description class="text-xs">
-                                Indica que esta comprobación por tarjeta comparte gastos o comprobantes
-                                relacionados con una solicitud de viático previamente registrada.
-                            </flux:description>
-                        </div>
-
-                        <flux:error name="es_extension" />
-                    </flux:field>
-                </div>
             </div>
         </div>
 

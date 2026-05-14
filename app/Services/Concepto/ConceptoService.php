@@ -65,6 +65,8 @@ class ConceptoService
 
     public function list(): array
     {
+
+        $this->flushCache();
         $cacheKey = 'conceptos.list';
 
         return Cache::remember($cacheKey, self::LIST_CACHE_TTL, fn() =>
@@ -89,7 +91,6 @@ class ConceptoService
             'categoria'       => $data['categoria']       ?? null,
             'descripcion'     => $data['descripcion']     ?? null,
 
-            // Naturaleza fiscal del concepto (no regla por rol)
             'aplica_iva'      => $data['aplica_iva']      ?? true,
             'aplica_ish'      => $data['aplica_ish']      ?? false,
             'aplica_ieps'     => $data['aplica_ieps']      ?? false,
@@ -108,7 +109,7 @@ class ConceptoService
     {
         $concepto->update([
             'nombre'          => $data['nombre'],
-            'codigo'          => strtoupper(trim($data['codigo'])),
+            'codigo'          => $concepto->codigo,
             'categoria'       => $data['categoria']       ?? $concepto->categoria,
             'descripcion'     => $data['descripcion']     ?? $concepto->descripcion,
 
@@ -158,11 +159,8 @@ class ConceptoService
     private function flushCache(): void
     {
         Cache::forget('conceptos.list.todos');
+        Cache::forget('conceptos.list');
         Cache::forget('conceptos.categorias');
-
-        Role::pluck('id')->each(fn($id) =>
-            Cache::forget("conceptos.list.{$id}")
-        );
     }
 }
 

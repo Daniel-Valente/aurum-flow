@@ -355,12 +355,12 @@ class PoliticaGastoService
             'monto_libre'            => $data['monto_libre']       ?? ($politica?->monto_libre       ?? null),
             'monto_comprobante'      => $data['monto_comprobante'] ?? ($politica?->monto_comprobante ?? null),
             'monto_factura'          => $data['monto_factura']     ?? ($politica?->monto_factura     ?? null),
-            'propina_max_porcentaje' => $data['propina_max_porcentaje']     ?? ($politica?->monto_factura     ?? null),
+            'propina_max_porcentaje' => $data['propina_max_porcentaje'] ?? ($politica?->propina_max_porcentaje ?? null),
 
             'valida_sat'             => $data['valida_sat']        ?? ($politica?->valida_sat        ?? false),
             'acumulable_dia'         => $data['acumulable_dia']    ?? ($politica?->acumulable_dia    ?? true),
             'permite_excepcion'      => $data['permite_excepcion'] ?? ($politica?->permite_excepcion ?? false),
-            'permite_propina'        => $data['permite_propina'] ?? ($politica?->propina_max_porcentaje ?? false),
+            'permite_propina'        => $data['permite_propina']   ?? ($politica?->permite_propina   ?? false),
 
             'vigencia_desde'         => $data['vigencia_desde']    ?? null,
             'vigencia_hasta'         => $data['vigencia_hasta']    ?? null,

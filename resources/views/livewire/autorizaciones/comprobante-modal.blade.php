@@ -64,7 +64,6 @@
                     <span class="text-zinc-400">Subido el</span>
                     <span class="text-zinc-500">{{ $comprobante->created_at->format('d/m/Y H:i') }}</span>
                 </div>
-
             </div>
 
             {{-- Enlace al archivo --}}

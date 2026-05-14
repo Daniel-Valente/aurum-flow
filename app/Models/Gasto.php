@@ -18,6 +18,7 @@ class Gasto extends Model
         'fecha_gasto',
         'monto',
         'uuid_factura',
+        'rfc_proveedor',
         'estatus',
     ];
 
@@ -25,12 +26,6 @@ class Gasto extends Model
         'fecha_gasto' => 'date',
         'monto'       => 'decimal:2',
     ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relaciones
-    |--------------------------------------------------------------------------
-    */
 
     public function solicitud(): BelongsTo
     {
@@ -60,11 +55,15 @@ class Gasto extends Model
         return $this->hasMany(GastoExcepcion::class);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Helpers de dominio
-    |--------------------------------------------------------------------------
-    */
+    public function compartidoComo()
+    {
+        return $this->hasOne(GastoCompartido::class, 'gasto_pagador_id');
+    }
+
+    public function compartidoDesde()
+    {
+        return $this->hasOne(GastoCompartido::class, 'gasto_receptor_id');
+    }
 
     public function esSolicitud(): bool
     {
@@ -75,12 +74,6 @@ class Gasto extends Model
     {
         return !is_null($this->comprobacion_tarjeta_id);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Accessors unificados
-    |--------------------------------------------------------------------------
-    */
 
     public function getOrigenAttribute(): string
     {

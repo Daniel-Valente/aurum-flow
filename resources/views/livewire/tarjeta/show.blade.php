@@ -256,7 +256,10 @@
         @else
             <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
                 @foreach ($gastos as $gasto)
-                    <div class="px-4 py-3 space-y-2" wire:key="gasto-{{ $gasto['id'] }}">
+                    @php
+                        $estaSubiendo = $gastoActivoCT === $gasto['id'];
+                    @endphp
+                    <div class="px-4 py-3 space-y-2" wire:key="gasto-ct-{{ $gasto['id'] }}">
                         <div class="flex items-center justify-between gap-3 flex-wrap">
                             <div class="flex flex-col gap-0.5">
                                 <span class="font-medium text-sm">{{ $gasto['concepto_nombre'] }}</span>
@@ -264,21 +267,164 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="font-mono font-semibold text-sm">
-                                    {{ Number::currency($gasto['monto_real'], in: 'MXN') }}
+                                    {{ Number::currency($gasto['monto_estimado'], in: 'MXN') }}
                                 </span>
+
+                                @if ($gasto['sin_comprobante'])
+                                    <flux:badge color="yellow" size="sm">Sin comprobante</flux:badge>
+                                @else
+                                    <flux:badge color="green" size="sm">Con CFDI</flux:badge>
+                                @endif
+
                                 @if ($comprobacion->estatus === 'abierta')
-                                    <flux:button
-                                        size="sm"
-                                        variant="ghost"
-                                        icon="trash"
-                                        wire:click="eliminarGasto({{ $gasto['id'] }})"
-                                        wire:confirm="¿Eliminar este gasto y sus archivos?"
-                                        class="text-rose-500 hover:text-rose-700"
-                                    />
+                                    @if ($gasto['sin_comprobante'] && !$estaSubiendo)
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon="document-arrow-up"
+                                            wire:click="abrirSubidaCT({{ $gasto['id'] }})"
+                                            title="Subir CFDI para este gasto"
+                                            class="text-accent hover:text-accent"
+                                        />
+                                    @elseif ($estaSubiendo)
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon="x-mark"
+                                            wire:click="cerrarSubidaCT"
+                                        />
+                                    @endif
+
+                                    @if (!$estaSubiendo)
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            icon="trash"
+                                            wire:click="eliminarGasto({{ $gasto['id'] }})"
+                                            class="text-rose-500 hover:text-rose-700"
+                                        />
+                                    @endif
                                 @endif
                             </div>
                         </div>
+                        @if ($estaSubiendo)
+                            <div class="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 p-4 space-y-4">
 
+                                @if ($comprobacion->es_extension)
+                                    <div class="flex items-start gap-2 rounded-md bg-blue-100 dark:bg-blue-900/30 px-3 py-2">
+                                        <flux:icon.information-circle class="size-4 text-blue-500 shrink-0 mt-0.5" />
+                                        <p class="text-xs text-blue-700 dark:text-blue-300">
+                                            Este gasto es extensión de
+                                            <span class="font-semibold">{{ $comprobacion->solicitud->folio ?? '—' }}</span>.
+                                            Puedes subir el mismo CFDI de la solicitud — solo se registrará la porción de tarjeta.
+                                        </p>
+                                    </div>
+                                @endif
+
+                                <flux:field>
+                                    <flux:label>
+                                        Porción de tarjeta ($)
+                                        <span class="text-zinc-400 font-normal text-xs ml-1">
+                                            — default: {{ Number::currency($gasto['monto_estimado'], in: 'MXN') }}
+                                        </span>
+                                    </flux:label>
+                                    <flux:input
+                                        wire:model="montoGastoCT"
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        :placeholder="$gasto['monto_estimado']"
+                                    />
+                                    <flux:description>
+                                        Deja vacío para usar el monto registrado automáticamente.
+                                    </flux:description>
+                                </flux:field>
+
+                                <flux:field>
+                                    <flux:label badge="Requerido">Archivo XML (CFDI)</flux:label>
+                                    <flux:file-upload
+                                        wire:model="archivosCfdiGasto"
+                                        multiple
+                                        wire:change="procesarXmlsGasto"
+                                    >
+                                        <flux:file-upload.dropzone
+                                            heading="Arrastra el XML aquí"
+                                            text="Solo .xml — el monto total del XML se registra en la porción indicada"
+                                            with-progress
+                                            inline
+                                        />
+                                    </flux:file-upload>
+                                    <flux:error name="archivosCfdiGasto" />
+                                </flux:field>
+
+                                @if (!empty($archivosCfdiGasto))
+                                    <div class="space-y-2">
+                                        @foreach ($archivosCfdiGasto as $idx => $cfdi)
+                                            @php $tieneError = !empty($cfdi['error']); @endphp
+                                            <div class="rounded-lg border {{ $tieneError ? 'border-rose-300 bg-rose-50 dark:border-rose-700 dark:bg-rose-950/30' : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800' }} p-3 space-y-2">
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div class="flex items-center gap-2 min-w-0">
+                                                        <flux:icon.document-text class="size-4 {{ $tieneError ? 'text-rose-400' : 'text-emerald-500' }} shrink-0" />
+                                                        <div class="min-w-0">
+                                                            @if ($tieneError)
+                                                                <p class="text-xs font-medium text-rose-600">{{ $cfdi['error'] }}</p>
+                                                            @else
+                                                                <p class="text-xs font-medium text-zinc-800 dark:text-zinc-100">{{ $cfdi['emisor'] }}</p>
+                                                                <p class="text-[10px] font-mono text-zinc-400">
+                                                                    {{ strtoupper(substr($cfdi['uuid'], 0, 8)) }}…
+                                                                    · {{ $cfdi['fecha'] }}
+                                                                    · Total XML: {{ Number::currency($cfdi['monto'], in: 'MXN') }}
+                                                                </p>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                    <flux:button
+                                                        size="xs"
+                                                        variant="ghost"
+                                                        icon="x-mark"
+                                                        wire:click="$set('archivosCfdiGasto', [])"
+                                                    />
+                                                </div>
+
+                                                @if (!$tieneError)
+                                                    <div class="pl-6">
+                                                        @if (!empty($pdfsCfdiGasto[$idx]))
+                                                            <div class="flex items-center gap-2 text-xs text-zinc-500">
+                                                                <flux:icon.paper-clip class="size-3" />
+                                                                <span>{{ $pdfsCfdiGasto[$idx]->getClientOriginalName() }}</span>
+                                                                <flux:button size="xs" variant="ghost" icon="x-mark"
+                                                                    wire:click="$set('pdfsCfdiGasto.{{ $idx }}', null)" />
+                                                            </div>
+                                                        @else
+                                                            <flux:file-upload wire:model="pdfsCfdiGasto.{{ $idx }}">
+                                                                <flux:button size="xs" variant="ghost" icon="paper-clip">
+                                                                    Adjuntar PDF (opcional)
+                                                                </flux:button>
+                                                            </flux:file-upload>
+                                                        @endif
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                <div class="flex justify-end gap-3">
+                                    <flux:button variant="ghost" wire:click="cerrarSubidaCT">Cancelar</flux:button>
+                                    <flux:button
+                                        variant="primary"
+                                        wire:click="guardarComprobanteCT"
+                                        wire:loading.attr="disabled"
+                                        wire:target="guardarComprobanteCT"
+                                    >
+                                        <span wire:loading.remove wire:target="guardarComprobanteCT">Guardar comprobante</span>
+                                        <span wire:loading wire:target="guardarComprobanteCT">Guardando…</span>
+                                    </flux:button>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Comprobantes ya subidos ───────────────────────────────────── --}}
                         @foreach ($gasto['comprobantes'] as $comp)
                             @php
                                 $satColor = match($comp['sat_status'] ?? null) {
@@ -290,12 +436,11 @@
                                 };
                             @endphp
                             <div class="flex items-start sm:items-center sm:justify-between flex-col sm:flex-row gap-2 rounded-md bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 px-3 py-2 ml-4">
-                                <div class="flex gap-2 justify-between sm:justify-start">
+                                <div class="flex gap-2">
                                     <flux:icon.document-text class="size-4 text-zinc-400 shrink-0" />
-
-                                    <div class="flex flex-col min-w-0 flex-1">
+                                    <div class="flex flex-col min-w-0">
                                         <span class="text-xs font-medium text-zinc-700 dark:text-zinc-200 truncate">
-                                            Ferreteria Indar
+                                            {{ $comp['emisor'] ?? 'CFDI' }}
                                         </span>
                                         @if ($comp['uuid'])
                                             <span class="text-[10px] font-mono text-zinc-400">
@@ -304,22 +449,14 @@
                                         @endif
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-1 shrink-0 justify-end">
-                                        <flux:button
-                                            size="sm"
-                                            variant="ghost"
-                                            wire:click="descargar({{ $comp['id'] }}, false)"
-                                            icon="document-currency-dollar"
-                                            title="XML adjunto"
-                                            />
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <flux:button size="sm" variant="ghost"
+                                        wire:click="descargar({{ $comp['id'] }}, false)"
+                                        icon="document-currency-dollar" title="Descargar XML" />
                                     @if ($comp['archivo_pdf'])
-                                        <flux:button
-                                            size="sm"
-                                            variant="ghost"
+                                        <flux:button size="sm" variant="ghost"
                                             wire:click="descargar({{ $comp['id'] }}, true)"
-                                            icon="paper-clip"
-                                            title="PDF adjunto"
-                                            />
+                                            icon="paper-clip" title="Descargar PDF" />
                                     @endif
                                     <flux:badge :color="$satColor" size="sm">
                                         SAT: {{ ucfirst($comp['sat_status'] ?? 'pendiente') }}
@@ -330,6 +467,7 @@
                                 </div>
                             </div>
                         @endforeach
+
                     </div>
                 @endforeach
             </div>

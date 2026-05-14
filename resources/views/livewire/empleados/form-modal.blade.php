@@ -114,7 +114,9 @@
                             <flux:label badge="Requerido">Referencia contable</flux:label>
                             <flux:select variant="listbox" wire:model="centro_costo_id" :disabled="$esGerente" required>
                                 @foreach ($centrosCostos as $centro)
-                                    <flux:select.option value="{{ $centro['id'] }}">{{ $centro['nombre'] ?? $centro['cuenta_contable'] }}</flux:select.option>
+                                    <flux:select.option value="{{ $centro['id'] }}">
+                                        {{ !empty($centro['nombre']) ? $centro['nombre'] : $centro['cuenta_contable'] }}
+                                    </flux:select.option>
                                 @endforeach
                             </flux:select>
                             <flux:error name="centro_costo_id" />
