@@ -7,7 +7,7 @@
                     placeholder="Folio, empleado..." icon="magnifying-glass" clearable />
             </flux:field>
         </div>
-        <div class="sm:w-44">
+        <div class="sm:w-48">
             <flux:field>
                 <flux:label>Proyectos</flux:label>
                 <flux:select variant="listbox" wire:model.live="proyecto_id">
@@ -18,7 +18,7 @@
                 </flux:select>
             </flux:field>
         </div>
-        <div class="sm:w-44">
+        <div class="sm:w-48">
             <flux:field>
                 <flux:label>Áreas</flux:label>
                 <flux:select variant="listbox" wire:model.live="area_id">

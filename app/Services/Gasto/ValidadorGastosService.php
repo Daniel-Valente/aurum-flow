@@ -98,7 +98,7 @@ class ValidadorGastosService
             $gasto->load(['solicitud.empleado.user.roles', 'concepto']);
         }
 
-        $config        = ConfiguracionEmpresa::actual();
+        $config        = $this->obtenerConfiguracion($gasto);
         $empleado      = $gasto->empleado;
         $fecha_inicio  = $gasto->solicitud?->fecha_inicio ?? $gasto->comprobacionTarjeta?->fecha_inicio;
         $fecha_fin     = $gasto->solicitud?->fecha_fin ?? $gasto->comprobacionTarjeta?->fecha_fin;
@@ -172,6 +172,29 @@ class ValidadorGastosService
         ]);
     }
 
+    public function validarRangoFechaCfdi(string $fechaCfdi, string $fechaGastoReal, Gasto $gasto): ?string
+    {
+        try {
+            $config = $this->obtenerConfiguracion($gasto);
+
+            $cfdi  = Carbon::parse($fechaCfdi)->startOfDay();
+            $gasto = Carbon::parse($fechaGastoReal)->startOfDay();
+
+            $min = $gasto->copy()->subDays($config->cfdi_dias_antes_permitidos);
+            $max = $gasto->copy()->addDays($config->cfdi_dias_despues_permitidos);
+
+            if ($cfdi->lt($min) || $cfdi->gt($max)) {
+                return "La fecha del CFDI ({$cfdi->toDateString()}) está fuera del rango "
+                    . "({$min->toDateString()} – {$max->toDateString()})";
+            }
+
+            return null;
+
+        } catch (\Throwable $e) {
+            return 'No se pudo validar la fecha del CFDI.';
+        }
+    }
+
     private function evaluarConPolitica(?object $politica, float $monto, ?object $gasto): array
     {
         if (!$politica) {
@@ -225,5 +248,11 @@ class ValidadorGastosService
             'mensaje'     => $mensaje,
             'politica_id' => null,
         ];
+    }
+
+    private function obtenerConfiguracion(Gasto $gasto): ConfiguracionEmpresa
+    {
+        $empresa = $gasto->empleado?->empresa;
+        return ConfiguracionEmpresa::obtenerPorEmpresa($empresa);
     }
 }

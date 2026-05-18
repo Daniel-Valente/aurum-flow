@@ -4,7 +4,7 @@
             <flux:heading size="xl">Referencia Contable</flux:heading>
             <flux:subheading>Gestiona las referencias contables de la organización.</flux:subheading>
         </div>
-        @can('centros_costos.crear')
+        @can('referencia_contable.crear')
             <flux:button variant="primary" icon="plus" wire:click="openCreate">
                 Nueva Referencia Contable
             </flux:button>
@@ -41,7 +41,6 @@
     </flux:card>
 
     <flux:card class="p-2">
-
         <div class="flex flex-col gap-1 border-b border-zinc-200 px-4 py-3 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
             <flux:text size="sm" class="text-zinc-500">
                 Total encontrados:
@@ -54,11 +53,15 @@
 
         <flux:table :paginate="$centroCostos">
             <flux:table.columns>
-                <flux:table.column class="pl-4">Código</flux:table.column>
+                <flux:table.column>
+                    <span class="pl-4">Código</span>
+                </flux:table.column>
                 <flux:table.column>Nombre</flux:table.column>
                 <flux:table.column>Cuenta Contable</flux:table.column>
                 <flux:table.column>Estatus</flux:table.column>
-                <flux:table.column class="flex justify-end">Acciones</flux:table.column>
+                <flux:table.column>
+                    <span class="flex justify-end pr-4">Acciones</span>
+                </flux:table.column>
             </flux:table.columns>
 
             <flux:table.rows>
@@ -87,7 +90,7 @@
 
                         <flux:table.cell class="text-right">
                             <div class="flex items-center justify-end gap-1">
-                                @can('centros_costos.editar')
+                                @can('referencia_contable.editar')
                                     <flux:button
                                         size="sm"
                                         variant="ghost"
@@ -99,7 +102,7 @@
                                 @endcan
 
                                 @if ($centroCosto->estatus)
-                                    @can('centros_costos.eliminar')
+                                    @can('referencia_contable.eliminar')
                                         <flux:button
                                             size="sm"
                                             variant="ghost"

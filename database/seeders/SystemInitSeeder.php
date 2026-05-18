@@ -34,6 +34,8 @@ class SystemInitSeeder extends Seeder
         $rAdmin->syncPermissions(Permission::all());
 
         $rManager->syncPermissions([
+            'ver-stats-operativo', 'ver-stats-manager',
+
             'solicitudes.ver.propias', 'solicitudes.ver.area',
             'solicitudes.crear', 'solicitudes.editar',
             'solicitudes.enviar', 'solicitudes.eliminar',
@@ -58,6 +60,8 @@ class SystemInitSeeder extends Seeder
         ]);
 
         $rFinanzas->syncPermissions([
+            'ver-stats-operativo', 'ver-stats-finanzas',
+
             'solicitudes.ver.todas',
             'solicitudes.ver.propias',
             'solicitudes.crear', 'solicitudes.editar',
@@ -68,6 +72,19 @@ class SystemInitSeeder extends Seeder
             'gastos.ver.todos', 'gastos.validar',
             'gastos.crear', 'gastos.editar', 'gastos.subir.comprobante',
             'gastos.tarjeta.conciliar',
+
+            'presupuestos.ver',
+            'presupuestos.crear',
+            'presupuestos.editar',
+            'presupuestos.eliminar',
+            'presupuestos.aprobar',
+            'presupuestos.cancelar',
+            'presupuestos.ajustar',
+            'presupuestos.transferir',
+
+            'empresas.ver',
+            'empresas.crear',
+            'empresas.editar',
 
             'comprobantes.validar',
 
@@ -81,6 +98,8 @@ class SystemInitSeeder extends Seeder
         ]);
 
         $rOperativo->syncPermissions([
+            'ver-stats-operativo',
+
             'solicitudes.ver.propias',
             'solicitudes.crear', 'solicitudes.editar',
             'solicitudes.enviar', 'solicitudes.eliminar',

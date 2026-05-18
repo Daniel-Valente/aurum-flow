@@ -16,7 +16,7 @@ class UpdateCentroCostoRequest extends FormRequest
             return false;
         }
 
-        return $this->user()->can('centros_costos.editar');
+        return $this->user()->can('referencia_contable.editar');
     }
 
     /**

@@ -12,6 +12,7 @@ class Area extends Model
     protected $fillable = [
         'codigo',
         'nombre',
+        'empresa_id',
         'estatus'
     ];
 
@@ -22,5 +23,10 @@ class Area extends Model
     public function empleados()
     {
         return $this->hasMany(Empleado::class);
+    }
+
+    public function empresa()
+    {
+        return $this->belongsTo(Empresa::class);
     }
 }

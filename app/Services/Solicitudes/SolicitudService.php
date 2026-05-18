@@ -8,7 +8,9 @@ use App\Models\Solicitud;
 use App\Models\SolicitudAprobacion;
 use App\Models\SolicitudAuditoria;
 use App\Models\SolicitudDetalle;
+use App\Services\Auditoria\ActividadLogService;
 use App\Services\Gasto\PoliticaGastoService;
+use App\Services\Presupuesto\PresupuestoService;
 use Cache;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -16,6 +18,11 @@ use Illuminate\Support\Facades\DB;
 
 class SolicitudService
 {
+    public function __construct(
+        private PresupuestoService $presupuestoService,
+        private ActividadLogService $actividadLog
+    ) {}
+
     private const ALLOWED_SORT_COLUMNS = [
         'folio',
         'monto_total',
@@ -35,11 +42,6 @@ class SolicitudService
     ];
 
     private const LIST_CACHE_KEY     = 'solicitudes.list.activos';
-
-    // -------------------------------------------------------------------------
-    // Listado paginado — vista "Mis Solicitudes"
-    // Scope automático por permisos: propias | área | todas
-    // -------------------------------------------------------------------------
 
     public function paginate(
         $user,
@@ -134,11 +136,6 @@ class SolicitudService
 
             ->paginate($perPage);
     }
-
-    // -------------------------------------------------------------------------
-    // Listado paginado — vista "Autorizaciones" (admin / gerente)
-    // Solo solicitudes en estatus Pendiente; gerente filtra por su área
-    // -------------------------------------------------------------------------
 
     public function paginateAutorizaciones(
         $user,
@@ -336,21 +333,43 @@ class SolicitudService
         }
 
         return DB::transaction(function () use ($data, $user) {
+            $empleado = $user->empleado;
+            $montoTotal = collect($data['detalles'])->sum('monto_estimado');
+            $folio = FolioHelper::generar('SOL');
+
+            $presupuestoTemp = new Solicitud([
+                'empleado_id' => $empleado->id,
+                'proyecto_id' => $data['proyecto_id'] ?? null,
+                'created_at' => now(),
+            ]);
+            $presupuesto = $this->presupuestoService->obtenerPresupuestoAplicable($presupuestoTemp);
+
             $solicitud = Solicitud::create([
-                'folio'        => FolioHelper::generar('SOL'),
-                'empleado_id'  => $user->empleado->id,
-                'area_id'      => $user->empleado->area_id,
+                'folio'        => $folio,
+                'empleado_id'  => $empleado->id,
+                'empresa_id' => $empleado->empresa_id,
+                'area_id'      => $empleado->area_id,
                 'proyecto_id'  => $data['proyecto_id']  ?? null,
+                'presupuesto_id' => $presupuesto?->id,
                 'fecha_inicio' => $data['fecha_inicio'] ?? null,
                 'fecha_fin'    => $data['fecha_fin']    ?? null,
                 'motivo'       => $data['motivo']       ?? null,
-                'monto_total'  => $data['monto_total']  ?? 0,
+                'monto_total'  => $montoTotal,
                 'estatus'      => 'Borrador',
             ]);
 
             $this->auditoria($solicitud, 'created', $user);
 
-            return $solicitud;
+            $this->actividadLog->registrar([
+                'user' => $user,
+                'evento' => 'created',
+                'modulo' => 'solicitudes',
+                'entidad' => $solicitud,
+                'entidad_descripcion' => "Solicitud {$solicitud->folio}",
+                'datos_despues' => $solicitud->toArray(),
+            ]);
+
+            return $solicitud->load(['detalles.concepto', 'empleado', 'proyecto', 'presupuesto']);
         });
     }
 
@@ -464,7 +483,14 @@ class SolicitudService
             );
         }
 
+        try {
+        app(PresupuestoService::class)->validarDisponibilidad($solicitud);
+        } catch (\App\Exceptions\Presupuesto\SaldoInsuficienteException $e) {
+            throw new \App\Exceptions\Solicitudes\SolicitudBloqueadaException($e->getMessage());
+        }
+
         $solicitud->update(['estatus' => 'Pendiente']);
+        app(PresupuestoService::class)->comprometerMonto($solicitud);
         $this->auditoria($solicitud, 'enviado', $user);
 
         return $solicitud;
@@ -533,7 +559,7 @@ class SolicitudService
             'estatus'            => 'Cancelado',
             'motivo_cancelacion' => $motivo,
         ]);
-
+        app(PresupuestoService::class)->liberarCompromiso($solicitud);
         $this->auditoria($solicitud, 'cancelado', $user, ['motivo_cancelacion' => $motivo]);
 
         return $solicitud;
@@ -590,6 +616,31 @@ class SolicitudService
             if ($solicitud->estatus !== 'Comprobado') {
                 $solicitud->update(['estatus' => 'Comprobado']);
 
+                if ($solicitud->presupuesto_id) {
+                    $montoReal = $solicitud->gastos()
+                        ->where('estatus', 'comprobado')
+                        ->sum('monto');
+
+                    $this->presupuestoService->registrarGasto(
+                        $solicitud->presupuesto,
+                        $montoReal,
+                        $solicitud,
+                        auth()->user()
+                    );
+                }
+
+                $this->actividadLog->registrar([
+                    'user' => auth()->user(),
+                    'evento' => 'updated',
+                    'modulo' => 'solicitudes',
+                    'entidad' => $solicitud,
+                    'entidad_descripcion' => "Solicitud {$solicitud->folio} completada automáticamente",
+                    'metadatos' => [
+                        'gastos_comprobados' => $counts->comprobados,
+                    ],
+                    'es_sensible' => true,
+                ]);
+
                 $this->auditoria($solicitud, 'comprobado_automatico', null, [
                     'total_gastos' => $counts->total,
                     'comprobados'  => $counts->comprobados,
@@ -615,9 +666,8 @@ class SolicitudService
                 'motivo_rechazo' => null,
             ]);
 
-            // ✅ CRÍTICO: Eliminar aprobaciones previas para re-evaluación limpia
             SolicitudAprobacion::where('solicitud_id', $solicitud->id)->delete();
-
+            app(PresupuestoService::class)->liberarCompromiso($solicitud);
             $this->auditoria($solicitud, 'reabierto', $user);
 
             return $solicitud;

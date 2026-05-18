@@ -163,6 +163,17 @@
                     />
                     <flux:error name="nombre" />
                 </flux:field>
+
+                <flux:field>
+                    <flux:label badge="Opcional">Empresa</flux:label>
+                    <flux:select variant="listbox" wire:model="empresa_id">
+                        @foreach ($empresas as $empresa)
+                            <flux:select.option value="{{ $empresa['id'] }}">{{ $empresa['nombre'] }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+
+                    <flux:error name="empresa_id" />
+                </flux:field>
             </div>
 
             <div class="flex justify-end gap-3">

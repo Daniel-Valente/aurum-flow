@@ -1,13 +1,13 @@
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <flux:heading class="sr-only">{{ __('Security settings') }}</flux:heading>
+    <flux:heading class="sr-only">{{ __('Seguridad') }}</flux:heading>
 
-    <x-settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+    <x-settings.layout :heading="__('Actualizar contraseña')" :subheading="__('Asegúrate de que tu cuenta use una contraseña larga y aleatoria para mantenerla segura')">
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
                 wire:model="current_password"
-                :label="__('Current password')"
+                :label="__('Contraseña Actual')"
                 type="password"
                 required
                 autocomplete="current-password"
@@ -15,7 +15,7 @@
             />
             <flux:input
                 wire:model="password"
-                :label="__('New password')"
+                :label="__('Nueva Contraseña')"
                 type="password"
                 required
                 autocomplete="new-password"
@@ -23,7 +23,7 @@
             />
             <flux:input
                 wire:model="password_confirmation"
-                :label="__('Confirm password')"
+                :label="__('Confirmar Contraseña')"
                 type="password"
                 required
                 autocomplete="new-password"
@@ -31,20 +31,20 @@
             />
 
             <div class="flex items-center gap-4">
-                <flux:button variant="primary" type="submit" data-test="update-password-button">{{ __('Save') }}</flux:button>
+                <flux:button variant="primary" type="submit" data-test="update-password-button">{{ __('Actualizar') }}</flux:button>
             </div>
         </form>
 
-        @if ($canManageTwoFactor)
+        @if (!$canManageTwoFactor)
             <section class="mt-12">
-                <flux:heading>{{ __('Two-factor authentication') }}</flux:heading>
-                <flux:subheading>{{ __('Manage your two-factor authentication settings') }}</flux:subheading>
+                <flux:heading>{{ __('Autenticación de dos factores') }}</flux:heading>
+                <flux:subheading>{{ __('Administrar la configuración de autenticación de dos factores') }}</flux:subheading>
 
                 <div class="flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
                     @if ($twoFactorEnabled)
                         <div class="space-y-4">
                             <flux:text>
-                                {{ __('You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.') }}
+                                {{ __('Se te pedirá un PIN seguro y aleatorio durante el inicio de sesión, que puedes recuperar desde la aplicación compatible con TOTP en tu teléfono.') }}
                             </flux:text>
 
                             <div class="flex justify-start">

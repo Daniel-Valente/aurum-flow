@@ -42,16 +42,18 @@ class ProyectoService
         return Proyecto::query()
             ->leftJoin('centros_costos', 'centros_costos.id', '=', 'proyectos.centro_costo_id')
             ->leftJoin('empleados',      'empleados.id',      '=', 'proyectos.responsable_id')
+            ->leftJoin('empresas',      'empresas.id',      '=', 'proyectos.empresa_id')
             ->select(
                 'proyectos.*',
                 'centros_costos.nombre  AS centro_costo_nombre',
                 'empleados.nombre_completo AS responsable_nombre',
+                'empresas.nombre AS empresa_nombre',
             )
             ->when($search, fn($q) =>
                 $q->where(fn($q2) =>
                     $q2->where('proyectos.nombre',  'ilike', "%{$search}%")
-                       ->orWhere('proyectos.codigo', 'ilike', "%{$search}%")
-                       ->orWhere('proyectos.cliente','ilike', "%{$search}%")
+                        ->orWhere('proyectos.codigo', 'ilike', "%{$search}%")
+                        ->orWhere('proyectos.cliente','ilike', "%{$search}%")
                 )
             )
             ->when($estatus !== '', fn($q) =>
@@ -105,6 +107,7 @@ class ProyectoService
             'estado_operativo' => $data['estado_operativo'] ?? 'Draft',
             'centro_costo_id'  => $data['centro_costo_id'] ?? null,
             'responsable_id'   => $data['responsable_id']  ?? null,
+            'empresa_id'       => $data['empresa_id']      ?? null,
             'presupuesto_total'=> $data['presupuesto_total'] ?? null,
             'fecha_inicio'     => $data['fecha_inicio']     ?? null,
             'fecha_fin'        => $data['fecha_fin']        ?? null,
@@ -129,8 +132,9 @@ class ProyectoService
             'descripcion'       => $data['descripcion']       ?? $proyecto->descripcion,
             'region'            => $data['region']            ?? $proyecto->region,
             'estado_operativo'  => $data['estado_operativo']  ?? $proyecto->estado_operativo,
-            'centro_costo_id'   => $data['centro_costo_id']  ?? $proyecto->centro_costo_id,
-            'responsable_id'    => $data['responsable_id']   ?? $proyecto->responsable_id,
+            'centro_costo_id'   => $data['centro_costo_id']   ?? $proyecto->centro_costo_id,
+            'responsable_id'    => $data['responsable_id']    ?? $proyecto->responsable_id,
+            'empresa_id'        => $data['empresa_id']        ?? $proyecto->empresa_id,
             'presupuesto_total' => $data['presupuesto_total'] ?? $proyecto->presupuesto_total,
             'fecha_inicio'      => $data['fecha_inicio']      ?? $proyecto->fecha_inicio,
             'fecha_fin'         => $data['fecha_fin']         ?? $proyecto->fecha_fin,

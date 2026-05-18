@@ -3,7 +3,13 @@
 namespace App\Providers;
 
 use App\Models\Empleado;
+use App\Models\GastoComprobante;
+use App\Models\Presupuesto;
+use App\Models\Solicitud;
 use App\Observers\EmpleadoObserver;
+use App\Observers\GastoComprobanteObserver;
+use App\Observers\PresupuestoObserver;
+use App\Observers\SolicitudObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -54,5 +60,8 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Empleado::observe(EmpleadoObserver::class);
+        Solicitud::observe(SolicitudObserver::class);
+        Presupuesto::observe(PresupuestoObserver::class);
+        GastoComprobante::observe(GastoComprobanteObserver::class);
     }
 }

@@ -15,6 +15,12 @@ class PermissionsSeeder extends Seeder
 
         // Permisos — separados por dominio
         $permisos = [
+            // Dashboard
+            'ver-stats-operativo',
+            'ver-stats-manager',
+            'ver-stats-finanzas',
+            'ver-stats-admin',
+
             // Solicitudes
             'solicitudes.ver.propias',
             'solicitudes.ver.area',
@@ -62,17 +68,41 @@ class PermissionsSeeder extends Seeder
             'empleados.editar',
             'empleados.eliminar',
 
+            //Roles
+            'roles.ver',
+            'roles.crear',
+            'roles.editar',
+            'roles.eliminar',
+            'roles.permisos',
+
             // Áreas
             'areas.ver',
             'areas.crear',
             'areas.editar',
             'areas.eliminar',
 
+            // Empresas
+            'empresas.ver',
+            'empresas.crear',
+            'empresas.editar',
+            'empresas.configurar',
+            'empresas.eliminar',
+
+            // Presupuestos
+            'presupuestos.ver',
+            'presupuestos.crear',
+            'presupuestos.editar',
+            'presupuestos.eliminar',
+            'presupuestos.aprobar',
+            'presupuestos.cancelar',
+            'presupuestos.ajustar',
+            'presupuestos.transferir',
+
             // Centros de costo
-            'centros_costos.ver',
-            'centros_costos.crear',
-            'centros_costos.editar',
-            'centros_costos.eliminar',
+            'referencia_contable.ver',
+            'referencia_contable.crear',
+            'referencia_contable.editar',
+            'referencia_contable.eliminar',
 
             // Proyectos
             'proyectos.ver',

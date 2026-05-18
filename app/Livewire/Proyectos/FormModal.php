@@ -6,6 +6,7 @@ use App\Models\Empleado;
 use App\Models\Proyecto;
 use App\Services\CentroCosto\CentroCostoService;
 use App\Services\Empleado\EmpleadoService;
+use App\Services\Empresa\EmpresaService;
 use App\Services\Proyecto\ProyectoService;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -24,6 +25,7 @@ class FormModal extends Component
 
     public ?int $centro_costo_id = null;
     public ?int $responsable_id = null;
+    public ?int $empresa_id     = null;
 
     public ?string $presupuesto_total = null;
     public ?string $fecha_inicio = null;
@@ -41,6 +43,7 @@ class FormModal extends Component
 
     public array $empleados = [];
     public array $centrosCostos = [];
+    public array $empresas = [];
 
     public array $ciudades = [];
     public array $estados  = [];
@@ -64,7 +67,8 @@ class FormModal extends Component
             $this->estado_operativo = $proyecto->estado_operativo;
 
             $this->centro_costo_id = $proyecto->centro_costo_id;
-            $this->responsable_id = $proyecto->responsable_id;
+            $this->responsable_id  = $proyecto->responsable_id;
+            $this->empresa_id      = $proyecto->empresa_id;
 
             $this->presupuesto_total = $proyecto->presupuesto_total;
             $this->fecha_inicio = $proyecto->fecha_inicio?->format('Y-m-d');
@@ -145,6 +149,7 @@ class FormModal extends Component
 
             'responsable_id' => 'nullable|exists:empleados,id',
             'centro_costo_id' => 'required|exists:centros_costos,id',
+            'empresa_id'      => 'nullable|exists:empresas,id',
 
             'estado_operativo' => 'required|in:Draft,Activo,Cerrado',
 
@@ -173,6 +178,8 @@ class FormModal extends Component
             'cliente.max' => 'El cliente no puede exceder 255 caracteres.',
 
             'responsable_id.exists' => 'El responsable seleccionado no es válido.',
+
+            'empresa_id.exists' => 'La empresa seleccionada no es válida.',
 
             'centro_costo_id.required' => 'La referencia contable es obligatoria.',
             'centro_costo_id.exists' => 'La referencia contable seleccionada no es válida.',
@@ -208,6 +215,7 @@ class FormModal extends Component
             'estado_operativo' => $this->estado_operativo,
             'centro_costo_id' => $this->centro_costo_id,
             'responsable_id' => $this->responsable_id,
+            'empresa_id' => $this->empresa_id,
             'presupuesto_total' => $this->presupuesto_total,
             'fecha_inicio' => $this->fecha_inicio,
             'fecha_fin' => $this->fecha_fin,
@@ -234,11 +242,11 @@ class FormModal extends Component
 
     public function resetForm(): void
     {
-        $this->reset(['codigo', 'nombre', 'cliente', 'tipo', 'descripcion', 'estado_operativo', 'centro_costo_id', 'responsable_id', 'presupuesto_total', 'fecha_inicio', 'fecha_fin', 'ciudad', 'estado', 'region', 'pais']);
+        $this->reset(['codigo', 'nombre', 'cliente', 'tipo', 'descripcion', 'estado_operativo', 'centro_costo_id', 'responsable_id', 'empresa_id', 'presupuesto_total', 'fecha_inicio', 'fecha_fin', 'ciudad', 'estado', 'region', 'pais']);
         $this->resetValidation();
     }
 
-    public function mount(EmpleadoService $empleadoService, CentroCostoService $centroCostoService, ProyectoService $proyectoService): void
+    public function mount(EmpleadoService $empleadoService, CentroCostoService $centroCostoService, ProyectoService $proyectoService, EmpresaService $empresaService): void
     {
         $this->empleados = $empleadoService->list();
         $this->centrosCostos = $centroCostoService->list();
@@ -247,6 +255,7 @@ class FormModal extends Component
         $this->regiones = $proyectoService->regiones();
         $this->estados  = $proyectoService->estados();
         $this->paises   = $proyectoService->paises();
+        $this->empresas = $empresaService->list();
     }
 
     public function render()

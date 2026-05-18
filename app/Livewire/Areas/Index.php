@@ -4,6 +4,7 @@ namespace App\Livewire\Areas;
 
 use App\Models\Area;
 use App\Services\Area\AreaService;
+use App\Services\Empresa\EmpresaService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -18,10 +19,18 @@ class Index extends Component
     public ?int $editingId = null;
     public string $codigo = '';
     public string $nombre = '';
+    public ?int $empresa_id = null;
     public bool $estatusForm = true;
 
     public ?int $deletingId = null;
     public string $deletingNombre = '';
+
+    public array $empresas = [];
+
+    public function mount(EmpresaService $service): void
+    {
+        $this->empresas = $service->list();
+    }
 
     public function updatingSearch(): void
     {
@@ -52,6 +61,7 @@ class Index extends Component
         $this->editingId = $area->id;
         $this->codigo = $area->codigo;
         $this->nombre = $area->nombre;
+        $this->empresa_id = $area->empresa_id;
         $this->estatusForm = (bool) $area->estatus;
 
         $this->resetValidation();
@@ -66,6 +76,7 @@ class Index extends Component
                 Rule::unique('areas', 'codigo')->ignore($this->editingId),
             ],
             'nombre' => 'required|string|max:100',
+            'empresa_id' => 'nullable|exists:empresas,id',
             'estatusForm' => 'boolean'
         ], messages: [
             'codigo.required'   => 'El código es obligatorio.',
@@ -78,6 +89,7 @@ class Index extends Component
         $data = [
             'codigo' => strtoupper(trim($this->codigo)),
             'nombre' => trim($this->nombre),
+            'empresa_id' => $this->empresa_id,
             'estatus' => $this->estatusForm
         ];
 
@@ -118,7 +130,7 @@ class Index extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['editingId', 'codigo', 'nombre']);
+        $this->reset(['editingId', 'codigo', 'nombre', 'empresa_id']);
         $this->estatusForm = true;
         $this->resetValidation();
     }

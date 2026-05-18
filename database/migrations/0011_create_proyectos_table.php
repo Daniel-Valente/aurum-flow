@@ -27,8 +27,10 @@ return new class extends Migration
 
             $table->foreignId('centro_costo_id')->nullable()->constrained('centros_costos');
             $table->foreignId('responsable_id')->nullable()->constrained('empleados')->nullOnDelete();
+            $table->foreignId('empresa_id')->nullable()->constrained('empresas')->nullOnDelete();
 
-            $table->decimal('presupuesto_total', 12, 2)->nullable();
+            $table->decimal('presupuesto_total', 15, 2)->nullable();
+            $table->decimal('presupuesto_gastado', 15, 2)->default(0);
 
             $table->date('fecha_inicio')->nullable();
             $table->date('fecha_fin')->nullable();

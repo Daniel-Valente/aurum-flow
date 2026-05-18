@@ -69,7 +69,8 @@ class CFDIService
             $estadoSat = 'error_consulta';
         }
 
-        /*$config = ConfiguracionEmpresa::actual();
+        /*
+        $config = $this->obtenerConfiguracion($gasto);
 
         if ($config->validar_rfc_receptor && $config->rfc_empresa) {
             $rfcEmpresa = strtoupper($config->rfc_empresa);
@@ -192,5 +193,11 @@ class CFDIService
         }
 
         return $resultado;
+    }
+
+    private function obtenerConfiguracion(Gasto $gasto): ConfiguracionEmpresa
+    {
+        $empresa = $gasto->empleado?->empresa;
+        return ConfiguracionEmpresa::obtenerPorEmpresa($empresa);
     }
 }

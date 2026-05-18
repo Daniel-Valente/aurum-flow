@@ -11,6 +11,7 @@ use App\Services\Concepto\ConceptoService;
 use App\Services\Gasto\ComprobacionTarjetaService;
 use App\Services\Gasto\GastoService;
 use App\Services\Gasto\PoliticaGastoService;
+use App\Services\Gasto\ValidadorGastosService;
 use Carbon\Carbon;
 use Flux;
 use Livewire\Attributes\On;
@@ -99,9 +100,10 @@ class Show extends Component
                     continue;
                 }
 
-                $existeEnBd = GastoComprobante::where('uuid', $cfdi['uuid'])->exists();
+                $existe = GastoComprobante::where('uuid', $cfdi['uuid'])->exists();
+                $errorFecha = null;
 
-                if ($existeEnBd && $this->comprobacion->es_extension && $this->comprobacion->solicitud_id) {
+                if ($existe && $this->comprobacion->es_extension && $this->comprobacion->solicitud_id) {
                     $existeSoloEnSolicitudVinculada = GastoComprobante::where('uuid', $cfdi['uuid'])
                         ->whereHas('gasto', fn($q) =>
                             $q->where('solicitud_id', $this->comprobacion->solicitud_id)
@@ -109,12 +111,20 @@ class Show extends Component
                         ->exists();
 
                     if ($existeSoloEnSolicitudVinculada) {
-                        $existeEnBd = false;
+                        $existe = false;
                     }
                 }
 
-                $errorFinal = $existeEnBd ? 'Este CFDI ya fue registrado en el sistema.' : null;
-                $errorFecha = null;
+                $errorFinal = $existe ? 'Este CFDI ya fue registrado en el sistema.' : null;
+
+                if (!empty($this->fechaGastoReal) && !empty($cfdi['fecha'])) {
+                    $gasto = collect($this->gastos)->firstWhere('id', $this->gastoActivo);
+                    $errorFecha = app(ValidadorGastosService::class)->validarRangoFechaCfdi(
+                        $cfdi['fecha'],
+                        $this->fechaGastoReal,
+                        $gasto
+                    );
+                }
 
                 if ($errorFecha) {
                     $errorFinal = $errorFinal
@@ -500,29 +510,6 @@ class Show extends Component
                 ])->toArray(),
             ];
         })->toArray();
-    }
-
-    private function validarRangoFechaCfdi(string $fechaCfdi, string $fechaGastoReal): ?string
-    {
-        try {
-            $config = ConfiguracionEmpresa::actual();
-
-            $cfdi  = Carbon::parse($fechaCfdi)->startOfDay();
-            $gasto = Carbon::parse($fechaGastoReal)->startOfDay();
-
-            $min = $gasto->copy()->subDays($config->cfdi_dias_antes_permitidos);
-            $max = $gasto->copy()->addDays($config->cfdi_dias_despues_permitidos);
-
-            if ($cfdi->lt($min) || $cfdi->gt($max)) {
-                return "La fecha del CFDI ({$cfdi->toDateString()}) está fuera del rango "
-                    . "({$min->toDateString()} – {$max->toDateString()})";
-            }
-
-            return null;
-
-        } catch (\Throwable $e) {
-            return 'No se pudo validar la fecha del CFDI.';
-        }
     }
 
     public function render()

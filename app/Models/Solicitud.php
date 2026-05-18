@@ -16,8 +16,10 @@ class Solicitud extends Model
     protected $fillable = [
         'folio',
         'empleado_id',
+        'empresa_id',
         'area_id',
         'proyecto_id',
+        'presupuesto_id',
         'fecha_inicio',
         'fecha_fin',
         'motivo',
@@ -54,6 +56,11 @@ class Solicitud extends Model
     public function proyecto()
     {
         return $this->belongsTo(Proyecto::class);
+    }
+
+    public function presupuesto()
+    {
+        return $this->hasOne(Presupuesto::class);
     }
 
     public function scopePropias($query, $user)

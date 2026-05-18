@@ -16,6 +16,7 @@ class Empleado extends Model
         'puesto',
         'area_id',
         'centro_costo_id',
+        'empresa_id',
         'rfc',
         'curp',
         'numero_nomina',
@@ -54,6 +55,16 @@ class Empleado extends Model
     public function centroCosto()
     {
         return $this->belongsTo(CentroCosto::class);
+    }
+
+    public function empresa()
+    {
+        return $this->belongsTo(Empresa::class);
+    }
+
+    public function presupuesto()
+    {
+        return $this->hasOne(Presupuesto::class);
     }
 
     public function solicitudes()

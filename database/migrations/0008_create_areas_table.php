@@ -15,8 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('codigo')->unique();
             $table->string('nombre')->unique();
+
+            $table->foreignId('empresa_id')->nullable()->constrained('empresas')->nullOnDelete();
+            
             $table->boolean('estatus')->default(true);
             $table->timestamps();
+
+            $table->index('empresa_id');
         });
     }
 

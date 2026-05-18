@@ -57,11 +57,25 @@
                         </dvi>
                     </div>
 
-                    <flux:field>
-                        <flux:label badge="Requerido">Nombre</flux:label>
-                        <flux:input wire:model="nombre" placeholder="Ej. CEDIS Orizaba" required />
-                        <flux:error name="nombre" />
-                    </flux:field>
+                    <div class="grid auto-rows-min gap-5 md:grid-cols-2">
+                        <flux:field>
+                            <flux:label badge="Requerido">Nombre</flux:label>
+                            <flux:input wire:model="nombre" placeholder="Ej. CEDIS Orizaba" required />
+                            <flux:error name="nombre" />
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label badge="Opcional">Empresa</flux:label>
+                            <flux:select variant="listbox" wire:model.live="empresa_id" clearable>
+                                <flux:select.option value=""></flux:select.option>
+                                @foreach ($empresas as $empresa)
+                                    <flux:select.option value="{{ $empresa['id'] }}">
+                                        {{ $empresa['nombre'] }}
+                                    </flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        </flux:field>
+                    </div>
 
                     <div class="grid auto-rows-min gap-5 md:grid-cols-2">
                         <div class="flex flex-col">

@@ -123,11 +123,24 @@
                         </flux:field>
                     </div>
 
-                    <flux:field>
-                        <flux:label badge="Opcional">Fecha de ingreso</flux:label>
-                        <flux:date-picker selectable-header wire:model="fecha_ingreso" fixed-weeks />
-                    </flux:field>
+                    <div class="grid md:grid-cols-2 gap-5">
+                        <flux:field>
+                            <flux:label badge="Requerido">Empresa</flux:label>
+                            <flux:select variant="listbox" wire:model="empresa_id">
+                                @foreach ($empresas as $empresa)
+                                    <flux:select.option value="{{ $empresa['id'] }}">{{ $empresa['nombre'] }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
 
+                            <flux:error name="empresa_id" />
+                        </flux:field>
+                        <flux:field>
+                            <flux:label badge="Opcional">Fecha de ingreso</flux:label>
+                            <flux:date-picker selectable-header wire:model="fecha_ingreso" fixed-weeks />
+
+                            <flux:error name="fecha_ingreso" />
+                        </flux:field>
+                    </div>
                 </div>
             </div>
 

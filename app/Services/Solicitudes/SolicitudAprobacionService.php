@@ -5,13 +5,18 @@ namespace App\Services\Solicitudes;
 use App\Models\FlujoAprobacion;
 use App\Models\Solicitud;
 use App\Models\SolicitudAprobacion;
-use App\Models\User;
+use App\Services\Auditoria\ActividadLogService;
 use App\Services\Auditoria\AuditoriaService;
+use App\Services\Presupuesto\PresupuestoService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class SolicitudAprobacionService
 {
+    public function __construct(
+        private PresupuestoService $presupuestoService,
+        private ActividadLogService $actividadLog
+    ) {}
     /**
      * Registra la aprobación o rechazo de un usuario para una solicitud.
      * Después evalúa si ya se alcanzó el mínimo o si fue rechazada.
@@ -78,7 +83,7 @@ class SolicitudAprobacionService
             ]);
         });
 
-        return $this->evaluarResultado($solicitud->fresh());
+        return $this->evaluarResultado($solicitud->fresh(), $user);
     }
 
     /**
@@ -87,7 +92,7 @@ class SolicitudAprobacionService
      *
      * Retorna: ['resultado' => 'pendiente|autorizado|rechazado', 'aprobadas' => N]
      */
-    public function evaluarResultado(Solicitud $solicitud): array
+    public function evaluarResultado(Solicitud $solicitud, $user): array
     {
         $flujos = FlujoAprobacion::activo()->tipo('viaticos')->get();
 
@@ -109,6 +114,7 @@ class SolicitudAprobacionService
                 'estatus'        => 'Rechazado',
                 'motivo_rechazo' => $motivo,
             ]);
+            app(PresupuestoService::class)->liberarCompromiso($solicitud);
 
             return ['resultado' => 'rechazado', 'aprobadas' => $totalAprobadas];
         }
@@ -117,6 +123,7 @@ class SolicitudAprobacionService
             DB::transaction(function () use ($solicitud) {
                 $solicitud->update(['estatus' => 'Autorizado']);
                 app(SolicitudGastoService::class)->generarGastos($solicitud);
+                app(PresupuestoService::class)->confirmarConsumo($solicitud);
             });
 
             return ['resultado' => 'autorizado', 'aprobadas' => $totalAprobadas];

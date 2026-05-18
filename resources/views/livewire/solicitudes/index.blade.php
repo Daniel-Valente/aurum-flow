@@ -84,7 +84,7 @@
                 </flux:field>
             </div>
 
-            <div class="sm:w-44">
+            <div class="sm:w-48">
                 <flux:field>
                     <flux:label>Estatus</flux:label>
                     <flux:select variant="listbox" wire:model.live="estatus">
@@ -99,7 +99,7 @@
                 </flux:field>
             </div>
 
-            <div class="sm:w-44">
+            <div class="sm:w-48">
                 <flux:field>
                     <flux:label>Cumplimiento</flux:label>
                     <flux:select variant="listbox" wire:model.live="cumplimiento">

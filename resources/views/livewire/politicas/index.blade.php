@@ -12,87 +12,89 @@
     </div>
 
     <flux:card>
-    <div class="space-y-4">
+        <div class="space-y-4">
+            <flux:accordion variant="reverse">
+                <flux:accordion.item>
+                    <flux:accordion.heading>
+                        <h3 class="text-sm font-semibold text-zinc-900 dark:text-white">
+                            ¿Cómo funcionan las políticas?
+                        </h3>
+                    </flux:accordion.heading>
 
-        <div>
-            <h3 class="text-sm font-semibold text-zinc-900 dark:text-white">
-                ¿Cómo funcionan las políticas?
-            </h3>
+                    <flux:accordion.content>
+                        <div>
+                            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                Las políticas definen las reglas operativas y fiscales aplicables
+                                a las solicitudes y comprobaciones de gastos según el concepto,
+                                el rol del colaborador y su vigencia.
+                            </p>
+                            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                Durante la captura, el sistema valida automáticamente límites,
+                                tipos de comprobación permitidos, montos, porcentajes y restricciones
+                                configuradas para cada política activa.
+                            </p>
+                            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                Cuando una solicitud excede las condiciones establecidas,
+                                puede generarse una excepción sujeta a aprobación escalonada:
+                                primero por un responsable operativo o gerente (Nivel 1)
+                                y posteriormente por administración o finanzas (Nivel 2).
+                            </p>
+                            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                Las políticas solamente aplican dentro de su periodo de vigencia,
+                                permitiendo mantener reglas distintas según cambios operativos,
+                                fiscales o administrativos.
+                            </p>
+                        </div>
 
-            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Las políticas definen las reglas operativas y fiscales aplicables
-                a las solicitudes y comprobaciones de gastos según el concepto,
-                el rol del colaborador y su vigencia.
-            </p>
+                        <flux:separator text="Flujo operativo" />
 
-            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Durante la captura, el sistema valida automáticamente límites,
-                tipos de comprobación permitidos, montos, porcentajes y restricciones
-                configuradas para cada política activa.
-            </p>
+                        <flux:table>
+                            <flux:table.columns>
+                                <flux:table.column class="pl-4">ROL / NIVEL</flux:table.column>
+                                <flux:table.column>RESPONSABILIDAD OPERATIVA</flux:table.column>
+                            </flux:table.columns>
 
-            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Cuando una solicitud excede las condiciones establecidas,
-                puede generarse una excepción sujeta a aprobación escalonada:
-                primero por un responsable operativo o gerente (Nivel 1)
-                y posteriormente por administración o finanzas (Nivel 2).
-            </p>
+                            <flux:table.rows>
+                                <flux:table.row>
+                                    <flux:table.cell class="pl-4">
+                                        Operativo
+                                    </flux:table.cell>
 
-            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Las políticas solamente aplican dentro de su periodo de vigencia,
-                permitiendo mantener reglas distintas según cambios operativos,
-                fiscales o administrativos.
-            </p>
+                                    <flux:table.cell>
+                                        Registra solicitudes y comprobaciones conforme
+                                        a las políticas activas asignadas a su rol.
+                                    </flux:table.cell>
+                                </flux:table.row>
+
+                                <flux:table.row>
+                                    <flux:table.cell class="pl-4">
+                                        Gerente / Responsable
+                                    </flux:table.cell>
+
+                                    <flux:table.cell>
+                                        Revisa y aprueba excepciones operativas
+                                        o desviaciones iniciales (Nivel 1).
+                                    </flux:table.cell>
+                                </flux:table.row>
+
+                                <flux:table.row>
+                                    <flux:table.cell class="pl-4">
+                                        Administración / Finanzas
+                                    </flux:table.cell>
+
+                                    <flux:table.cell>
+                                        Valida excepciones finales, control fiscal,
+                                        auditoría y autorizaciones administrativas (Nivel 2).
+                                    </flux:table.cell>
+                                </flux:table.row>
+
+                            </flux:table.rows>
+                        </flux:table>
+                    </flux:accordion.content>
+                </flux:accordion.item>
+            </flux:accordion>
         </div>
-
-        <flux:separator text="Flujo operativo" />
-
-        <flux:table>
-            <flux:table.columns>
-                <flux:table.column class="pl-4">ROL / NIVEL</flux:table.column>
-                <flux:table.column>RESPONSABILIDAD OPERATIVA</flux:table.column>
-            </flux:table.columns>
-
-            <flux:table.rows>
-
-                <flux:table.row>
-                    <flux:table.cell class="pl-4">
-                        Operativo
-                    </flux:table.cell>
-
-                    <flux:table.cell>
-                        Registra solicitudes y comprobaciones conforme
-                        a las políticas activas asignadas a su rol.
-                    </flux:table.cell>
-                </flux:table.row>
-
-                <flux:table.row>
-                    <flux:table.cell class="pl-4">
-                        Gerente / Responsable
-                    </flux:table.cell>
-
-                    <flux:table.cell>
-                        Revisa y aprueba excepciones operativas
-                        o desviaciones iniciales (Nivel 1).
-                    </flux:table.cell>
-                </flux:table.row>
-
-                <flux:table.row>
-                    <flux:table.cell class="pl-4">
-                        Administración / Finanzas
-                    </flux:table.cell>
-
-                    <flux:table.cell>
-                        Valida excepciones finales, control fiscal,
-                        auditoría y autorizaciones administrativas (Nivel 2).
-                    </flux:table.cell>
-                </flux:table.row>
-
-            </flux:table.rows>
-        </flux:table>
-
-    </div>
-</flux:card>
+    </flux:card>
 
     <flux:card class="py-3">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end">

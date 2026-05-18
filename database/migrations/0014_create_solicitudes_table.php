@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreignId('empleado_id')->constrained();
             $table->foreignId('area_id')->nullable()->constrained('areas');
             $table->foreignId('proyecto_id')->nullable()->constrained();
+            $table->foreignId('empresa_id')->nullable()->constrained('empresas')->nullOnDelete();
+            $table->foreignId('presupuesto_id')->nullable()->constrained('presupuestos')->nullOnDelete();
 
             $table->timestamp('fecha_solicitud')->useCurrent();
 
@@ -37,6 +39,9 @@ return new class extends Migration
 
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('empresa_id');
+            $table->index('presupuesto_id');
         });
     }
 

@@ -16,9 +16,10 @@ class FormModal extends Component
     public ?int $editingId = null;
     public bool $esGerente = false;
 
-    public array $roles = [];
+    public array $roles         = [];
     public array $centrosCostos = [];
-    public array $areas = [];
+    public array $areas         = [];
+    public array $empresas      = [];
 
     public string $nombre_completo = '';
     public string $email = '';
@@ -30,6 +31,7 @@ class FormModal extends Component
     public ?int $area_id = null;
     public ?int $rol_id = null;
     public ?int $centro_costo_id = null;
+    public ?int $empresa_id = null;
     public string $fecha_ingreso = '';
     public string $numero_nomina = '';
     public string $banco_nomina = '';
@@ -54,6 +56,7 @@ class FormModal extends Component
             $this->puesto          = $empleado->puesto ?? '';
             $this->area_id         = $empleado->area_id;
             $this->centro_costo_id = $empleado->centro_costo_id;
+            $this->empresa_id      = $empleado->empresa_id;
             $this->rfc             = $empleado->rfc ?? '';
             $this->curp            = $empleado->curp ?? '';
             $this->numero_nomina   = $empleado->numero_nomina ?? '';
@@ -95,8 +98,9 @@ class FormModal extends Component
                 ),
             ],
             'rol_id'            => 'required|exists:roles,id',
-            'area_id'        => 'required|exists:areas,id',
+            'area_id'           => 'required|exists:areas,id',
             'centro_costo_id' => 'required|exists:centros_costos,id',
+            'empresa_id'      => 'required|exists:empresas,id',
             'rfc'  => 'required|string|min:13|max:13',
             'curp' => 'required|string|min:18|max:18',
             'puesto'        => 'required|string|max:100',
@@ -111,20 +115,34 @@ class FormModal extends Component
             'tarjeta_credito_corporativa_asignada' => 'boolean'
         ], messages: [
             'nombre_completo.required' => 'El nombre completo es obligatorio.',
+
             'email.required'           => 'El email es obligatorio.',
             'email.email'              => 'El email no tiene un formato válido.',
             'email.unique'             => 'Este email ya está registrado.',
+
             'rol_id.required'          => 'El rol es obligatorio.',
-            'centro_costo_id.required' => 'El centro de costo es obligatorio.',
+            'rol_id.exists'            => 'El rol seleccionado no es válido.',
+
+            'centro_costo_id.required' => 'La referencia contable es obligatoria.',
+            'centro_costo_id.exists'   => 'La referencia contable seleccionada no es válida.',
+
+            'empresa_id.required'      => 'La empresa es obligatoria.',
+            'empresa_id.exists'        => 'La empresa seleccionada no es válida.',
+
             'area_id.required'         => 'El área es obligatoria.',
+            'area_id.exists'           => 'El área seleccionada no es válida.',
+
             'rfc.required'             => 'El RFC es obligatorio.',
             'rfc.min'                  => 'El RFC debe tener exactamente 13 caracteres.',
             'rfc.max'                  => 'El RFC debe tener exactamente 13 caracteres.',
+
             'curp.required'            => 'El CURP es obligatorio.',
             'curp.min'                 => 'El CURP debe tener exactamente 18 caracteres.',
             'curp.max'                 => 'El CURP debe tener exactamente 18 caracteres.',
+
             'clabe_nomina.size'        => 'La CLABE debe tener exactamente 18 dígitos.',
             'clabe_nomina.required'    => 'La CLABE es obligatoria.',
+
             'fecha_ingreso.date'       => 'La fecha de ingreso no tiene un formato válido.',
             'nss.required'             => 'El nss es obligatorio.',
             'puesto.required'          => 'El puesto es obligatorio.',
@@ -132,6 +150,7 @@ class FormModal extends Component
             'banco_nomina.required'    => 'El banco es obligatorio.',
             'cuenta_nomina.required'   => 'La cuenta de nómina es obligatoria.',
             'telefono.max'             => 'El Teléfono debe tener exactamente 10 caracteres.',
+
             'limite_credito_tarjeta.numeric'  => 'El límite de crédito debe ser un número.',
             'limite_credito_tarjeta.min'      => 'El límite de crédito no puede ser negativo.',
 
@@ -143,6 +162,7 @@ class FormModal extends Component
             'puesto' => $this->puesto,
             'area_id' => $this->area_id,
             'centro_costo_id' => $this->centro_costo_id,
+            'empresa_id' => $this->empresa_id,
             'rfc' => $this->rfc,
             'curp' => $this->curp,
             'numero_nomina' => $this->numero_nomina,
@@ -185,7 +205,7 @@ class FormModal extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['editingId', 'nombre_completo', 'email', 'telefono', 'rfc', 'curp', 'nss', 'puesto', 'area_id', 'rol_id', 'centro_costo_id', 'fecha_ingreso', 'numero_nomina', 'banco_nomina', 'cuenta_nomina', 'clabe_nomina' ]);
+        $this->reset(['editingId', 'nombre_completo', 'email', 'telefono', 'rfc', 'curp', 'nss', 'puesto', 'area_id', 'rol_id', 'centro_costo_id', 'empresa_id', 'fecha_ingreso', 'numero_nomina', 'banco_nomina', 'cuenta_nomina', 'clabe_nomina' ]);
         $this->resetValidation();
     }
 }

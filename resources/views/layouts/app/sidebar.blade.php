@@ -22,123 +22,144 @@
                 </flux:sidebar.group>
 
                 @can('solicitudes.ver.propias')
-                <flux:sidebar.group heading="Operación">
+                    <flux:sidebar.group heading="Operación">
+                        @can('solicitudes.aprobar')
+                            <flux:sidebar.item icon="document-check"
+                                :href="route('autorizaciones.index')"
+                                :current="request()->routeIs('autorizaciones.index')"
+                                wire:navigate>
+                                Autorizaciones
+                            </flux:sidebar.item>
+                        @endcan
 
-                    <flux:sidebar.item icon="document-chart-bar"
-                        :href="route('solicitudes.index')"
-                        :current="request()->routeIs('solicitudes.index')"
-                        wire:navigate>
-                        Mis solicitudes
-                    </flux:sidebar.item>
+                        @can('auditoria.ver')
+                            <flux:sidebar.item icon="book-open"
+                                :href="route('auditoria.index')"
+                                :current="request()->routeIs('auditoria.index')"
+                                wire:navigate>
+                                Auditoría
+                            </flux:sidebar.item>
+                        @endcan
 
-                    <flux:sidebar.item icon="currency-dollar"
-                        :href="route('gastos.index')"
-                        :current="request()->routeIs('gastos.index')"
-                        wire:navigate>
-                        Comprobar gastos
-                    </flux:sidebar.item>
+                        <flux:sidebar.item icon="currency-dollar"
+                            :href="route('gastos.index')"
+                            :current="request()->routeIs('gastos.index')"
+                            wire:navigate>
+                            Comprobar gastos
+                        </flux:sidebar.item>
 
-                    @can('solicitudes.aprobar')
-                    <flux:sidebar.item icon="document-check"
-                        :href="route('autorizaciones.index')"
-                        :current="request()->routeIs('autorizaciones.index')"
-                        wire:navigate>
-                        Autorizaciones
-                    </flux:sidebar.item>
-                    @endcan
-
-                    @can('auditoria.ver')
-                    <flux:sidebar.item icon="book-open"
-                        :href="route('auditoria.index')"
-                        :current="request()->routeIs('auditoria.index')"
-                        wire:navigate>
-                        Auditoría
-                    </flux:sidebar.item>
-                    @endcan
-
-                </flux:sidebar.group>
+                        <flux:sidebar.item icon="document-chart-bar"
+                            :href="route('solicitudes.index')"
+                            :current="request()->routeIs('solicitudes.index')"
+                            wire:navigate>
+                            Mis solicitudes
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
                 @endcan
 
                 @canany(['empleados.ver.propios', 'empleados.ver.area', 'empleados.ver.todos'])
-                <flux:sidebar.group heading="Administración">
+                    <flux:sidebar.group heading="Administración">
+                        @can('areas.ver')
+                            <flux:sidebar.item icon="globe-alt"
+                                :href="route('areas')"
+                                :current="request()->routeIs('areas')"
+                                wire:navigate>
+                                Áreas
+                            </flux:sidebar.item>
+                        @endcan
 
-                    <flux:sidebar.item icon="user"
-                        :href="route('empleados')"
-                        :current="request()->routeIs('empleados')"
-                        wire:navigate>
-                        Empleados
-                    </flux:sidebar.item>
+                        @can('conceptos.ver')
+                            <flux:sidebar.item icon="clipboard-document-list"
+                                :href="route('conceptos')"
+                                :current="request()->routeIs('conceptos')"
+                                wire:navigate>
+                                Conceptos
+                            </flux:sidebar.item>
+                        @endcan
 
-                    @can('proyectos.ver')
-                    <flux:sidebar.item icon="briefcase"
-                        :href="route('proyectos')"
-                        :current="request()->routeIs('proyectos')"
-                        wire:navigate>
-                        Proyectos
-                    </flux:sidebar.item>
-                    @endcan
+                        @can('empresas.ver')
+                            <flux:sidebar.item icon="user-group"
+                                :href="route('empresas.index')"
+                                :current="request()->routeIs('empresas.index')"
+                                wire:navigate>
+                                Empresas
+                            </flux:sidebar.item>
+                        @endcan
 
-                    @can('conceptos.ver')
-                    <flux:sidebar.item icon="clipboard-document-list"
-                        :href="route('conceptos')"
-                        :current="request()->routeIs('conceptos')"
-                        wire:navigate>
-                        Conceptos
-                    </flux:sidebar.item>
-                    @endcan
+                        <flux:sidebar.item icon="user"
+                            :href="route('empleados')"
+                            :current="request()->routeIs('empleados')"
+                            wire:navigate>
+                            Empleados
+                        </flux:sidebar.item>
 
-                    @can('politicas.ver')
-                    <flux:sidebar.item icon="shield-exclamation"
-                        :href="route('politicas')"
-                        :current="request()->routeIs('politicas')"
-                        wire:navigate>
-                        Políticas
-                    </flux:sidebar.item>
-                    @endcan
+                        @can('politicas.ver')
+                            <flux:sidebar.item icon="shield-exclamation"
+                                :href="route('politicas')"
+                                :current="request()->routeIs('politicas')"
+                                wire:navigate>
+                                Políticas
+                            </flux:sidebar.item>
+                        @endcan
 
-                    @can('centros_costos.ver')
-                    <flux:sidebar.item icon="building-office"
-                        :href="route('centros-costos')"
-                        :current="request()->routeIs('centros-costos')"
-                        wire:navigate>
-                        Referencia contable
-                    </flux:sidebar.item>
-                    @endcan
+                        @can('proyectos.ver')
+                            <flux:sidebar.item icon="briefcase"
+                                :href="route('proyectos')"
+                                :current="request()->routeIs('proyectos')"
+                                wire:navigate>
+                                Proyectos
+                            </flux:sidebar.item>
+                        @endcan
 
-                    @can('areas.ver')
-                    <flux:sidebar.item icon="globe-alt"
-                        :href="route('areas')"
-                        :current="request()->routeIs('areas')"
-                        wire:navigate>
-                        Áreas
-                    </flux:sidebar.item>
-                    @endcan
+                        @can('referencia_contable.ver')
+                            <flux:sidebar.item icon="building-office"
+                                :href="route('centros-costos')"
+                                :current="request()->routeIs('centros-costos')"
+                                wire:navigate>
+                                Referencia contable
+                            </flux:sidebar.item>
+                        @endcan
 
-                </flux:sidebar.group>
+                        @can('roles.ver')
+                            <flux:sidebar.item
+                                icon="shield-check"
+                                :href="route('roles-permisos')"
+                                :current="request()->routeIs('roles-permisos')"
+                                wire:navigate
+                                >
+                                Roles y Permisos
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
                 @endcan
 
-                @can('reportes.ver')
-                <flux:sidebar.group heading="Finanzas">
+                @canany(['reportes.ver', 'presupuestos.ver'])
+                    <flux:sidebar.group heading="Finanzas">
+                        @can('presupuestos.ver')
+                            <flux:sidebar.item icon="banknotes"
+                                :href="route('presupuestos.index')"
+                                :current="request()->routeIs('presupuestos.index')"
+                                wire:navigate>
+                                Presupuestos
+                            </flux:sidebar.item>
+                        @endcan
 
-                    <flux:sidebar.item icon="chart-pie"
-                        :href="route('reportes.index')"
-                        :current="request()->routeIs('reportes.index')"
-                        wire:navigate>
-                        Reportes
-                    </flux:sidebar.item>
+                        <flux:sidebar.item icon="chart-pie"
+                            :href="route('reportes.index')"
+                            :current="request()->routeIs('reportes.index')"
+                            wire:navigate>
+                            Reportes
+                        </flux:sidebar.item>
 
-                </flux:sidebar.group>
+                    </flux:sidebar.group>
                 @endcan
-
             </flux:sidebar.nav>
-
 
             <flux:spacer />
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
 
-        <!-- Mobile User Menu -->
         <flux:header class="lg:hidden">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
@@ -171,7 +192,7 @@
 
                     <flux:menu.radio.group>
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                            {{ __('Settings') }}
+                            {{ __('Ajustes') }}
                         </flux:menu.item>
                     </flux:menu.radio.group>
 
@@ -186,7 +207,7 @@
                             class="w-full cursor-pointer"
                             data-test="logout-button"
                         >
-                            {{ __('Log out') }}
+                            {{ __('Cerrar Sesión') }}
                         </flux:menu.item>
                     </form>
                 </flux:menu>

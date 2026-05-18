@@ -4,7 +4,6 @@ namespace App\Services\Empleado;
 
 use App\Models\Empleado;
 use App\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -43,11 +42,13 @@ class EmpleadoService
             ->join('roles',           'roles.id',           '=', 'model_has_roles.role_id')
             ->leftJoin('areas',       'areas.id',           '=', 'empleados.area_id')
             ->leftJoin('centros_costos','centros_costos.id',  '=', 'empleados.centro_costo_id')
+            ->leftJoin('empresas','empresas.id',  '=', 'empleados.empresa_id')
             ->select(
                 'empleados.*',
                 'users.email',
                 'roles.name as rol_nombre',
                 'areas.nombre as area_nombre',
+                'empresas.nombre as empresa_nombre',
                 'centros_costos.nombre as centro_costo_nombre',
             )
             // Restricción por centro de costo para gerente
@@ -107,6 +108,7 @@ class EmpleadoService
                 'puesto'          => $data['puesto'],
                 'area_id'         => $data['area_id'],
                 'centro_costo_id' => $data['centro_costo_id'],
+                'empresa_id'      => $data['empresa_id'],
                 'rfc'             => strtoupper(trim($data['rfc'])),
                 'curp'            => strtoupper(trim($data['curp'])),
                 'numero_nomina'   => $data['numero_nomina'],
@@ -136,6 +138,7 @@ class EmpleadoService
                 'puesto'          => $data['puesto'],
                 'area_id'         => $data['area_id'],
                 'centro_costo_id' => $data['centro_costo_id'],
+                'empresa_id'      => $data['empresa_id'],
                 'rfc'             => strtoupper(trim($data['rfc'])),
                 'curp'            => strtoupper(trim($data['curp'])),
                 'numero_nomina'   => $data['numero_nomina'],
@@ -188,7 +191,7 @@ class EmpleadoService
         }
 
         // ¿Hay otros managers en el mismo área?
-        $otrosManagers = \App\Models\Empleado::whereHas('user.roles', fn($q) =>
+        $otrosManagers = Empleado::whereHas('user.roles', fn($q) =>
             $q->where('name', 'manager')
         )
         ->where('area_id', $empleado->area_id)

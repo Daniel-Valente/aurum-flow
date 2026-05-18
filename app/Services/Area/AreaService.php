@@ -26,6 +26,11 @@ class AreaService
         $perPage = min($perPage, 100);
 
         return Area::query()
+            ->join('empresas','empresas.id',  '=', 'areas.empresa_id')
+            ->select(
+                'areas.*',
+                'empresas.nombre as empresa_nombre'
+            )
             ->when($search, fn($q) =>
                 // ILIKE nativo de PostgreSQL — sin LOWER(), usa índice trgm
                 $q->where('nombre', 'ilike', "%{$search}%")
@@ -49,9 +54,10 @@ class AreaService
     public function create(array $data): Area
     {
         $area = Area::create([
-            'nombre'  => $data['nombre'],
-            'codigo'  => $data['codigo'],
-            'estatus' => $data['estatus'] ?? true,
+            'nombre'     => $data['nombre'],
+            'codigo'     => $data['codigo'],
+            'empresa_id' => $data['empresa_id'],
+            'estatus'    => $data['estatus'] ?? true,
         ]);
 
         $this->flushCache();
@@ -62,9 +68,10 @@ class AreaService
     public function update(Area $area, array $data): Area
     {
         $area->update([
-            'nombre'  => $data['nombre'],
-            'codigo'  => $data['codigo'],
-            'estatus' => $data['estatus'] ?? $area->estatus,
+            'nombre'     => $data['nombre'],
+            'codigo'     => $data['codigo'],
+            'empresa_id' => $data['empresa_id'],
+            'estatus'    => $data['estatus'] ?? $area->estatus,
         ]);
 
         $this->flushCache();

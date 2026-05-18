@@ -23,6 +23,7 @@ return new class extends Migration
 
             $table->foreignId('area_id')->nullable()->constrained('areas')->nullOnDelete();
             $table->foreignId('centro_costo_id')->nullable()->constrained('centros_costos')->nullOnDelete();
+            $table->foreignId('empresa_id')->nullable()->constrained('empresas')->nullOnDelete();
 
             $table->string('rfc', 13)->nullable()->index();
             $table->string('curp', 18)->nullable();
@@ -39,12 +40,15 @@ return new class extends Migration
             $table->string('telefono')->nullable();
 
             $table->boolean('tarjeta_credito_corporativa_asignada')->default(false);
+            $table->string('presupuesto_modo', 20)->nullable();
             $table->decimal('limite_credito_tarjeta', 10, 2)->nullable();
 
             $table->boolean('estatus')->default(true)->index();
 
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('empresa_id');
         });
     }
 

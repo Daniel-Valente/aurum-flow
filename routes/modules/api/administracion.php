@@ -56,22 +56,22 @@ Route::prefix('admin')->group(function () {
 
     Route::prefix('centros-costos')->group(function () {
         Route::get('/', [CentroCostoController::class, 'index'])
-            ->middleware('permission:centros_costos.ver');
+            ->middleware('permission:referencia_contable.ver');
 
         Route::get('/list', [CentroCostoController::class, 'list'])
-            ->middleware('permission:centros_costos.ver');
+            ->middleware('permission:referencia_contable.ver');
 
         Route::post('/', [CentroCostoController::class, 'store'])
-            ->middleware('permission:centros_costos.crear');
+            ->middleware('permission:referencia_contable.crear');
 
         Route::put('/{centro_costo}', [CentroCostoController::class, 'update'])
-            ->middleware('permission:centros_costos.editar');
+            ->middleware('permission:referencia_contable.editar');
 
         Route::patch('/{centro_costo}/toggle', [CentroCostoController::class, 'toggleStatus'])
-            ->middleware('permission:centros_costos.editar');
+            ->middleware('permission:referencia_contable.editar');
 
         Route::delete('/{centro_costo}', [CentroCostoController::class, 'destroy'])
-            ->middleware('permission:centros_costos.eliminar');
+            ->middleware('permission:referencia_contable.eliminar');
     });
 
     Route::prefix('proyectos')->group(function () {

@@ -13,51 +13,35 @@ class FormModal extends Component
 {
     public ?int $editingId = null;
 
-    // — Identificadores —
     public ?int $roleId      = null;
     public ?int $concepto_id = null;
 
-    // — Monto principal —
     public string $monto_max   = '';
     public string $tipo_limite = '';
 
-    // — Tramos documentales —
-    // null = ese tramo no aplica para la política
     public ?string $monto_libre            = null;
     public ?string $monto_comprobante      = null;
     public ?string $monto_factura          = null;
     public ?string $propina_max_porcentaje = null;
 
-    // — Flags de comportamiento —
     public bool $valida_sat        = false;
     public bool $acumulable_dia    = true;
     public bool $permite_excepcion = false;
     public bool $permite_propina   = false;
 
-    // — Vigencia —
     public ?string $vigencia_desde = null;
     public ?string $vigencia_hasta = null;
 
-    // — Sólo en edición —
     public ?string $motivo = null;
 
-    // — Datos para selects —
     public array $roles     = [];
     public array $conceptos = [];
-
-    // -------------------------------------------------------------------------
-    // Ciclo de vida
-    // -------------------------------------------------------------------------
 
     public function mount(EmpleadoService $empleadoService, ConceptoService $conceptoService): void
     {
         $this->roles     = $empleadoService->roles();
         $this->conceptos = $conceptoService->list();
     }
-
-    // -------------------------------------------------------------------------
-    // Apertura del modal
-    // -------------------------------------------------------------------------
 
     #[On('openPoliticaForm')]
     public function open(?int $id = null): void
@@ -72,19 +56,16 @@ class FormModal extends Component
             $this->monto_max   = (string) $politica->monto_max;
             $this->tipo_limite = $politica->tipo_limite;
 
-            // Tramos documentales
             $this->monto_libre            = $politica->monto_libre       !== null ? (string) $politica->monto_libre       : null;
             $this->monto_comprobante      = $politica->monto_comprobante !== null ? (string) $politica->monto_comprobante : null;
             $this->monto_factura          = $politica->monto_factura     !== null ? (string) $politica->monto_factura     : null;
             $this->propina_max_porcentaje = $politica->propina_max_porcentaje !== null ? (string) $politica->propina_max_porcentaje : null;
 
-            // Flags
             $this->valida_sat        = $politica->valida_sat;
             $this->acumulable_dia    = $politica->acumulable_dia;
             $this->permite_excepcion = $politica->permite_excepcion;
             $this->permite_propina   = $politica->permite_propina;
 
-            // Vigencia
             $this->vigencia_desde = $politica->vigencia_desde?->format('Y-m-d');
             $this->vigencia_hasta = $politica->vigencia_hasta?->format('Y-m-d');
         } else {
@@ -95,21 +76,12 @@ class FormModal extends Component
         $this->modal('politica-form')->show();
     }
 
-
-    /**
-     * Si se activa validación SAT, la factura es obligatoria desde $0.01.
-     * Se auto-completa monto_factura con 0.01 si estaba vacío.
-     */
     public function updatedValidaSat(bool $value): void
     {
         if ($value && empty($this->monto_factura)) {
             $this->monto_factura = '0.01';
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Validación
-    // -------------------------------------------------------------------------
 
     public function isEditing(): bool
     {
@@ -177,10 +149,6 @@ class FormModal extends Component
         ];
     }
 
-    /**
-     * Validaciones de negocio sobre los tramos (orden y consistencia).
-     * Se ejecutan después de la validación de Laravel.
-     */
     private function validarTramos(): bool
     {
         $libre       = filled($this->monto_libre)       ? (float) $this->monto_libre       : null;
@@ -188,33 +156,27 @@ class FormModal extends Component
         $factura     = filled($this->monto_factura)     ? (float) $this->monto_factura     : null;
         $max         = filled($this->monto_max)         ? (float) $this->monto_max         : null;
 
-        // Sin monto_max no hay nada que validar
         if ($max === null || $max <= 0) {
             return true;
         }
 
         $ok = true;
 
-        // libre < comprobante
         if ($libre !== null && $comprobante !== null && $libre >= $comprobante) {
             $this->addError('monto_libre', 'El monto libre debe ser menor al monto de comprobante.');
             $ok = false;
         }
 
-        // comprobante < factura
         if ($comprobante !== null && $factura !== null && $comprobante >= $factura) {
             $this->addError('monto_comprobante', 'El monto de comprobante debe ser menor al monto de factura.');
             $ok = false;
         }
 
-        // libre < factura (sin comprobante intermedio)
         if ($libre !== null && $factura !== null && $comprobante === null && $libre >= $factura) {
             $this->addError('monto_libre', 'El monto libre debe ser menor al monto de factura.');
             $ok = false;
         }
 
-        // Cada tramo debe ser ESTRICTAMENTE menor al monto_max
-        // Mensaje específico por campo para no confundir al usuario
         if ($libre !== null && $libre >= $max) {
             $this->addError('monto_libre', 'El monto libre debe ser menor al máximo (' . number_format($max, 2) . ').');
             $ok = false;
@@ -230,7 +192,6 @@ class FormModal extends Component
             $ok = false;
         }
 
-        // Si valida_sat=true debe tener factura definida
         if ($this->valida_sat && $factura === null) {
             $this->addError('monto_factura', 'Debes definir el monto de factura si activas la validación SAT.');
             $ok = false;
@@ -238,10 +199,6 @@ class FormModal extends Component
 
         return $ok;
     }
-
-    // -------------------------------------------------------------------------
-    // Guardar
-    // -------------------------------------------------------------------------
 
     public function save(PoliticaGastoService $service): void
     {
@@ -257,7 +214,6 @@ class FormModal extends Component
             'monto_max'         => $this->monto_max,
             'tipo_limite'       => $this->tipo_limite,
 
-            // Tramos documentales — null si el campo está vacío
             'monto_libre'            => filled($this->monto_libre)       ? $this->monto_libre       : null,
             'monto_comprobante'      => filled($this->monto_comprobante) ? $this->monto_comprobante : null,
             'monto_factura'          => filled($this->monto_factura)     ? $this->monto_factura     : null,
@@ -299,10 +255,6 @@ class FormModal extends Component
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
     public function resetForm(): void
     {
         $this->reset([
@@ -313,7 +265,7 @@ class FormModal extends Component
             'vigencia_desde', 'vigencia_hasta', 'permite_propina',
             'propina_max_porcentaje', 'motivo',
         ]);
-        $this->acumulable_dia = true; // default
+        $this->acumulable_dia = true;
         $this->resetValidation();
     }
 
